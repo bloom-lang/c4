@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.6)
-project(Col)
-subdirs(src)
+PROJECT(Col)
+SUBDIRS(src)
 
-set(package_versin 1)
-set(build_shared_libs on)
+SET(PACKAGE_VERSION 1)
+SET(BUILD_SHARED_LIBS on)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-find_package(flex)
-find_package(bison)
+FIND_PACKAGE(flex)
+FIND_PACKAGE(bison)
 
 SET(CMAKE_C_FLAGS "-g -Wall -W -pedantic -std=gnu99 ${CMAKE_C_FLAGS}")

@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "types/tuple.h"
 
 Tuple *

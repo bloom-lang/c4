@@ -5,5 +5,5 @@
 int
 main(void) {
     Tuple *t = alloc_tuple();
-    printf("hello, world");
+    printf("hello, world: %d", t->foo);
 }
