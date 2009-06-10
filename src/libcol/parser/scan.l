@@ -1,5 +1,7 @@
 %{
 #include "y.tab.h"
+
+#include "util/str.h"
 %}
 
 %option 8bit
@@ -8,11 +10,15 @@
 %option fast
 %option nounput
 %option noyywrap
+%option header-file="scan.h"
 
 digit           [0-9]
 space           [ \t\n\r\f]
 newline         [\n\r]
 non_newline     [^\n\r]
+
+/* "self" is the set of characters that are returned to the parser as-is. */
+self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=]
 
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
@@ -31,4 +37,12 @@ identifier		{ident_start}{ident_cont}*
 
 {whitespace}            /* ignore */
 <<EOF>>                 { return OLG_EOF; }
+
+{self}                  { return yytext[0]; }
+
+{identifier} {
+    yylvar.str = downcase_str(yytext, yyleng);
+    return IDENT;
+}
+
 %%
