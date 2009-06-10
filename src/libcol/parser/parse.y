@@ -1,4 +1,6 @@
+%{
 #include "util/list.h"
+%}
 
 %union
 {
