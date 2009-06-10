@@ -5,20 +5,33 @@
 %union
 {
     char *str;
-    const char *keyword;
     List *list;
+    void *ptr;
 }
 
-%token <keyword> PROGRAM DEFINE
 %start input
+%pure_parser
+
+%token DEFINE PROGRAM OLG_EOF
 
 %type <str>     program_header
 %type <list>    program_body
+%type <ptr>     clause rule fact define
 
 %%
-input: program_header program_body {}
+input: program_header program_body OLG_EOF {}
 
-program_header: PROGRAM identifier { $$ = $1; }
+program_header: PROGRAM identifier { $$ = $2; };
 
-program_body: {}
+program_body: clause program_body { $$ = list_append($2, $1); }
+| /* EMPTY */ { $$ = NULL; }
+;
+
+clause: rule | fact | define;
+
+rule:;
+
+fact:;
+
+define:;
 %%
