@@ -1,5 +1,5 @@
 %{
-#include "y.tab.h"
+#include "yy_parse.h"
 
 #include "util/str.h"
 %}
@@ -11,6 +11,7 @@
 %option nounput
 %option noyywrap
 %option header-file="scan.h"
+%option bison-bridge
 
 digit           [0-9]
 space           [ \t\n\r\f]
@@ -46,3 +47,9 @@ identifier		{ident_start}{ident_cont}*
 }
 
 %%
+
+void
+yyerror(const char *message)
+{
+    ;
+}

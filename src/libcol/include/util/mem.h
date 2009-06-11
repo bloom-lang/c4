@@ -1,6 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 
+#include <stddef.h>
+
 void *ol_alloc(size_t sz);
 void *ol_alloc0(size_t sz);
 void ol_free(void *ptr);

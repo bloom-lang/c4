@@ -1,3 +1,5 @@
+#include <ctype.h>
+
 #include "util/mem.h"
 #include "util/str.h"
 

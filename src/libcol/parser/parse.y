@@ -1,4 +1,6 @@
 %{
+#include <stdio.h>
+
 #include "util/list.h"
 %}
 
@@ -17,10 +19,10 @@
 
 %type <str>     program_header
 %type <list>    program_body
-%type <ptr>     clause rule fact define
+%type <ptr>     clause
 
 %%
-input: program_header program_body OLG_EOF {}
+input: program_header program_body OLG_EOF {};
 
 program_header: PROGRAM IDENT { $$ = $2; };
 
@@ -28,11 +30,6 @@ program_body: clause program_body { $$ = list_append($2, $1); }
 | /* EMPTY */ { $$ = NULL; }
 ;
 
-clause: rule | fact | define;
-
-rule:;
-
-fact:;
-
-define:;
+clause: IDENT { $$ = $1; };
 %%
+
