@@ -109,10 +109,10 @@ IF(FLEX_EXECUTABLE)
 
   MACRO(ADD_FLEX_BISON_DEPENDENCY FlexTarget BisonTarget)
     IF(NOT FLEX_${FlexTarget}_OUTPUTS)
-      MESSAGE(SEND_ERROR "Flex target `${FlexTarget}' does not exists.")
+      MESSAGE(SEND_ERROR "Flex target `${FlexTarget}' does not exist.")
     ENDIF(NOT FLEX_${FlexTarget}_OUTPUTS)
     IF(NOT BISON_${BisonTarget}_OUTPUT_HEADER)
-      MESSAGE(SEND_ERROR "Bison target `${BisonTarget}' does not exists.")
+      MESSAGE(SEND_ERROR "Bison target `${BisonTarget}' does not exist.")
     ENDIF(NOT BISON_${BisonTarget}_OUTPUT_HEADER)
 
     SET_SOURCE_FILES_PROPERTIES(${FLEX_${FlexTarget}_OUTPUTS}
