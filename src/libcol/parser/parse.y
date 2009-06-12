@@ -3,6 +3,8 @@
 
 #include "scan.h"
 #include "util/list.h"
+
+int yyerror(const char *message);
 %}
 
 %union
@@ -36,5 +38,6 @@ clause: IDENT { $$ = $1; };
 int
 yyerror(const char *message)
 {
+    printf("Parse error: %s\n", message);
     return 1;
 }
