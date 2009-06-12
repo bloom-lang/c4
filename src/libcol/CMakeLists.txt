@@ -2,7 +2,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE libcol_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 
-FLEX_TARGET(Lexer ${CMAKE_CURRENT_SOURCE_DIR}/parser/scan.l ${PROJECT_BINARY_DIR}/scan.c)
+FLEX_TARGET(Lexer ${CMAKE_CURRENT_SOURCE_DIR}/parser/scan.l ${PROJECT_BINARY_DIR}/scan.c COMPILE_FLAGS "--header-file=${PROJECT_BINARY_DIR}/scan.h")
 BISON_TARGET(Parser ${CMAKE_CURRENT_SOURCE_DIR}/parser/parse.y ${PROJECT_BINARY_DIR}/yy_parse.c COMPILE_FLAGS "-d")
 ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
 

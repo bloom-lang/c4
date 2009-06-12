@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 
+#include "scan.h"
 #include "util/list.h"
 %}
 
@@ -12,7 +13,6 @@
 }
 
 %start input
-%pure_parser
 
 %token DEFINE PROGRAM OLG_EOF
 %token <str> IDENT ICONST FCONST SCONST
@@ -26,10 +26,15 @@ input: program_header program_body OLG_EOF {};
 
 program_header: PROGRAM IDENT { $$ = $2; };
 
-program_body: clause program_body { $$ = list_append($2, $1); }
+program_body: clause program_body { $$ = NULL; }
 | /* EMPTY */ { $$ = NULL; }
 ;
 
 clause: IDENT { $$ = $1; };
 %%
 
+int
+yyerror(const char *message)
+{
+    return 1;
+}

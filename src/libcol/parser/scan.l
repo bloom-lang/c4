@@ -1,17 +1,15 @@
 %{
-#include "yy_parse.h"
-
+#include "util/list.h"
 #include "util/str.h"
+
+#include "yy_parse.h"
 %}
 
 %option 8bit
 %option never-interactive batch
-%option reentrant
 %option fast
 %option nounput
 %option noyywrap
-%option header-file="scan.h"
-%option bison-bridge
 
 digit           [0-9]
 space           [ \t\n\r\f]
@@ -31,10 +29,10 @@ identifier		{ident_start}{ident_cont}*
 %x comment
 
 %%
-"/*"                    BEGIN(comment)
+"/*"                    { BEGIN(comment); }
 <comment>[^*]*          /* eat anything that's not a '*' */
 <comment>"*"+[^*/]*     /* eat up '*'s not followed by '/'s */
-<comment>"*"+"/"        BEGIN(INITIAL)
+<comment>"*"+"/"        { BEGIN(INITIAL); }
 
 {whitespace}            /* ignore */
 <<EOF>>                 { return OLG_EOF; }
@@ -42,14 +40,8 @@ identifier		{ident_start}{ident_cont}*
 {self}                  { return yytext[0]; }
 
 {identifier} {
-    yylvar.str = downcase_str(yytext, yyleng);
+    yylval.str = downcase_str(yytext, yyleng);
     return IDENT;
 }
 
 %%
-
-void
-yyerror(const char *message)
-{
-    ;
-}
