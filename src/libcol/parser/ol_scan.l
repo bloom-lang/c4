@@ -50,14 +50,14 @@ identifier		{ident_start}{ident_cont}*
 {identifier} {
     yylval.str = downcase_str(yytext, yyleng);
 
-    if (strcmp(yylval.str, "define") == 0)
-        return DEFINE;
-    if (strcmp(yylval.str, "program") == 0)
-        return PROGRAM;
-    if (strcmp(yylval.str, "keys") == 0)
-        return KEYS;
     if (strcmp(yylval.str, "delete") == 0)
         return DELETE;
+    if (strcmp(yylval.str, "define") == 0)
+        return DEFINE;
+    if (strcmp(yylval.str, "keys") == 0)
+        return KEYS;
+    if (strcmp(yylval.str, "program") == 0)
+        return PROGRAM;
 
     return IDENT;
 }
