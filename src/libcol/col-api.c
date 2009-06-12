@@ -22,7 +22,15 @@ col_terminate()
 ColInstance *
 col_make()
 {
-    ColInstance *result = ol_alloc(sizeof(*result));
+    apr_status_t s;
+    apr_pool_t *pool;
+
+    s = apr_pool_create(&pool, NULL);
+    if (s != APR_SUCCESS)
+        return NULL;
+
+    ColInstance *result = apr_palloc(pool, sizeof(*result));
+    result->pool = pool;
     result->net = network_make(0);
     return result;
 }
@@ -31,7 +39,7 @@ ColStatus
 col_destroy(ColInstance *col)
 {
     network_destroy(col->net);
-    ol_free(col);
+    apr_pool_destroy(col->pool);
     return COL_OK;
 }
 
