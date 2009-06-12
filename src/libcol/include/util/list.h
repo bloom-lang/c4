@@ -1,3 +1,7 @@
+/*
+ * A simple linked list implementation. The code and interface is inspired
+ * by the PostgreSQL linked list implementation. ~nrc
+ */
 #ifndef LIST_H
 #define LIST_H
 
@@ -21,7 +25,17 @@ struct ListCell
 #define list_tail(l)    ((l) ? l->tail : NULL)
 #define list_length(l)  ((l) ? l->length : 0)
 
-void list_append(List *list, void *datum);
-void list_prepend(List *list, void *datum);
+#define lc_data(lc)     ((lc)->data)
+#define lc_next(lc)     ((lc)->next)
+
+/*
+ * foreach -
+ *    a convenience macro which loops through the list
+ */
+#define foreach(cell, l)    \
+    for ((cell) = list_head(l); (cell) != NULL; (cell) = lc_next(cell))
+
+List *list_append(List *list, void *datum);
+List *list_prepend(List *list, void *datum);
 
 #endif  /* LIST_H */
