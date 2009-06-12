@@ -2,7 +2,7 @@
 /* XXX: should be a pure-parser */
 #include <stdio.h>
 
-#include "scan.h"
+#include "ol_scan.h"
 #include "util/list.h"
 
 int yyerror(const char *message);

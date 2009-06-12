@@ -3,7 +3,7 @@
 #include "util/list.h"
 #include "util/str.h"
 
-#include "yy_parse.h"
+#include "ol_parse.h"
 %}
 
 %option 8bit
