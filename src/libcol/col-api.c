@@ -9,8 +9,21 @@ col_init()
     return result;
 }
 
-void
+ColStatus
 col_shutdown(ColInstance *col)
 {
     ol_free(col);
+    return COL_OK;
+}
+
+ColStatus
+col_install_file(const char *path)
+{
+    return COL_OK;
+}
+
+ColStatus
+col_install_str(const char *str)
+{
+    return COL_OK;
 }
