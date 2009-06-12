@@ -18,7 +18,7 @@ typedef enum ColStatus
 } ColStatus;
 
 ColInstance *col_init();
-ColStatus col_shutdown(ColInstance *col);
+ColStatus col_destroy(ColInstance *col);
 
 ColStatus col_install_file(const char *path);
 ColStatus col_install_str(const char *str);

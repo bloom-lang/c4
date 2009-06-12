@@ -6,6 +6,6 @@ int
 main(void)
 {
     ColInstance *c = col_init();
-    col_shutdown(c);
+    col_destroy(c);
     printf("hello, world\n");
 }

@@ -1,11 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-/* from scan.l */
-extern int	yylex(void);
-extern void yyerror(const char *message);
+typedef struct ColParser ColParser;
 
-/* from gram.y */
-extern int	yyparse(void);
+ColParser *parser_init(ColInstance *col);
+ColStatus parser_destroy(ColParser *parser);
 
 #endif  /* PARSER_H */

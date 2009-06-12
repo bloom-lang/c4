@@ -1,6 +1,4 @@
-#include "col-api.h"
 #include "col-internal.h"
-#include "util/mem.h"
 
 ColInstance *
 col_init()
@@ -10,7 +8,7 @@ col_init()
 }
 
 ColStatus
-col_shutdown(ColInstance *col)
+col_destroy(ColInstance *col)
 {
     ol_free(col);
     return COL_OK;
