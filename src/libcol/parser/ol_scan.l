@@ -2,6 +2,7 @@
 /* XXX: should be a reentrant scanner */
 #include <string.h>
 
+#include "parser/ast.h"
 #include "util/list.h"
 #include "util/str.h"
 
@@ -20,7 +21,7 @@ newline         [\n\r]
 non_newline     [^\n\r]
 
 /* "self" is the set of characters that are returned to the parser as-is. */
-self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=]
+self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=@]
 
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
@@ -43,6 +44,9 @@ identifier		{ident_start}{ident_cont}*
 
 {self}                  { return yytext[0]; }
 
+"#delete"               { return OLG_HASH_DELETE; }
+"#insert"               { return OLG_HASH_INSERT; }
+
 {identifier} {
     yylval.str = downcase_str(yytext, yyleng);
 
@@ -52,6 +56,8 @@ identifier		{ident_start}{ident_cont}*
         return PROGRAM;
     if (strcmp(yylval.str, "keys") == 0)
         return KEYS;
+    if (strcmp(yylval.str, "delete") == 0)
+        return DELETE;
 
     return IDENT;
 }
