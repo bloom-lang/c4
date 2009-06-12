@@ -3,10 +3,10 @@
 #include "parser/parser.h"
 
 ColInstance *
-col_init()
+col_make()
 {
     ColInstance *result = ol_alloc(sizeof(*result));
-    result->net = network_init(0);
+    result->net = network_make(0);
     return result;
 }
 
@@ -30,7 +30,7 @@ col_install_str(ColInstance *col, const char *str)
     ColParser *parser;
     AstProgram *program;
 
-    parser = parser_init(col);
+    parser = parser_make(col);
     program = parser_do_parse(parser, str);
     parser_destroy(parser);
 

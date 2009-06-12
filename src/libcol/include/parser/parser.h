@@ -5,7 +5,7 @@
 
 typedef struct ColParser ColParser;
 
-ColParser *parser_init(ColInstance *col);
+ColParser *parser_make(ColInstance *col);
 ColStatus parser_destroy(ColParser *parser);
 
 AstProgram *parser_do_parse(ColParser *parser, const char *str);

@@ -12,7 +12,7 @@ struct ColParser
 };
 
 ColParser *
-parser_init(ColInstance *col)
+parser_make(ColInstance *col)
 {
     ColParser *result = ol_alloc(sizeof(*result));
     return result;

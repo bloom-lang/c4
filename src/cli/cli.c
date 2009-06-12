@@ -29,11 +29,13 @@ exec_file(const char *srcfile)
     ColInstance *c;
     ColStatus s;
 
-    c = col_init();
-
+    c = col_make();
+#if 0
     s = col_install_file(c, srcfile);
     if (s)
         printf("Failed to install file: %d", (int) s);
+#endif
+    s = col_install_str(c, "program bar; foo(X) :- baz(X);");
 
     col_destroy(c);
 }

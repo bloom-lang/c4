@@ -17,7 +17,7 @@ typedef enum ColStatus
     COL_ERROR
 } ColStatus;
 
-ColInstance *col_init();
+ColInstance *col_make();
 ColStatus col_destroy(ColInstance *col);
 
 ColStatus col_install_file(ColInstance *col, const char *path);

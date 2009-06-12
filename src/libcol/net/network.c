@@ -6,7 +6,7 @@
  * port to listen on; 0 means to use an ephemeral port.
  */
 ColNetwork *
-network_init(int port)
+network_make(int port)
 {
     ColNetwork *result = ol_alloc(sizeof(*result));
     return result;
