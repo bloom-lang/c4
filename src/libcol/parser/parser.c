@@ -14,6 +14,12 @@ parser_init(ColInstance *col)
     return result;
 }
 
+AstProgram *
+parser_do_parse(ColParser *parser, const char *src)
+{
+    return NULL;
+}
+
 ColStatus
 parser_destroy(ColParser *parser)
 {

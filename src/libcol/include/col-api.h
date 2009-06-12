@@ -20,7 +20,7 @@ typedef enum ColStatus
 ColInstance *col_init();
 ColStatus col_destroy(ColInstance *col);
 
-ColStatus col_install_file(const char *path);
-ColStatus col_install_str(const char *str);
+ColStatus col_install_file(ColInstance *col, const char *path);
+ColStatus col_install_str(ColInstance *col, const char *str);
 
 #endif  /* COL_API_H */

@@ -1,5 +1,7 @@
 #include "col-internal.h"
 
+#include "parser/parser.h"
+
 ColInstance *
 col_init()
 {
@@ -15,13 +17,20 @@ col_destroy(ColInstance *col)
 }
 
 ColStatus
-col_install_file(const char *path)
+col_install_file(ColInstance *col, const char *path)
 {
     return COL_OK;
 }
 
 ColStatus
-col_install_str(const char *str)
+col_install_str(ColInstance *col, const char *str)
 {
+    ColParser *parser;
+    AstProgram *program;
+
+    parser = parser_init(col);
+    program = parser_do_parse(parser, str);
+    parser_destroy(parser);
+
     return COL_OK;
 }
