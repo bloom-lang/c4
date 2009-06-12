@@ -1,6 +1,23 @@
+#include <apr_general.h>
+#include <stdlib.h>
+
 #include "col-internal.h"
 #include "net/network.h"
 #include "parser/parser.h"
+
+void
+col_initialize()
+{
+    apr_status_t s = apr_initialize();
+    if (s != APR_SUCCESS)
+        exit(1);
+}
+
+void
+col_terminate()
+{
+    apr_terminate();
+}
 
 ColInstance *
 col_make()

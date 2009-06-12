@@ -29,6 +29,7 @@ exec_file(const char *srcfile)
     ColInstance *c;
     ColStatus s;
 
+    col_initialize();
     c = col_make();
 #if 0
     s = col_install_file(c, srcfile);
@@ -38,4 +39,5 @@ exec_file(const char *srcfile)
     s = col_install_str(c, "program bar; foo(X) :- baz(X);");
 
     col_destroy(c);
+    col_terminate();
 }

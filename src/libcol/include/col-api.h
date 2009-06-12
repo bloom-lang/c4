@@ -17,6 +17,14 @@ typedef enum ColStatus
     COL_ERROR
 } ColStatus;
 
+/*
+ * Initialize and terminate COL for the current process. Must be the first
+ * and last API function called, respectively.
+ */
+void col_initialize();
+void col_terminate();
+
+/* Create and destroy individual instances of COL. */
 ColInstance *col_make();
 ColStatus col_destroy(ColInstance *col);
 
