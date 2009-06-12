@@ -6,7 +6,7 @@ ColInstance *
 col_init()
 {
     ColInstance *result = ol_alloc(sizeof(*result));
-    result->net = network_init();
+    result->net = network_init(0);
     return result;
 }
 

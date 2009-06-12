@@ -6,7 +6,7 @@ typedef struct ColNetwork
     int foo;
 } ColNetwork;
 
-ColNetwork *network_init();
+ColNetwork *network_init(int port);
 ColStatus network_destroy(ColNetwork *net);
 
 void network_start(ColNetwork *net);
