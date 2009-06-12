@@ -63,8 +63,12 @@ col_install_str(ColInstance *col, const char *str)
     return COL_OK;
 }
 
-void
+ColStatus
 col_start(ColInstance *col)
 {
-    network_start(col->net);
+    ColStatus s = network_start(col->net);
+    if (s != COL_OK)
+        return s;
+
+    return COL_OK;
 }

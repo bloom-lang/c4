@@ -31,12 +31,16 @@ exec_file(const char *srcfile)
 
     col_initialize();
     c = col_make();
+    col_start(c);
 #if 0
     s = col_install_file(c, srcfile);
     if (s)
         printf("Failed to install file: %d", (int) s);
 #endif
     s = col_install_str(c, "program bar; foo(X) :- baz(X);");
+
+    while (1)
+        ;
 
     col_destroy(c);
     col_terminate();
