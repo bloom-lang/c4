@@ -23,8 +23,9 @@ self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=]
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
 
-ident_start		[A-Za-z\200-\377_]
-ident_cont		[A-Za-z\200-\377_0-9\$]
+/* No support for Unicode identifiers */
+ident_start		[A-Za-z_]
+ident_cont		[A-Za-z_0-9]
 identifier		{ident_start}{ident_cont}*
 
 %x comment
@@ -42,6 +43,12 @@ identifier		{ident_start}{ident_cont}*
 
 {identifier} {
     yylval.str = downcase_str(yytext, yyleng);
+
+    if (strcmp(yylval.str, "define") == 0)
+        return DEFINE;
+    if (strcmp(yylval.str, "program") == 0)
+        return PROGRAM;
+
     return IDENT;
 }
 
