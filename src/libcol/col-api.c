@@ -24,15 +24,16 @@ col_make()
 {
     apr_status_t s;
     apr_pool_t *pool;
+    ColInstance *col;
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
         return NULL;
 
-    ColInstance *result = apr_palloc(pool, sizeof(*result));
-    result->pool = pool;
-    result->net = network_make(0);
-    return result;
+    col = apr_palloc(pool, sizeof(*col));
+    col->pool = pool;
+    col->net = network_make(col, 0);
+    return col;
 }
 
 ColStatus

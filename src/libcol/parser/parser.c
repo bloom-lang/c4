@@ -8,39 +8,57 @@ extern int yyparse();
 
 struct ColParser
 {
-    int foo;
+    apr_pool_t *pool;
 };
 
 ColParser *
 parser_make(ColInstance *col)
 {
-    ColParser *result = ol_alloc(sizeof(*result));
-    return result;
+    apr_status_t s;
+    apr_pool_t *pool;
+    ColParser *parser;
+
+    s = apr_pool_create(&pool, col->pool);
+    if (s != APR_SUCCESS)
+        return NULL;
+
+    parser = apr_palloc(pool, sizeof(*parser));
+    parser->pool = pool;
+    return parser;
 }
 
 AstProgram *
-parser_do_parse(ColParser *parser, const char *src)
+parser_do_parse(ColParser *parser, const char *str)
 {
-    int result;
-    YY_BUFFER_STATE scanbuf;
+    size_t slen;
+    char *scan_buf;
+    YY_BUFFER_STATE buf_state;
+    int parse_result;
 
-    /* Setup buffer for flex */
-    scanbuf = yy_scan_string(src);
+    /* XXX: temp hack */
+#define YY_END_OF_BUFFER_CHAR '\0'
 
-    result = yyparse();
-    if (result)
+    /* Setup scan buffer, with special termination needed by Flex */
+    slen = strlen(str);
+    scan_buf = apr_palloc(parser->pool, slen + 2);
+    memcpy(scan_buf, str, slen);
+	scan_buf[slen] = scan_buf[slen + 1] = YY_END_OF_BUFFER_CHAR;
+    buf_state = yy_scan_buffer(scan_buf, slen + 2);
+
+    parse_result = yyparse();
+    if (parse_result)
     {
-        yy_delete_buffer(scanbuf);
+        yy_delete_buffer(buf_state);
         return NULL;
     }
 
-    yy_delete_buffer(scanbuf);
+    yy_delete_buffer(buf_state);
     return NULL;
 }
 
 ColStatus
 parser_destroy(ColParser *parser)
 {
-    ol_free(parser);
+    apr_pool_destroy(parser->pool);
     return COL_OK;
 }

@@ -3,10 +3,11 @@
 
 typedef struct ColNetwork
 {
-    int foo;
+    ColInstance *col;
+    apr_pool_t *pool;
 } ColNetwork;
 
-ColNetwork *network_make(int port);
+ColNetwork *network_make(ColInstance *col, int port);
 ColStatus network_destroy(ColNetwork *net);
 
 void network_start(ColNetwork *net);
