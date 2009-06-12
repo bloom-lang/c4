@@ -1,11 +1,39 @@
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "col-api.h"
 
+static void usage();
+static void exec_file(const char *srcfile);
+
 int
-main(void)
+main(int argc, char **argv)
 {
-    ColInstance *c = col_init();
-    col_destroy(c);
+    if (argc < 1 || argc > 2)
+        usage();
+
+    exec_file(argv[1]);
     printf("hello, world\n");
+}
+
+static void
+usage()
+{
+    printf("Usage: coverlog srcfile\n");
+    exit(1);
+}
+
+static void
+exec_file(const char *srcfile)
+{
+    ColInstance *c;
+    ColStatus s;
+
+    c = col_init();
+
+    s = col_install_file(c, srcfile);
+    if (s)
+        printf("Failed to install file: %d", (int) s);
+
+    col_destroy(c);
 }
