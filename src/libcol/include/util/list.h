@@ -25,6 +25,11 @@ struct ListCell
 #define list_tail(l)    ((l) ? l->tail : NULL)
 #define list_length(l)  ((l) ? l->length : 0)
 
+#define list_make1(x1)				list_append(NULL, x1)
+#define list_make2(x1,x2)			list_append(list_make1(x1), x2)
+#define list_make3(x1,x2,x3)		list_append(list_make2(x1, x2), x3)
+#define list_make4(x1,x2,x3,x4)		list_append(list_make3(x1, x2, x3), x4)
+
 #define lc_data(lc)     ((lc)->data)
 #define lc_next(lc)     ((lc)->next)
 
