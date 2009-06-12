@@ -1,5 +1,7 @@
 %{
 /* XXX: should be a reentrant scanner */
+#include <string.h>
+
 #include "util/list.h"
 #include "util/str.h"
 
@@ -37,7 +39,7 @@ identifier		{ident_start}{ident_cont}*
 <comment>"*"+"/"        { BEGIN(INITIAL); }
 
 {whitespace}            /* ignore */
-<<EOF>>                 { return OLG_EOF; }
+<INITIAL><<EOF>>        { yyterminate(); }
 
 {self}                  { return yytext[0]; }
 
@@ -48,6 +50,8 @@ identifier		{ident_start}{ident_cont}*
         return DEFINE;
     if (strcmp(yylval.str, "program") == 0)
         return PROGRAM;
+    if (strcmp(yylval.str, "keys") == 0)
+        return KEYS;
 
     return IDENT;
 }

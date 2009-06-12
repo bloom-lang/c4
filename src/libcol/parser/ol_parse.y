@@ -6,6 +6,8 @@
 #include "util/list.h"
 
 int yyerror(const char *message);
+
+#define YYERROR_VERBOSE
 %}
 
 %union
@@ -17,7 +19,7 @@ int yyerror(const char *message);
 
 %start input
 
-%token DEFINE PROGRAM OLG_EOF
+%token KEYS DEFINE PROGRAM
 %token <str> IDENT ICONST FCONST SCONST
 
 %type <str>     program_header
@@ -25,9 +27,9 @@ int yyerror(const char *message);
 %type <ptr>     clause
 
 %%
-input: program_header program_body OLG_EOF {};
+input: program_header program_body {};
 
-program_header: PROGRAM IDENT { $$ = $2; };
+program_header: PROGRAM IDENT ';' { printf("NAME = %s\n", $2); $$ = $2; };
 
 program_body: clause program_body { $$ = NULL; }
 | /* EMPTY */ { $$ = NULL; }
