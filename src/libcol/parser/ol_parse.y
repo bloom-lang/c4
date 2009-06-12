@@ -2,10 +2,10 @@
 /* XXX: should be a pure-parser */
 #include <stdio.h>
 
+#include "col-internal.h"
 #include "ol_scan.h"
 #include "parser/ast.h"
 #include "util/list.h"
-#include "util/mem.h"
 
 int yyerror(const char *message);
 %}

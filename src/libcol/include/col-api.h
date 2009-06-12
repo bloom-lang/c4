@@ -23,4 +23,6 @@ ColStatus col_destroy(ColInstance *col);
 ColStatus col_install_file(ColInstance *col, const char *path);
 ColStatus col_install_str(ColInstance *col, const char *str);
 
+void col_start(ColInstance *col);
+
 #endif  /* COL_API_H */

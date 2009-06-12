@@ -2,6 +2,7 @@
 /* XXX: should be a reentrant scanner */
 #include <string.h>
 
+#include "col-internal.h"
 #include "parser/ast.h"
 #include "util/list.h"
 #include "util/str.h"
