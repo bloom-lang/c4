@@ -1,9 +1,11 @@
 #include <stdio.h>
 
-#include "types/tuple.h"
+#include "col-api.h"
 
 int
-main(void) {
-    Tuple *t = alloc_tuple();
-    printf("hello, world: %d", t->foo);
+main(void)
+{
+    ColInstance *c = col_init();
+    col_shutdown(c);
+    printf("hello, world\n");
 }

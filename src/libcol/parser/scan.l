@@ -1,4 +1,5 @@
 %{
+/* XXX: should be a reentrant scanner */
 #include "util/list.h"
 #include "util/str.h"
 

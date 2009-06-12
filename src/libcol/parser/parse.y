@@ -1,4 +1,5 @@
 %{
+/* XXX: should be a pure-parser */
 #include <stdio.h>
 
 #include "scan.h"
