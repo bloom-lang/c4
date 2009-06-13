@@ -13,6 +13,7 @@ network_make(ColInstance *col, int port)
     apr_status_t s;
     apr_pool_t *pool;
     ColNetwork *net;
+    apr_sockaddr_t *addr;
 
     s = apr_pool_create(&pool, col->pool);
     if (s != APR_SUCCESS)
@@ -22,11 +23,11 @@ network_make(ColInstance *col, int port)
     net->col = col;
     net->pool = pool;
 
-    s = apr_sockaddr_info_get(&net->addr, NULL, APR_INET, port, 0, net->pool);
+    s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
     if (s != APR_SUCCESS)
         FAIL();
 
-    s = apr_socket_create(&net->sock, net->addr->family,
+    s = apr_socket_create(&net->sock, addr->family,
                           SOCK_STREAM, APR_PROTO_TCP, net->pool);
     if (s != APR_SUCCESS)
         FAIL();
@@ -35,7 +36,7 @@ network_make(ColInstance *col, int port)
     if (s != APR_SUCCESS)
         FAIL();
 
-    s = apr_socket_bind(net->sock, net->addr);
+    s = apr_socket_bind(net->sock, addr);
     if (s != APR_SUCCESS)
         FAIL();
 

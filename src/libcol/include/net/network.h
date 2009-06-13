@@ -14,7 +14,6 @@ typedef struct ColNetwork
     apr_thread_t *thread;
 
     /* Socket info */
-    apr_sockaddr_t *addr;
     apr_socket_t *sock;
 } ColNetwork;
 
