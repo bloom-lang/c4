@@ -20,7 +20,7 @@ col_terminate()
 }
 
 ColInstance *
-col_make()
+col_make(int port)
 {
     apr_status_t s;
     apr_pool_t *pool;
@@ -32,7 +32,7 @@ col_make()
 
     col = apr_palloc(pool, sizeof(*col));
     col->pool = pool;
-    col->net = network_make(col, 0);
+    col->net = network_make(col, port);
     return col;
 }
 

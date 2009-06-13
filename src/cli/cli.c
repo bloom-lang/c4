@@ -30,7 +30,7 @@ exec_file(const char *srcfile)
     ColStatus s;
 
     col_initialize();
-    c = col_make();
+    c = col_make(0);
     col_start(c);
 #if 0
     s = col_install_file(c, srcfile);

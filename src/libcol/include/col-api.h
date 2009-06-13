@@ -25,7 +25,7 @@ void col_initialize();
 void col_terminate();
 
 /* Create and destroy individual instances of COL. */
-ColInstance *col_make();
+ColInstance *col_make(int port);
 ColStatus col_destroy(ColInstance *col);
 
 ColStatus col_install_file(ColInstance *col, const char *path);
