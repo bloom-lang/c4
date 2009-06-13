@@ -19,7 +19,7 @@ typedef enum ColStatus
 
 /*
  * Initialize and terminate COL for the current process. Must be the first
- * and last API function called, respectively.
+ * and last API functions called, respectively.
  */
 void col_initialize();
 void col_terminate();

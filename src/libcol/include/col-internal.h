@@ -6,8 +6,10 @@
 /* Commonly-used external headers */
 #include <apr_pools.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /* Commonly-used internal headers */
+#include "util/error.h"
 #include "util/mem.h"
 
 struct ColInstance
