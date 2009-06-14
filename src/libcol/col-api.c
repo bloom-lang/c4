@@ -4,6 +4,7 @@
 #include "col-internal.h"
 #include "net/network.h"
 #include "parser/parser.h"
+#include "router.h"
 
 void
 col_initialize()
@@ -30,8 +31,9 @@ col_make(int port)
     if (s != APR_SUCCESS)
         return NULL;
 
-    col = apr_palloc(pool, sizeof(*col));
+    col = apr_pcalloc(pool, sizeof(*col));
     col->pool = pool;
+    col->router = router_make(col);
     col->net = network_make(col, port);
     return col;
 }
@@ -40,7 +42,9 @@ ColStatus
 col_destroy(ColInstance *col)
 {
     network_destroy(col->net);
+    router_destroy(col->router);
     apr_pool_destroy(col->pool);
+
     return COL_OK;
 }
 
@@ -66,9 +70,8 @@ col_install_str(ColInstance *col, const char *str)
 ColStatus
 col_start(ColInstance *col)
 {
-    ColStatus s = network_start(col->net);
-    if (s != COL_OK)
-        return s;
+    router_start(col->router);
+    network_start(col->net);
 
     return COL_OK;
 }

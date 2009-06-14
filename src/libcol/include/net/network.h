@@ -18,8 +18,8 @@ typedef struct ColNetwork
 } ColNetwork;
 
 ColNetwork *network_make(ColInstance *col, int port);
-ColStatus network_destroy(ColNetwork *net);
+void network_destroy(ColNetwork *net);
 
-ColStatus network_start(ColNetwork *net);
+void network_start(ColNetwork *net);
 
 #endif  /* NETWORK_H */

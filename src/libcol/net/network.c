@@ -43,28 +43,25 @@ network_make(ColInstance *col, int port)
     return net;
 }
 
-ColStatus
+void
 network_destroy(ColNetwork *net)
 {
     apr_pool_destroy(net->pool);
-    return COL_OK;
 }
 
-ColStatus
+void
 network_start(ColNetwork *net)
 {
     apr_status_t s;
 
     s = apr_threadattr_create(&net->thread_attr, net->pool);
     if (s != APR_SUCCESS)
-        return COL_ERROR;
+        FAIL();
 
     s = apr_thread_create(&net->thread, net->thread_attr,
                           network_thread_start, net, net->pool);
     if (s != APR_SUCCESS)
-        return COL_ERROR;
-
-    return COL_OK;
+        FAIL();
 }
 
 static void * APR_THREAD_FUNC

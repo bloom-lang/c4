@@ -15,6 +15,7 @@
 struct ColInstance
 {
     apr_pool_t *pool;
+    struct ColRouter *router;
     struct ColNetwork *net;
 };
 
