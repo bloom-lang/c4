@@ -56,3 +56,13 @@ router_thread_start(apr_thread_t *thread, void *data)
     return NULL;        /* Return value ignored */
 }
 
+/*
+ * Enqueue a new tuple to be routed. The tuple will be routed in some
+ * subsequent fixpoint. Tuples are routed in the order in which they are
+ * enqueued.
+ */
+void
+router_enqueue(ColRouter *router, Tuple *tuple)
+{
+    ;
+}

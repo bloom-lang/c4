@@ -6,6 +6,6 @@ typedef struct
     int foo;
 } Tuple;
 
-Tuple *alloc_tuple();
+Tuple *tuple_make();
 
 #endif          /* TUPLE_H */
