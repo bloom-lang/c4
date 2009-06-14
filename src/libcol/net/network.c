@@ -1,7 +1,10 @@
+#include <apr_hash.h>
 #include <apr_network_io.h>
+#include <apr_strings.h>
 #include <apr_thread_proc.h>
 
 #include "col-internal.h"
+#include "net/connection.h"
 #include "net/network.h"
 
 struct ColNetwork
@@ -13,11 +16,20 @@ struct ColNetwork
     apr_threadattr_t *thread_attr;
     apr_thread_t *thread;
 
-    /* Socket info */
+    /* Server socket info */
     apr_socket_t *sock;
+
+    /*
+     * Info describing all currently-active connections. We maintain a hash
+     * table mapping location specifiers (e.g. "tcp:host:port") to
+     * ColConnection objects.
+     */
+    apr_hash_t *conn_tbl;
 };
 
 static void * APR_THREAD_FUNC network_thread_start(apr_thread_t *thread, void *data);
+static void accept_new_conn(ColNetwork *net, apr_socket_t *sock);
+static char *sock_get_remote_loc_spec(apr_socket_t *sock, apr_pool_t *pool);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -38,6 +50,7 @@ network_make(ColInstance *col, int port)
     net = apr_pcalloc(pool, sizeof(*net));
     net->col = col;
     net->pool = pool;
+    net->conn_tbl = apr_hash_make(net->pool);
 
     s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
     if (s != APR_SUCCESS)
@@ -80,6 +93,12 @@ network_start(ColNetwork *net)
         FAIL();
 }
 
+apr_pool_t *
+network_get_pool(ColNetwork *net)
+{
+    return net->pool;
+}
+
 static void * APR_THREAD_FUNC
 network_thread_start(apr_thread_t *thread, void *data)
 {
@@ -97,8 +116,48 @@ network_thread_start(apr_thread_t *thread, void *data)
         s = apr_socket_accept(&client_sock, net->sock, net->pool);
         if (s != APR_SUCCESS)
             FAIL();
+
+        accept_new_conn(net, client_sock);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
+}
+
+/*
+ * Given a newly-connected client socket "sock", create a new ColConnection
+ * object and thread to handle the connection.
+ */
+static void
+accept_new_conn(ColNetwork *net, apr_socket_t *sock)
+{
+    ColConnection *conn;
+    char *loc_spec;
+
+    loc_spec = sock_get_remote_loc_spec(sock, net->pool);
+    conn = connection_make(sock, loc_spec, net, net->col);
+}
+
+void
+network_send(ColNetwork *net, const char *loc, Tuple *tuple)
+{
+    ;
+}
+
+static char *
+sock_get_remote_loc_spec(apr_socket_t *sock, apr_pool_t *pool)
+{
+    apr_status_t s;
+    apr_sockaddr_t *addr;
+    char *ip;
+
+    s = apr_socket_addr_get(&addr, APR_REMOTE, sock);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    s = apr_sockaddr_ip_get(&ip, addr);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    return apr_psprintf(pool, "tcp:%s:%us", ip, addr->port);
 }
