@@ -1,5 +1,17 @@
+#include <apr_thread_proc.h>
+
 #include "col-internal.h"
 #include "router.h"
+
+struct ColRouter
+{
+    ColInstance *col;
+    apr_pool_t *pool;
+
+    /* Thread info for router thread */
+    apr_threadattr_t *thread_attr;
+    apr_thread_t *thread;
+};
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
 

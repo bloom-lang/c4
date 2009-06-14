@@ -1,5 +1,21 @@
+#include <apr_network_io.h>
+#include <apr_thread_proc.h>
+
 #include "col-internal.h"
 #include "net/network.h"
+
+struct ColNetwork
+{
+    ColInstance *col;
+    apr_pool_t *pool;
+
+    /* Thread info for server thread */
+    apr_threadattr_t *thread_attr;
+    apr_thread_t *thread;
+
+    /* Socket info */
+    apr_socket_t *sock;
+};
 
 static void * APR_THREAD_FUNC network_thread_start(apr_thread_t *thread, void *data);
 
