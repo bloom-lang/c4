@@ -12,9 +12,12 @@ typedef enum ConnectionState
     COL_CONNECTED
 } ConnectionState;
 
-ColConnection *connection_make(apr_socket_t *sock, const char *remote_loc,
-                               ColNetwork *net, ColInstance *col);
-ConnectionState connection_get_state(ColConnection *conn);
+ColConnection *connection_make(apr_socket_t *sock, ColInstance *col, apr_pool_t *pool);
+void connection_destroy(ColConnection *conn);
+
 void connection_send(ColConnection *conn, Tuple *tuple);
+
+ConnectionState connection_get_state(ColConnection *conn);
+char *connection_get_remote_loc(ColConnection *conn);
 
 #endif  /* CONNECTION_H */

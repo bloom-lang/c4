@@ -28,8 +28,6 @@ struct ColNetwork
 };
 
 static void * APR_THREAD_FUNC network_thread_start(apr_thread_t *thread, void *data);
-static void accept_new_conn(ColNetwork *net, apr_socket_t *sock);
-static char *sock_get_remote_loc_spec(apr_socket_t *sock, apr_pool_t *pool);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -111,53 +109,36 @@ network_thread_start(apr_thread_t *thread, void *data)
 
     while (true)
     {
+        apr_pool_t *conn_pool;
         apr_socket_t *client_sock;
+        ColConnection *conn;
+        char *loc_spec;
 
-        s = apr_socket_accept(&client_sock, net->sock, net->pool);
+        /*
+         * Note that we ensure that the client socket is allocated in a
+         * per-connection pool, so it is free'd at the right time.
+         */
+        s = apr_pool_create(&conn_pool, net->pool);
         if (s != APR_SUCCESS)
             FAIL();
 
-        accept_new_conn(net, client_sock);
+        s = apr_socket_accept(&client_sock, net->sock, conn_pool);
+        if (s != APR_SUCCESS)
+            FAIL();
+
+        conn = connection_make(client_sock, net->col, conn_pool);
+
+        /* Add new connection to the hash table */
+        loc_spec = connection_get_remote_loc(conn);
+        apr_hash_set(net->conn_tbl, loc_spec, APR_HASH_KEY_STRING, conn);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
 }
 
-/*
- * Given a newly-connected client socket "sock", create a new ColConnection
- * object and thread to handle the connection.
- */
-static void
-accept_new_conn(ColNetwork *net, apr_socket_t *sock)
-{
-    ColConnection *conn;
-    char *loc_spec;
-
-    loc_spec = sock_get_remote_loc_spec(sock, net->pool);
-    conn = connection_make(sock, loc_spec, net, net->col);
-}
-
 void
 network_send(ColNetwork *net, const char *loc, Tuple *tuple)
 {
     ;
-}
-
-static char *
-sock_get_remote_loc_spec(apr_socket_t *sock, apr_pool_t *pool)
-{
-    apr_status_t s;
-    apr_sockaddr_t *addr;
-    char *ip;
-
-    s = apr_socket_addr_get(&addr, APR_REMOTE, sock);
-    if (s != APR_SUCCESS)
-        FAIL();
-
-    s = apr_sockaddr_ip_get(&ip, addr);
-    if (s != APR_SUCCESS)
-        FAIL();
-
-    return apr_psprintf(pool, "tcp:%s:%us", ip, addr->port);
 }

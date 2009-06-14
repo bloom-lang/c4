@@ -8,7 +8,6 @@
 struct ColConnection
 {
     ColInstance *col;
-    ColNetwork *net;
     apr_pool_t *pool;
 
     ConnectionState state;
@@ -16,27 +15,33 @@ struct ColConnection
     char *remote_loc;
 };
 
-ColConnection *
-connection_make(apr_socket_t *sock, const char *remote_loc,
-                ColNetwork *net, ColInstance *col)
-{
-    apr_status_t s;
-    apr_pool_t *pool;
-    ColConnection *conn;
+static char *get_sock_remote_loc(apr_socket_t *sock, apr_pool_t *pool);
 
-    s = apr_pool_create(&pool, network_get_pool(net));
-    if (s != APR_SUCCESS)
-        FAIL();
+ColConnection *
+connection_make(apr_socket_t *sock, ColInstance *col, apr_pool_t *pool)
+{
+    ColConnection *conn;
 
     conn = apr_pcalloc(pool, sizeof(*conn));
     conn->col = col;
-    conn->net = net;
     conn->pool = pool;
     conn->sock = sock;
-    conn->remote_loc = apr_pstrdup(conn->pool, remote_loc);
     conn->state = COL_CONNECTED;
+    conn->remote_loc = get_sock_remote_loc(conn->sock, conn->pool);
 
     return conn;
+}
+
+void
+connection_destroy(ColConnection *conn)
+{
+    ;
+}
+
+void
+connection_send(ColConnection *conn, Tuple *tuple)
+{
+    ;
 }
 
 ConnectionState
@@ -45,8 +50,26 @@ connection_get_state(ColConnection *conn)
     return conn->state;
 }
 
-void
-connection_send(ColConnection *conn, Tuple *tuple)
+char *
+connection_get_remote_loc(ColConnection *conn)
 {
-    ;
+    return conn->remote_loc;
+}
+
+static char *
+get_sock_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
+{
+    apr_status_t s;
+    apr_sockaddr_t *addr;
+    char *ip;
+
+    s = apr_socket_addr_get(&addr, APR_REMOTE, sock);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    s = apr_sockaddr_ip_get(&ip, addr);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    return apr_psprintf(pool, "tcp:%s:%us", ip, addr->port);
 }
