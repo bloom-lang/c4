@@ -13,14 +13,20 @@ struct ColConnection
     ConnectionState state;
     apr_socket_t *sock;
     char *remote_loc;
+
+    /* Thread info for connection thread */
+    apr_threadattr_t *thread_attr;
+    apr_thread_t *thread;
 };
 
+static void * APR_THREAD_FUNC conn_thread_start(apr_thread_t *thread, void *data);
 static char *get_sock_remote_loc(apr_socket_t *sock, apr_pool_t *pool);
 
 ColConnection *
 connection_make(apr_socket_t *sock, ColInstance *col, apr_pool_t *pool)
 {
     ColConnection *conn;
+    apr_status_t s;
 
     conn = apr_pcalloc(pool, sizeof(*conn));
     conn->col = col;
@@ -28,6 +34,16 @@ connection_make(apr_socket_t *sock, ColInstance *col, apr_pool_t *pool)
     conn->sock = sock;
     conn->state = COL_CONNECTED;
     conn->remote_loc = get_sock_remote_loc(conn->sock, conn->pool);
+
+    /* Create and start per-connection thread */
+    s = apr_threadattr_create(&conn->thread_attr, conn->pool);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    s = apr_thread_create(&conn->thread, conn->thread_attr,
+                          conn_thread_start, conn, conn->pool);
+    if (s != APR_SUCCESS)
+        FAIL();
 
     return conn;
 }
@@ -54,6 +70,15 @@ char *
 connection_get_remote_loc(ColConnection *conn)
 {
     return conn->remote_loc;
+}
+
+static void * APR_THREAD_FUNC
+conn_thread_start(apr_thread_t *thread, void *data)
+{
+    ColConnection *conn = (ColConnection *) data;
+
+    apr_thread_exit(thread, APR_SUCCESS);
+    return NULL;        /* Return value ignored */
 }
 
 static char *
