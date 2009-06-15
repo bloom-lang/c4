@@ -1,6 +1,8 @@
 #include <apr_network_io.h>
 #include <apr_strings.h>
 #include <apr_thread_proc.h>
+#include <limits.h>
+#include <stdlib.h>
 
 #include "col-internal.h"
 #include "net/connection.h"
@@ -136,6 +138,8 @@ conn_thread_start(apr_thread_t *thread, void *data)
             FAIL();
         if (len != 4)
             FAIL();
+
+        /* Read/deserialize the message itself */
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
@@ -190,5 +194,32 @@ start_connection(ColConnection *conn)
 static void
 parse_loc_spec(const char *loc_spec, char *host, int *port_p)
 {
-    ;
+    const char *p = loc_spec;
+    char *colon_ptr;
+    ptrdiff_t host_len;
+    long raw_port;
+    char *end_ptr;
+
+    /* We only handle TCP for now */
+    if (strncmp(p, "tcp:", 4) != 0)
+        FAIL();
+
+    p += 4;
+    colon_ptr = rindex(p, ':');
+    if (colon_ptr == NULL)
+        FAIL();
+
+    host_len = colon_ptr - p - 1;
+    if (host_len <= 0 || host_len >= APRMAXHOSTLEN - 1)
+        FAIL();
+
+    memcpy(host, p, host_len);
+    host[host_len] = '\0';
+
+    p += host_len + 1;
+    raw_port = strtol(p, &end_ptr, 10);
+    if (p == end_ptr || raw_port <= 0 || raw_port > INT_MAX)
+        FAIL();
+
+    *port_p = (int) raw_port;
 }
