@@ -9,7 +9,6 @@ typedef struct ColConnection ColConnection;
 typedef enum ConnectionState
 {
     COL_NEW,
-    COL_CONNECTING,
     COL_CONNECTED
 } ConnectionState;
 

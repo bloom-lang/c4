@@ -11,9 +11,9 @@ struct ColConnection
     apr_pool_t *pool;
 
     ConnectionState state;
-    apr_socket_t *sock;
     char *remote_loc;
     char *buf;
+    apr_socket_t *sock;
 
     /* Thread info for connection thread */
     apr_threadattr_t *thread_attr;
@@ -163,10 +163,28 @@ get_sock_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
 static void
 start_connection(ColConnection *conn)
 {
+    apr_status_t s;
     char host[APRMAXHOSTLEN];
     int port_num;
+    apr_sockaddr_t *addr;
 
     parse_loc_spec(conn->remote_loc, host, &port_num);
+
+    s = apr_sockaddr_info_get(&addr, host, APR_INET, port_num, 0, conn->pool);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    s = apr_socket_create(&conn->sock, addr->family, SOCK_STREAM,
+                          APR_PROTO_TCP, conn->pool);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    s = apr_socket_connect(conn->sock, addr);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    conn->state = COL_CONNECTED;
+    /* Need to process any queued tuples? */
 }
 
 static void
