@@ -1,6 +1,6 @@
 #include <ctype.h>
 
-#include "util/mem.h"
+#include "col-internal.h"
 #include "util/str.h"
 
 char *

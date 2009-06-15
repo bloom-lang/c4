@@ -1,4 +1,4 @@
-#include "util/mem.h"
+#include "col-internal.h"
 #include "util/list.h"
 
 /*

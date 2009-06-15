@@ -14,14 +14,10 @@ struct ColParser
 ColParser *
 parser_make(ColInstance *col)
 {
-    apr_status_t s;
     apr_pool_t *pool;
     ColParser *parser;
 
-    s = apr_pool_create(&pool, col->pool);
-    if (s != APR_SUCCESS)
-        return NULL;
-
+    pool = make_subpool(col->pool);
     parser = apr_palloc(pool, sizeof(*parser));
     parser->pool = pool;
     return parser;

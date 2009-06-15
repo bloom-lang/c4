@@ -26,10 +26,7 @@ router_make(ColInstance *col)
     apr_pool_t *pool;
     ColRouter *router;
 
-    s = apr_pool_create(&pool, col->pool);
-    if (s != APR_SUCCESS)
-        FAIL();
-
+    pool = make_subpool(col->pool);
     router = apr_pcalloc(pool, sizeof(*router));
     router->col = col;
     router->pool = pool;
@@ -103,11 +100,9 @@ router_thread_start(apr_thread_t *thread, void *data)
 void
 router_enqueue(ColRouter *router, Tuple *tuple)
 {
-    apr_status_t s;
-
     while (true)
     {
-        s = apr_queue_push(router->queue, tuple);
+        apr_status_t s = apr_queue_push(router->queue, tuple);
 
         if (s == APR_EINTR)
             continue;

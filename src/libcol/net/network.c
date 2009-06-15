@@ -1,33 +1,30 @@
 #include <apr_hash.h>
 #include <apr_network_io.h>
-#include <apr_strings.h>
 #include <apr_thread_proc.h>
 
 #include "col-internal.h"
-#include "net/connection.h"
 #include "net/network.h"
+#include "net/send_recv.h"
 
 struct ColNetwork
 {
     ColInstance *col;
     apr_pool_t *pool;
 
-    /* Thread info for server thread */
+    /* Thread info for server socket thread */
     apr_threadattr_t *thread_attr;
     apr_thread_t *thread;
 
     /* Server socket info */
     apr_socket_t *sock;
 
-    /*
-     * Info describing all currently-active connections. We maintain a hash
-     * table mapping location specifiers (e.g. "tcp:host:port") to
-     * ColConnection objects.
-     */
-    apr_hash_t *conn_tbl;
+    apr_hash_t *recv_tbl;
+    apr_hash_t *send_tbl;
 };
 
-static void * APR_THREAD_FUNC network_thread_start(apr_thread_t *thread, void *data);
+static void * APR_THREAD_FUNC network_thread_main(apr_thread_t *thread, void *data);
+static void new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool);
+static SendThread *get_send_thread(ColNetwork *net, const char *loc_spec);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -41,14 +38,12 @@ network_make(ColInstance *col, int port)
     ColNetwork *net;
     apr_sockaddr_t *addr;
 
-    s = apr_pool_create(&pool, col->pool);
-    if (s != APR_SUCCESS)
-        FAIL();
-
+    pool = make_subpool(col->pool);
     net = apr_pcalloc(pool, sizeof(*net));
     net->col = col;
     net->pool = pool;
-    net->conn_tbl = apr_hash_make(net->pool);
+    net->recv_tbl = apr_hash_make(net->pool);
+    net->send_tbl = apr_hash_make(net->pool);
 
     s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
     if (s != APR_SUCCESS)
@@ -86,19 +81,13 @@ network_start(ColNetwork *net)
         FAIL();
 
     s = apr_thread_create(&net->thread, net->thread_attr,
-                          network_thread_start, net, net->pool);
+                          network_thread_main, net, net->pool);
     if (s != APR_SUCCESS)
         FAIL();
 }
 
-apr_pool_t *
-network_get_pool(ColNetwork *net)
-{
-    return net->pool;
-}
-
 static void * APR_THREAD_FUNC
-network_thread_start(apr_thread_t *thread, void *data)
+network_thread_main(apr_thread_t *thread, void *data)
 {
     ColNetwork *net = (ColNetwork *) data;
     apr_status_t s;
@@ -109,43 +98,60 @@ network_thread_start(apr_thread_t *thread, void *data)
 
     while (true)
     {
-        apr_pool_t *conn_pool;
+        apr_pool_t *recv_pool;
         apr_socket_t *client_sock;
-        ColConnection *conn;
-        char *loc_spec;
 
         /*
-         * Note that we ensure that the client socket is allocated in a
-         * per-connection pool, so it is free'd at the right time.
+         * We need to preallocate the RecvThread's pool, so that we can
+         * include the socket in it.
          */
-        s = apr_pool_create(&conn_pool, net->pool);
+        recv_pool = make_subpool(net->pool);
+
+        s = apr_socket_accept(&client_sock, net->sock, recv_pool);
         if (s != APR_SUCCESS)
             FAIL();
 
-        s = apr_socket_accept(&client_sock, net->sock, conn_pool);
-        if (s != APR_SUCCESS)
-            FAIL();
-
-        conn = connection_make(client_sock, net->col, conn_pool);
-
-        /* Add the new connection to the hash table */
-        loc_spec = connection_get_remote_loc(conn);
-        apr_hash_set(net->conn_tbl, loc_spec, APR_HASH_KEY_STRING, conn);
+        new_recv_thread(net, client_sock, recv_pool);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
 }
 
+/* XXX: check if there's an existing recv thread at socket loc? */
+static void
+new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool)
+{
+    RecvThread *rt;
+
+    rt = recv_thread_make(net->col, sock, recv_pool);
+    recv_thread_start(rt);
+    apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
+                 APR_HASH_KEY_STRING, rt);
+}
+
 void
 network_send(ColNetwork *net, const char *loc_spec, Tuple *tuple)
 {
-    ColConnection *conn = apr_hash_get(net->conn_tbl, loc_spec,
-                                       APR_HASH_KEY_STRING);
+    SendThread *st;
 
-    /* No previously-existing connection; create a new one */
-    if (conn == NULL)
-        conn = connection_new_connect(loc_spec, net->col, net->pool);
+    st = get_send_thread(net, loc_spec);
+    send_thread_enqueue(st, tuple);
+}
 
-    connection_send(conn, tuple);
+static SendThread *
+get_send_thread(ColNetwork *net, const char *loc_spec)
+{
+    SendThread *st = apr_hash_get(net->send_tbl, loc_spec,
+                                  APR_HASH_KEY_STRING);
+
+    if (st == NULL)
+    {
+        st = send_thread_make(net->col, loc_spec,
+                              make_subpool(net->pool));
+        send_thread_start(st);
+        apr_hash_set(net->send_tbl, loc_spec, APR_HASH_KEY_STRING, st);
+    }
+
+    return st;
 }

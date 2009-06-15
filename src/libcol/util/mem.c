@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util/mem.h"
+#include "col-internal.h"
 
 void *
 ol_alloc(size_t sz)
@@ -38,4 +38,15 @@ ol_strdup(const char *str)
     return result;
 }
 
+apr_pool_t *
+make_subpool(apr_pool_t *parent)
+{
+    apr_status_t s;
+    apr_pool_t *pool;
 
+    s = apr_pool_create(&pool, parent);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    return pool;
+}
