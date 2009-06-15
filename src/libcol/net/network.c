@@ -128,7 +128,7 @@ network_thread_start(apr_thread_t *thread, void *data)
 
         conn = connection_make(client_sock, net->col, conn_pool);
 
-        /* Add new connection to the hash table */
+        /* Add the new connection to the hash table */
         loc_spec = connection_get_remote_loc(conn);
         apr_hash_set(net->conn_tbl, loc_spec, APR_HASH_KEY_STRING, conn);
     }
@@ -138,7 +138,14 @@ network_thread_start(apr_thread_t *thread, void *data)
 }
 
 void
-network_send(ColNetwork *net, const char *loc, Tuple *tuple)
+network_send(ColNetwork *net, const char *loc_spec, Tuple *tuple)
 {
-    ;
+    ColConnection *conn = apr_hash_get(net->conn_tbl, loc_spec,
+                                       APR_HASH_KEY_STRING);
+
+    /* No previously-existing connection; create a new one */
+    if (conn == NULL)
+        conn = connection_new_connect(loc_spec, net->col, net->pool);
+
+    connection_send(conn, tuple);
 }
