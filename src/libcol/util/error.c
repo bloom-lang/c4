@@ -6,7 +6,7 @@
 
 #include "col-internal.h"
 
-static void print_backtrace();
+static void print_backtrace(void);
 
 void
 fatal_error(const char *file, int line_num)
@@ -29,7 +29,7 @@ assert_fail(const char *cond, const char *file, int line_num)
 }
 
 static void
-print_backtrace()
+print_backtrace(void)
 {
 #ifdef HAVE_EXECINFO
     void *bt_array[128];

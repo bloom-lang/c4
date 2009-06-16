@@ -21,8 +21,8 @@ typedef enum ColStatus
  * Initialize and terminate COL for the current process. Must be the first
  * and last API functions called, respectively.
  */
-void col_initialize();
-void col_terminate();
+void col_initialize(void);
+void col_terminate(void);
 
 /* Create and destroy individual instances of COL. */
 ColInstance *col_make(int port);

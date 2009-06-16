@@ -5,9 +5,9 @@
 
 #include "col-api.h"
 
-static void usage();
+static void usage(void);
 static void exec_file(const char *srcfile);
-static void ping_test();
+static void ping_test(void);
 
 int
 main(int argc, char **argv)
@@ -26,7 +26,7 @@ main(int argc, char **argv)
 }
 
 static void
-usage()
+usage(void)
 {
     printf("Usage: coverlog srcfile\n");
     exit(1);
@@ -54,7 +54,7 @@ exec_file(const char *srcfile)
 }
 
 static void
-ping_test()
+ping_test(void)
 {
     ColInstance *c1;
     ColInstance *c2;

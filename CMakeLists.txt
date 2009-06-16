@@ -14,4 +14,4 @@ FIND_PACKAGE(apu)
 INCLUDE_DIRECTORIES(${APR_INCLUDES} ${APU_INCLUDES})
 LINK_LIBRARIES(${APR_LIBS} ${APU_LIBS})
 
-SET(CMAKE_C_FLAGS "-g -Wall -W -pedantic -std=gnu99 ${CMAKE_C_FLAGS}")
+SET(CMAKE_C_FLAGS "-g -Wall -W -Wmissing-prototypes -pedantic -std=gnu99 ${CMAKE_C_FLAGS}")

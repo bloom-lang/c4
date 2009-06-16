@@ -5,7 +5,7 @@
 #include "util/socket.h"
 
 Tuple *
-tuple_make()
+tuple_make(void)
 {
     Tuple *t = (Tuple *) ol_alloc(sizeof(Tuple));
     t->refcount = 1;

@@ -4,7 +4,7 @@
 #include "router.h"
 
 void
-col_initialize()
+col_initialize(void)
 {
     apr_status_t s = apr_initialize();
     if (s != APR_SUCCESS)
@@ -12,7 +12,7 @@ col_initialize()
 }
 
 void
-col_terminate()
+col_terminate(void)
 {
     apr_terminate();
 }

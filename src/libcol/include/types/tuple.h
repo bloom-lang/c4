@@ -12,7 +12,7 @@ typedef struct
     apr_uint32_t refcount;
 } Tuple;
 
-Tuple *tuple_make();
+Tuple *tuple_make(void);
 void tuple_pin(Tuple *tuple);
 void tuple_unpin(Tuple *tuple);
 
