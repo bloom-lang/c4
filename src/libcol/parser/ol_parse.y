@@ -2,10 +2,10 @@
 /* XXX: should be a pure-parser */
 #include "col-internal.h"
 #include "ol_scan.h"
-#include "parser/ast.h"
+#include "parser/parser-internal.h"
 #include "util/list.h"
 
-int yyerror(void *scanner, const char *message);
+int yyerror(ColParser *context, void *scanner, const char *message);
 %}
 
 %union
@@ -19,6 +19,7 @@ int yyerror(void *scanner, const char *message);
 
 %start program
 %error-verbose
+%parse-param { ColParser *context }
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
@@ -135,7 +136,7 @@ opt_loc_spec: '@' { $$ = true; }
 %%
 
 int
-yyerror(void *scanner, const char *message)
+yyerror(ColParser *context, void *scanner, const char *message)
 {
     printf("Parse error: %s\n", message);
     return 0;   /* return value ignored */

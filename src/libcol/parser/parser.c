@@ -29,7 +29,7 @@ parser_do_parse(ColParser *parser, const char *str)
     scan_buf = setup_scan_buf(str, slen, parser->pool);
     buf_state = yy_scan_buffer(scan_buf, slen + 2, parser->yyscanner);
 
-    parse_result = yyparse();
+    parse_result = yyparse(parser, parser->yyscanner);
     if (parse_result)
     {
         yy_delete_buffer(buf_state, parser->yyscanner);
