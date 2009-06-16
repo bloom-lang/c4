@@ -8,7 +8,7 @@ col_initialize()
 {
     apr_status_t s = apr_initialize();
     if (s != APR_SUCCESS)
-        exit(1);
+        FAIL();
 }
 
 void
@@ -26,7 +26,7 @@ col_make(int port)
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
-        return NULL;
+        FAIL();
 
     col = apr_pcalloc(pool, sizeof(*col));
     col->pool = pool;
