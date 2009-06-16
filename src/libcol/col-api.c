@@ -1,6 +1,3 @@
-#include <apr_general.h>
-#include <stdlib.h>
-
 #include "col-internal.h"
 #include "net/network.h"
 #include "parser/parser.h"

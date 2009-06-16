@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 /* XXX: __MACH__ is probably slightly wrong */
 #if defined(__linux__) || defined(__FreeBSD__) || defined(__MACH__)
 #define HAVE_EXECINFO

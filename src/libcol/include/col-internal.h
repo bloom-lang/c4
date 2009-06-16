@@ -4,9 +4,11 @@
 #include "col-api.h"
 
 /* Commonly-used external headers */
+#include <apr_general.h>
 #include <apr_pools.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* Commonly-used internal headers */
 #include "util/error.h"

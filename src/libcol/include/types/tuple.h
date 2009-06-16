@@ -5,7 +5,11 @@
 
 typedef struct
 {
-    apr_uint16_t refcount;
+    /*
+     * XXX: This could be smaller, but APR's atomic ops are only defined for
+     * apr_uint32_t
+     */
+    apr_uint32_t refcount;
 } Tuple;
 
 Tuple *tuple_make();

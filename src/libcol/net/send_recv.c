@@ -3,7 +3,6 @@
 #include <apr_thread_proc.h>
 #include <apr_strings.h>
 #include <limits.h>
-#include <stdlib.h>
 
 #include "col-internal.h"
 #include "router.h"
