@@ -1,5 +1,4 @@
 %{
-/* XXX: should be a reentrant scanner */
 #include <string.h>
 
 #include "col-internal.h"
@@ -14,6 +13,7 @@
 %option fast
 %option nounput
 %option noyywrap
+%option reentrant
 
 digit           [0-9]
 space           [ \t\n\r\f]

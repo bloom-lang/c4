@@ -5,7 +5,7 @@
 #include "parser/ast.h"
 #include "util/list.h"
 
-int yyerror(const char *message);
+int yyerror(void *scanner, const char *message);
 %}
 
 %union
@@ -19,6 +19,8 @@ int yyerror(const char *message);
 
 %start program
 %error-verbose
+%parse-param { void *scanner }
+%lex-param { yyscan_t scanner }
 
 %token KEYS DEFINE PROGRAM DELETE OLG_HASH_INSERT OLG_HASH_DELETE
 %token <str> IDENT ICONST FCONST SCONST
@@ -133,7 +135,7 @@ opt_loc_spec: '@' { $$ = true; }
 %%
 
 int
-yyerror(const char *message)
+yyerror(void *scanner, const char *message)
 {
     printf("Parse error: %s\n", message);
     return 0;   /* return value ignored */
