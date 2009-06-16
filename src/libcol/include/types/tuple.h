@@ -5,10 +5,12 @@
 
 typedef struct
 {
-    int foo;
+    apr_uint16_t refcount;
 } Tuple;
 
 Tuple *tuple_make();
+void tuple_pin(Tuple *tuple);
+void tuple_unpin(Tuple *tuple);
 
 Tuple *tuple_from_buf(const char *buf, apr_size_t len);
 void tuple_socket_send(Tuple *tuple, apr_socket_t *sock);

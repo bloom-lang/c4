@@ -89,13 +89,11 @@ router_thread_start(apr_thread_t *thread, void *data)
         if (s != APR_SUCCESS)
             FAIL();
 
-        printf("Got a tuple: self = %d\n", router->col->port);
-
         /* Route the new tuple */
         network_send(router->col->net, router->col->target_loc_spec, NULL);
         router->ntuple_routed++;
 
-        if (router->ntuple_routed == 10000)
+        if (router->ntuple_routed == 100000)
             exit(0);
     }
 
@@ -106,8 +104,8 @@ router_thread_start(apr_thread_t *thread, void *data)
 /*
  * Enqueue a new tuple to be routed. The tuple will be routed in some
  * subsequent fixpoint. Tuples are routed in the order in which they are
- * enqueued. If the queue is full, blocks until the router has had a chance
- * to catchup.
+ * enqueued. If the queue is full, this function blocks until the router has
+ * had a chance to catchup.
  */
 void
 router_enqueue(ColRouter *router, Tuple *tuple)

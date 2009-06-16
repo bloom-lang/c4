@@ -8,7 +8,20 @@ Tuple *
 tuple_make()
 {
     Tuple *t = (Tuple *) malloc(sizeof(Tuple));
+    t->refcount = 1;
     return t;
+}
+
+void
+tuple_pin(Tuple *tuple)
+{
+    ;
+}
+
+void
+tuple_unpin(Tuple *tuple)
+{
+    ;
 }
 
 void
