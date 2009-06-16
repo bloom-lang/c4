@@ -1,3 +1,4 @@
+#include <arpa/inet.h>
 #include <apr_queue.h>
 #include <apr_thread_proc.h>
 #include <apr_strings.h>
@@ -5,8 +6,11 @@
 #include <stdlib.h>
 
 #include "col-internal.h"
+#include "router.h"
 #include "net/network.h"
 #include "net/send_recv.h"
+
+#define MAX_MSG_SIZE    (1024 * 1024)
 
 struct RecvThread
 {
@@ -19,6 +23,7 @@ struct RecvThread
 
     apr_socket_t *sock;
     char *buf;
+    size_t buf_size;
 };
 
 struct SendThread
@@ -34,8 +39,11 @@ struct SendThread
     apr_queue_t *queue;
 };
 
+static apr_status_t recv_thread_cleanup(void *data);
 static void * APR_THREAD_FUNC recv_thread_main(apr_thread_t *thread, void *data);
 static void * APR_THREAD_FUNC send_thread_main(apr_thread_t *thread, void *data);
+static apr_uint32_t sock_read_uint32(apr_socket_t *sock);
+static void sock_read_data(apr_socket_t *sock, char *buf, apr_size_t buf_len);
 static void establish_send_socket(SendThread *st);
 static char *socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool);
 static void parse_loc_spec(const char *loc_spec, char *host, int *port_p);
@@ -50,8 +58,22 @@ recv_thread_make(ColInstance *col, apr_socket_t *sock, apr_pool_t *pool)
     rt->pool = pool;
     rt->sock = sock;
     rt->remote_loc = socket_get_remote_loc(sock, pool);
+    rt->buf = malloc(1024);
+    rt->buf_size = 1024;
+
+    apr_pool_cleanup_register(pool, rt, recv_thread_cleanup,
+                              apr_pool_cleanup_null);
 
     return rt;
+}
+
+static apr_status_t
+recv_thread_cleanup(void *data)
+{
+    RecvThread *rt = (RecvThread *) data;
+
+    free(rt->buf);
+    return APR_SUCCESS;
 }
 
 void
@@ -76,22 +98,66 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
     while (true)
     {
-        apr_status_t s;
-        apr_size_t len;
+        apr_uint32_t msg_len;
+        Tuple *tuple;
 
-        /* Read the length of the next packet */
-        len = 4;
-        s = apr_socket_recv(rt->sock, rt->buf, &len);
-        if (s != APR_SUCCESS)
-            FAIL();
-        if (len != 4)
+        /* Length of the following message */
+        msg_len = sock_read_uint32(rt->sock);
+
+        if (msg_len > MAX_MSG_SIZE)
             FAIL();
 
-        /* Read/deserialize the message itself */
+        if (msg_len > rt->buf_size)
+        {
+            rt->buf = realloc(rt->buf, msg_len);
+            rt->buf_size = msg_len;
+        }
+
+        /* Read the message itself */
+        sock_read_data(rt->sock, rt->buf, msg_len);
+
+        /* Convert to tuple format, route tuple */
+        tuple = tuple_from_buf(rt->buf, msg_len);
+        router_enqueue(rt->col->router, tuple);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
+}
+
+static apr_uint32_t
+sock_read_uint32(apr_socket_t *sock)
+{
+    apr_status_t s;
+    apr_size_t len;
+    char buf[4];
+    apr_uint32_t raw_result;
+
+    len = sizeof(buf);
+    s = apr_socket_recv(sock, buf, &len);
+
+    if (s != APR_SUCCESS)
+        FAIL();
+    if (len != sizeof(buf))
+        FAIL();
+
+    memcpy(&raw_result, buf, sizeof(buf));
+    return ntohl(raw_result);
+}
+
+static void
+sock_read_data(apr_socket_t *sock, char *buf, apr_size_t buf_len)
+{
+    apr_status_t s;
+    apr_size_t len;
+
+    len = buf_len;
+    s = apr_socket_recv(sock, buf, &buf_len);
+
+    if (s != APR_SUCCESS)
+        FAIL();
+    if (len != buf_len)
+        FAIL();
 }
 
 const char *
@@ -151,6 +217,8 @@ send_thread_main(apr_thread_t *thread, void *data)
             continue;
         if (s != APR_SUCCESS)
             FAIL();
+
+        tuple_socket_send(tuple, st->sock);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
