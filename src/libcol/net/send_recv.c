@@ -56,7 +56,7 @@ recv_thread_make(ColInstance *col, apr_socket_t *sock, apr_pool_t *pool)
     rt->pool = pool;
     rt->sock = sock;
     rt->remote_loc = socket_get_remote_loc(sock, pool);
-    rt->buf = malloc(1024);
+    rt->buf = ol_alloc(1024);
     rt->buf_size = 1024;
 
     apr_pool_cleanup_register(pool, rt, recv_thread_cleanup,
@@ -70,7 +70,7 @@ recv_thread_cleanup(void *data)
 {
     RecvThread *rt = (RecvThread *) data;
 
-    free(rt->buf);
+    ol_free(rt->buf);
     return APR_SUCCESS;
 }
 
@@ -107,7 +107,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
         if (msg_len > rt->buf_size)
         {
-            rt->buf = realloc(rt->buf, msg_len);
+            rt->buf = ol_realloc(rt->buf, msg_len);
             rt->buf_size = msg_len;
         }
 

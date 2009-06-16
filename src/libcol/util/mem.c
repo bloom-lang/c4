@@ -4,19 +4,28 @@
 #include "col-internal.h"
 
 void *
-ol_alloc(size_t sz)
+ol_alloc(apr_size_t sz)
 {
     void *result = malloc(sz);
     if (result == NULL)
-        exit(0);
+        FAIL();
     return result;
 }
 
 void *
-ol_alloc0(size_t sz)
+ol_alloc0(apr_size_t sz)
 {
     void *result = ol_alloc(sz);
     memset(result, 0, sz);
+    return result;
+}
+
+void *
+ol_realloc(void *ptr, apr_size_t sz)
+{
+    void *result = realloc(ptr, sz);
+    if (result == NULL)
+        FAIL();
     return result;
 }
 
