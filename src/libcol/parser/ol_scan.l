@@ -3,8 +3,7 @@
 #include <string.h>
 
 #include "col-internal.h"
-#include "parser/ast.h"
-#include "util/list.h"
+#include "parser/parser-internal.h"
 #include "util/str.h"
 
 #include "ol_parse.h"
