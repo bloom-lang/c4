@@ -248,7 +248,7 @@ parse_loc_spec(const char *loc_spec, char *host, int *port_p)
     if (colon_ptr == NULL)
         FAIL();
 
-    host_len = colon_ptr - p - 1;
+    host_len = colon_ptr - p;
     if (host_len <= 0 || host_len >= APRMAXHOSTLEN - 1)
         FAIL();
 
