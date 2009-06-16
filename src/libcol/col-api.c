@@ -35,6 +35,7 @@ col_make(int port)
     col->pool = pool;
     col->router = router_make(col);
     col->net = network_make(col, port);
+    col->port = port;
     return col;
 }
 
@@ -74,4 +75,18 @@ col_start(ColInstance *col)
     network_start(col->net);
 
     return COL_OK;
+}
+
+void
+col_set_other(ColInstance *col, int target_port)
+{
+    col->target_port = target_port;
+    snprintf(col->target_loc_spec, sizeof(col->target_loc_spec),
+             "tcp:localhost:%d", target_port);
+}
+
+void
+col_do_ping(ColInstance *col)
+{
+    router_enqueue(col->router, NULL);
 }

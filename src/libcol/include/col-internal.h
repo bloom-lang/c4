@@ -17,6 +17,9 @@ struct ColInstance
     apr_pool_t *pool;
     struct ColRouter *router;
     struct ColNetwork *net;
+    int port;
+    char target_loc_spec[128];
+    int target_port;
 };
 
 #endif

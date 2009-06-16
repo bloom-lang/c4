@@ -1,19 +1,28 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "col-api.h"
 
 static void usage();
 static void exec_file(const char *srcfile);
+static void ping_test();
 
 int
 main(int argc, char **argv)
 {
-    if (argc < 1 || argc > 2)
+    if (argc <= 1 || argc > 2)
         usage();
 
-    exec_file(argv[1]);
-    printf("hello, world\n");
+    col_initialize();
+
+    if (strcmp(argv[1], "t") == 0)
+        ping_test();
+    else
+        exec_file(argv[1]);
+
+    col_terminate();
 }
 
 static void
@@ -29,7 +38,6 @@ exec_file(const char *srcfile)
     ColInstance *c;
     ColStatus s;
 
-    col_initialize();
     c = col_make(0);
     col_start(c);
 #if 0
@@ -43,5 +51,24 @@ exec_file(const char *srcfile)
         ;
 
     col_destroy(c);
-    col_terminate();
+}
+
+static void
+ping_test()
+{
+    ColInstance *c1;
+    ColInstance *c2;
+
+    c1 = col_make(10000);
+    col_start(c1);
+
+    c2 = col_make(10001);
+    col_start(c2);
+
+    col_set_other(c1, 10001);
+    col_set_other(c2, 10000);
+    col_do_ping(c1);
+
+    while (true)
+        ;
 }
