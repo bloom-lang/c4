@@ -64,3 +64,20 @@ identifier		{ident_start}{ident_cont}*
 }
 
 %%
+
+/*
+ * Setup an input buffer for Flex to scan. This is defined here mostly so
+ * that we can use the YY_END_OF_BUFFER_CHAR #define, which Flex helpfully
+ * doesn't export. Return value is apr_palloc'd in the given pool.
+ */
+char *
+setup_scan_buf(const char *str, apr_size_t len, apr_pool_t *pool)
+{
+    char *scan_buf;
+
+    scan_buf = apr_palloc(pool, len + 2);
+    memcpy(scan_buf, str, len);
+	scan_buf[len] = scan_buf[len + 1] = YY_END_OF_BUFFER_CHAR;
+
+    return scan_buf;
+}
