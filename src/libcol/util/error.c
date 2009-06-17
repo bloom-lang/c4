@@ -4,6 +4,7 @@
 #include <execinfo.h>
 #endif
 
+#include <stdarg.h>
 #include "col-internal.h"
 
 static void print_backtrace(void);
@@ -20,7 +21,16 @@ simple_error(const char *file, int line_num)
 void
 var_error(const char *file, int line_num, const char *fmt, ...)
 {
-    ;
+    char buf[1024];
+    va_list args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    fprintf(stderr, "ERROR: %s, at %s:%d\n", buf, file, line_num);
+    fflush(stderr);
+
+    print_backtrace();
+    abort();
 }
 
 int
