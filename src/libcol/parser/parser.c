@@ -3,7 +3,7 @@
 #include "ol_scan.h"
 #include "parser/parser-internal.h"
 
-ColParser *
+static ColParser *
 parser_make(ColInstance *col)
 {
     apr_pool_t *pool;
@@ -15,8 +15,8 @@ parser_make(ColInstance *col)
     return parser;
 }
 
-AstProgram *
-parser_do_parse(ColParser *parser, const char *str)
+static AstProgram *
+do_parse(ColParser *parser, const char *str)
 {
     apr_size_t slen;
     char *scan_buf;
@@ -42,9 +42,24 @@ parser_do_parse(ColParser *parser, const char *str)
     return parser->result;
 }
 
-ColStatus
+static ColStatus
 parser_destroy(ColParser *parser)
 {
     apr_pool_destroy(parser->pool);
     return COL_OK;
+}
+
+AstProgram *
+parse_str(ColInstance *col, const char *str, apr_pool_t *pool)
+{
+    ColParser *parser;
+    AstProgram *ast;
+
+    parser = parser_make(pool);
+    ast = do_parse(parser, str);
+    analyze_ast(ast, parser->pool);
+    /* Copy "ast" => "pool" */
+    parser_destroy(parser);
+
+    return NULL;
 }

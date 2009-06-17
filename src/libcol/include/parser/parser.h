@@ -3,11 +3,6 @@
 
 #include "parser/ast.h"
 
-typedef struct ColParser ColParser;
-
-ColParser *parser_make(ColInstance *col);
-ColStatus parser_destroy(ColParser *parser);
-
-AstProgram *parser_do_parse(ColParser *parser, const char *str);
+AstProgram *parse_str(ColInstance *col, const char *str, apr_pool_t *pool);
 
 #endif  /* PARSER_H */

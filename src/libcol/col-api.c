@@ -56,13 +56,12 @@ col_install_file(ColInstance *col, const char *path)
 ColStatus
 col_install_str(ColInstance *col, const char *str)
 {
-    ColParser *parser;
     AstProgram *program;
+    apr_pool_t *plan_pool;
 
-    parser = parser_make(col);
-    program = parser_do_parse(parser, str);
-    analyze_parsetree(program);
-    parser_destroy(parser);
+    plan_pool = make_subpool(col->pool);
+    program = parse_str(col, str, plan_pool);
+    apr_pool_destroy(plan_pool);
 
     return COL_OK;
 }

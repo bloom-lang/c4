@@ -9,8 +9,21 @@ typedef struct AstProgram
     List *clauses;
 } AstProgram;
 
+typedef enum AstClauseType
+{
+    AST_DEFINE,
+    AST_RULE,
+    AST_FACT
+} AstClauseType;
+
+typedef struct AstClause
+{
+    AstClauseType type;
+} AstClause;
+
 typedef struct AstDefine
 {
+    AstClause parent;
     char *name;
     List *keys;
     List *schema;
@@ -38,9 +51,15 @@ typedef struct AstColumnRef
 
 typedef struct AstRule
 {
+    AstClause parent;
     bool is_delete;
     AstTableRef *head;
     List *body;
 } AstRule;
+
+typedef struct AstFact
+{
+    AstClause parent;
+} AstFact;
 
 #endif  /* AST_H */

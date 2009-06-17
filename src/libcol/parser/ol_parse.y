@@ -55,6 +55,7 @@ clause: define { $$ = $1; };
 
 define: DEFINE '(' IDENT ',' opt_keys define_schema ')' {
     AstDefine *n = parser_alloc(sizeof(*n));
+    n->parent.type = AST_DEFINE;
     n->name = $3;
     n->keys = $5;
     n->schema = $6;
@@ -87,6 +88,7 @@ ident_list:
 
 rule: opt_delete table_ref opt_rule_body {
     AstRule *n = parser_alloc(sizeof(*n));
+    n->parent.type = AST_RULE;
     n->is_delete = $1;
     n->head = $2;
     n->body = $3;

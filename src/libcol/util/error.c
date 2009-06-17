@@ -9,12 +9,18 @@
 static void print_backtrace(void);
 
 void
-fatal_error(const char *file, int line_num)
+simple_error(const char *file, int line_num)
 {
     fprintf(stderr, "FATAL ERROR at %s:%d\n", file, line_num);
     print_backtrace();
     fflush(stderr);
     abort();
+}
+
+void
+var_error(const char *file, int line_num, const char *fmt, ...)
+{
+    ;
 }
 
 int
