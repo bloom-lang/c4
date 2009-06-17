@@ -1,6 +1,7 @@
 #include "col-internal.h"
 
 #include "ol_scan.h"
+#include "parser/analyze.h"
 #include "parser/parser-internal.h"
 
 static ColParser *
@@ -55,7 +56,7 @@ parse_str(ColInstance *col, const char *str, apr_pool_t *pool)
     ColParser *parser;
     AstProgram *ast;
 
-    parser = parser_make(pool);
+    parser = parser_make(col);
     ast = do_parse(parser, str);
     analyze_ast(ast, parser->pool);
     /* Copy "ast" => "pool" */

@@ -26,6 +26,8 @@ var_error(const char *file, int line_num, const char *fmt, ...)
 
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
     fprintf(stderr, "ERROR: %s, at %s:%d\n", buf, file, line_num);
     fflush(stderr);
 

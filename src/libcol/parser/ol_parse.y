@@ -87,12 +87,23 @@ ident_list:
 ;
 
 rule: opt_delete table_ref opt_rule_body {
-    AstRule *n = parser_alloc(sizeof(*n));
-    n->parent.type = AST_RULE;
-    n->is_delete = $1;
-    n->head = $2;
-    n->body = $3;
-    $$ = n;
+    if ($3 == NULL)
+    {
+        /* A rule without a body is a fact */
+        AstFact *n = parser_alloc(sizeof(*n));
+        n->parent.type = AST_FACT;
+        n->definition = $2;
+        $$ = n;
+    }
+    else
+    {
+        AstRule *n = parser_alloc(sizeof(*n));
+        n->parent.type = AST_RULE;
+        n->is_delete = $1;
+        n->head = $2;
+        n->body = $3;
+        $$ = n;
+    }
 };
 
 opt_rule_body: ':' '-' table_ref_list { $$ = $3; }

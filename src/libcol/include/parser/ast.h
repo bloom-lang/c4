@@ -60,6 +60,7 @@ typedef struct AstRule
 typedef struct AstFact
 {
     AstClause parent;
+    List *definition;
 } AstFact;
 
 #endif  /* AST_H */

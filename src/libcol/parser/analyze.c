@@ -1,28 +1,39 @@
+#include <apr_hash.h>
+
 #include "col-internal.h"
 #include "parser/analyze.h"
 
-static void
-analyze_define(AstDefine *def, apr_pool_t *pool)
+typedef struct AnalyzeState
 {
-    ;
+    apr_pool_t *pool;
+} AnalyzeState;
+
+static void
+analyze_define(AstDefine *def, AnalyzeState *state)
+{
+    printf("DEFINE\n");
 }
 
 static void
-analyze_rule(AstRule *rule, apr_pool_t *pool)
+analyze_rule(AstRule *rule, AnalyzeState *state)
 {
-    ;
+    printf("RULE\n");
 }
 
 static void
-analyze_fact(AstFact *fact, apr_pool_t *pool)
+analyze_fact(AstFact *fact, AnalyzeState *state)
 {
-    ;
+    printf("FACT\n");
 }
 
 void
 analyze_ast(AstProgram *program, apr_pool_t *pool)
 {
+    AnalyzeState *state;
     ListCell *lc;
+
+    state = apr_palloc(pool, sizeof(*state));
+    state->pool = pool;
 
     foreach (lc, program->clauses)
     {
@@ -31,15 +42,15 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
         switch (clause->type)
         {
             case AST_DEFINE:
-                analyze_define((AstDefine *) clause, pool);
+                analyze_define((AstDefine *) clause, state);
                 break;
 
             case AST_RULE:
-                analyze_rule((AstRule *) clause, pool);
+                analyze_rule((AstRule *) clause, state);
                 break;
 
             case AST_FACT:
-                analyze_fact((AstFact *) clause, pool);
+                analyze_fact((AstFact *) clause, state);
                 break;
 
             default:
