@@ -72,7 +72,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 static void
 analyze_fact(AstFact *fact, AnalyzeState *state)
 {
-    AstTableRef *target = fact->definition;
+    AstTableRef *target = fact->head;
     AstDefine *target_define;
 
     printf("FACT\n");

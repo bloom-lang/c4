@@ -1,3 +1,5 @@
+#include <apr_file_io.h>
+
 #include "col-internal.h"
 #include "net/network.h"
 #include "parser/analyze.h"
@@ -47,10 +49,51 @@ col_destroy(ColInstance *col)
     return COL_OK;
 }
 
+/*
+ * Read the file at the specified location into memory, parse it, and then
+ * install the resulting program into the specified COL runtime. XXX: We
+ * currently assume that the file is small enough that it can be slurped
+ * into a single memory buffer without too much pain.
+ */
 ColStatus
 col_install_file(ColInstance *col, const char *path)
 {
-    return COL_OK;
+    apr_status_t s;
+    apr_file_t *file;
+    apr_pool_t *file_pool;
+    apr_finfo_t finfo;
+    char *buf;
+    apr_size_t file_size;
+    ColStatus result;
+
+    file_pool = make_subpool(col->pool);
+    s = apr_file_open(&file, path, APR_READ|APR_BUFFERED,
+                      APR_OS_DEFAULT, file_pool);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    /*
+     * Get the file size, and allocate an appropriately-sized buffer to hold
+     * the file contents. There is a trivial race condition here.
+     */
+    s = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    file_size = (apr_size_t) finfo.size;
+    buf = apr_palloc(file_pool, file_size + 1);
+
+    s = apr_file_read(file, buf, &file_size);
+    if (s != APR_SUCCESS)
+        FAIL();
+    if (file_size != (apr_size_t) finfo.size)
+        FAIL();
+
+    buf[file_size] = '\0';
+    result = col_install_str(col, buf);
+    apr_pool_destroy(file_pool);
+
+    return result;
 }
 
 ColStatus
