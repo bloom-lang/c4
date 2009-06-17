@@ -1,5 +1,6 @@
 #include "col-internal.h"
 #include "net/network.h"
+#include "parser/analyze.h"
 #include "parser/parser.h"
 #include "router.h"
 
@@ -60,6 +61,7 @@ col_install_str(ColInstance *col, const char *str)
 
     parser = parser_make(col);
     program = parser_do_parse(parser, str);
+    analyze_parsetree(program);
     parser_destroy(parser);
 
     return COL_OK;

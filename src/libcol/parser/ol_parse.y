@@ -46,7 +46,7 @@ program: program_header program_body {
 program_header: PROGRAM IDENT ';' { printf("NAME = %s\n", $2); $$ = $2; };
 
 program_body: clause ';' program_body { $$ = list_prepend($3, $1); }
-| /* EMPTY */ { $$ = NULL; }
+| /* EMPTY */ { $$ = list_make(context->pool); }
 ;
 
 clause: define { $$ = $1; };
@@ -76,12 +76,12 @@ opt_int_list: int_list { $$ = $1; }
 ;
 
 int_list:
-  ICONST { $$ = list_make1((void *) $1); }
+  ICONST { $$ = list_make1((void *) $1, context->pool); }
 | int_list ',' ICONST { $$ = list_append($1, $3); }
 ;
 
 ident_list:
-  IDENT { $$ = list_make1($1); }
+  IDENT { $$ = list_make1($1, context->pool); }
 | ident_list ',' ICONST { $$ = list_append($1, $3); }
 ;
 
@@ -102,7 +102,7 @@ opt_delete: DELETE { $$ = true; }
 ;
 
 table_ref_list:
-  table_ref { $$ = list_make1($1); }
+  table_ref { $$ = list_make1($1, context->pool); }
 | table_ref_list ',' table_ref { $$ = list_append($1, $3); }
 ;
 
@@ -120,7 +120,7 @@ opt_hash_variant: OLG_HASH_DELETE { $$ = AST_HASH_DELETE; }
 ;
 
 column_ref_list:
-  column_ref { $$ = list_make1($1); }
+  column_ref { $$ = list_make1($1, context->pool); }
 | column_ref_list ',' column_ref { $$ = list_append($1, $3); }
 ;
 
