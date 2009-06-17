@@ -6,6 +6,8 @@
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
+
+#define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
 
 %union
@@ -26,7 +28,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %token KEYS DEFINE PROGRAM DELETE OLG_HASH_INSERT OLG_HASH_DELETE
 %token <str> IDENT ICONST FCONST SCONST
 
-%type <ptr>     program clause define rule table_ref column_ref
+%type <ptr>     clause define rule table_ref column_ref
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys table_ref_list column_ref_list opt_rule_body
@@ -35,10 +37,10 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 
 %%
 program: program_header program_body {
-    AstProgram *n = ol_alloc0(sizeof(*n));
+    AstProgram *n = parser_alloc(sizeof(*n));
     n->name = $1;
     n->clauses = $2;
-    $$ = n;
+    context->result = n;
 };
 
 program_header: PROGRAM IDENT ';' { printf("NAME = %s\n", $2); $$ = $2; };
@@ -52,7 +54,7 @@ clause: define { $$ = $1; };
 ;
 
 define: DEFINE '(' IDENT ',' opt_keys define_schema ')' {
-    AstDefine *n = ol_alloc0(sizeof(*n));
+    AstDefine *n = parser_alloc(sizeof(*n));
     n->name = $3;
     n->keys = $5;
     n->schema = $6;
@@ -84,7 +86,7 @@ ident_list:
 ;
 
 rule: opt_delete table_ref opt_rule_body {
-    AstRule *n = ol_alloc0(sizeof(*n));
+    AstRule *n = parser_alloc(sizeof(*n));
     n->is_delete = $1;
     n->head = $2;
     n->body = $3;
@@ -105,7 +107,7 @@ table_ref_list:
 ;
 
 table_ref: IDENT opt_hash_variant '(' column_ref_list ')' {
-    AstTableRef *n = ol_alloc0(sizeof(*n));
+    AstTableRef *n = parser_alloc(sizeof(*n));
     n->name = $1;
     n->hash_variant = $2;
     n->cols = $4;
@@ -123,7 +125,7 @@ column_ref_list:
 ;
 
 column_ref: opt_loc_spec IDENT {
-    AstColumnRef *n = ol_alloc0(sizeof(*n));
+    AstColumnRef *n = parser_alloc(sizeof(*n));
     n->has_loc_spec = $1;
     n->name = $2;
     $$ = n;
