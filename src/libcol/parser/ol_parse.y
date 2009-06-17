@@ -96,6 +96,10 @@ rule: opt_delete table_ref opt_rule_body {
         AstFact *n = parser_alloc(sizeof(*n));
         n->parent.type = AST_FACT;
         n->definition = $2;
+
+        if ($1)
+            ERROR("Cannot specify \"delete\" in a fact");
+
         $$ = n;
     }
     else
