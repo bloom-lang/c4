@@ -6,12 +6,23 @@
 typedef struct AnalyzeState
 {
     apr_pool_t *pool;
+    AstProgram *program;
+    apr_hash_t *define_tbl;
 } AnalyzeState;
 
 static void
 analyze_define(AstDefine *def, AnalyzeState *state)
 {
     printf("DEFINE\n");
+
+    /* Check for duplicate defines within the current program */
+    if (apr_hash_get(state->define_tbl, def->name,
+                     APR_HASH_KEY_STRING) == NULL)
+        ERROR("Duplicate table name \"%s\" in program %s",
+              def->name, state->program->name);
+
+    apr_hash_set(state->define_tbl, def->name,
+                 APR_HASH_KEY_STRING, def);
 }
 
 static void
@@ -34,6 +45,8 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 
     state = apr_palloc(pool, sizeof(*state));
     state->pool = pool;
+    state->program = program;
+    state->define_tbl = apr_hash_make(pool);
 
     foreach (lc, program->clauses)
     {

@@ -6,6 +6,8 @@
 #include "util/str.h"
 
 #include "ol_parse.h"
+
+#define SCANNER_POOL yyget_extra(yyscanner)->pool
 %}
 
 %option 8bit
@@ -49,7 +51,7 @@ identifier		{ident_start}{ident_cont}*
 "#insert"               { return OLG_HASH_INSERT; }
 
 {identifier} {
-    yylval.str = downcase_str(yytext, yyleng);
+    yylval.str = downcase_buf(yytext, yyleng, SCANNER_POOL);
 
     if (strcmp(yylval.str, "delete") == 0)
         return DELETE;
