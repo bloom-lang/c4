@@ -1,8 +1,12 @@
 #include "col-internal.h"
 
-#include "ol_scan.h"
 #include "parser/analyze.h"
+/*
+ * XXX: we need to include the definition of ColParser before we can include
+ * ol_scan.h, because Flex is broken.
+ */
 #include "parser/parser-internal.h"
+#include "ol_scan.h"
 
 static ColParser *
 parser_make(ColInstance *col)
@@ -24,7 +28,7 @@ do_parse(ColParser *parser, const char *str)
     YY_BUFFER_STATE buf_state;
     int parse_result;
 
-    yylex_init(&parser->yyscanner);
+    yylex_init_extra(parser, &parser->yyscanner);
 
     slen = strlen(str);
     scan_buf = setup_scan_buf(str, slen, parser->pool);

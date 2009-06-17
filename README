@@ -1,0 +1,8 @@
+Build dependencies: flex (>= 2.3.35), bison, cmake, apr, and apr-util.
+
+To build:
+
+mkdir build
+cd build
+cmake ..
+make

@@ -14,6 +14,7 @@
 %option nounput
 %option noyywrap
 %option reentrant
+%option extra-type="ColParser *"
 
 digit           [0-9]
 space           [ \t\n\r\f]
