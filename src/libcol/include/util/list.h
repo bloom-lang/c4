@@ -15,11 +15,22 @@ typedef struct
     ListCell *tail;
 } List;
 
+#define list_head(list)         (list)->head
+#define list_tail(list)         (list)->tail
+#define list_length(list)       (list)->length
+
 struct ListCell
 {
-    void *data;
+    union
+    {
+        void *ptr_value;
+        int int_value;
+    } data;
     ListCell *next;
 };
+
+#define lc_ptr(lc)      ((lc)->data.ptr_value)
+#define lc_int(lc)      ((lc)->data.int_value)
 
 /*
  * foreach -
@@ -30,8 +41,15 @@ struct ListCell
 
 List *list_make(apr_pool_t *pool);
 #define list_make1(datum, pool)         list_append(list_make(pool), datum)
+#define list_make1_int(datum, pool)     list_append_int(list_make(pool), datum)
 
 List *list_append(List *list, void *datum);
+List *list_append_int(List *list, int datum);
+
 List *list_prepend(List *list, void *datum);
+List *list_prepend_int(List *list, int datum);
+
+bool list_member(List *list, void *datum);
+bool list_member_int(List *list, int datum);
 
 #endif  /* LIST_H */

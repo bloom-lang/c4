@@ -13,6 +13,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 
 %union
 {
+    int ival;
     char *str;
     List *list;
     void *ptr;
@@ -27,7 +28,8 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %lex-param { yyscan_t scanner }
 
 %token KEYS DEFINE PROGRAM DELETE OLG_HASH_INSERT OLG_HASH_DELETE
-%token <str> IDENT ICONST FCONST SCONST
+%token <str> IDENT FCONST SCONST
+%token <ival> ICONST
 
 %type <ptr>     clause define rule table_ref column_ref
 %type <str>     program_header
@@ -78,13 +80,13 @@ opt_int_list: int_list { $$ = $1; }
 ;
 
 int_list:
-  ICONST { $$ = list_make1((void *) $1, context->pool); }
-| int_list ',' ICONST { $$ = list_append($1, $3); }
+  ICONST { $$ = list_make1_int($1, context->pool); }
+| int_list ',' ICONST { $$ = list_append_int($1, $3); }
 ;
 
 ident_list:
   IDENT { $$ = list_make1($1, context->pool); }
-| ident_list ',' ICONST { $$ = list_append($1, $3); }
+| ident_list ',' IDENT { $$ = list_append($1, $3); }
 ;
 
 rule: opt_delete table_ref opt_rule_body {
