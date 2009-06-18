@@ -62,6 +62,7 @@ make_ptr_cell(List *list, void *datum, ListCell *prev, ListCell *next)
     if (prev)
         prev->next = lc;
 
+    list->length++;
     return lc;
 }
 
@@ -79,6 +80,7 @@ make_int_cell(List *list, int datum, ListCell *prev, ListCell *next)
     if (prev)
         prev->next = lc;
 
+    list->length++;
     return lc;
 }
 

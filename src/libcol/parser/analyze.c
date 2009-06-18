@@ -18,11 +18,11 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     List *seen_keys;
     ListCell *lc;
 
-    printf("DEFINE\n");
+    printf("DEFINE => %s\n", def->name);
 
     /* Check for duplicate defines within the current program */
     if (apr_hash_get(state->define_tbl, def->name,
-                     APR_HASH_KEY_STRING) == NULL)
+                     APR_HASH_KEY_STRING) != NULL)
         ERROR("Duplicate table name %s in program %s",
               def->name, state->program->name);
 
@@ -75,7 +75,7 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
     AstTableRef *target = fact->head;
     AstDefine *target_define;
 
-    printf("FACT\n");
+    printf("FACT => %s\n", target->name);
 
     if (target->hash_variant != AST_HASH_NONE)
         ERROR("Cannot specify \"#insert\" or \"#delete\" in a fact");
@@ -97,6 +97,9 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->pool = pool;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
+
+    printf("Program name: %s; # of clauses: %d\n",
+           program->name, list_length(program->clauses));
 
     foreach (lc, program->clauses)
     {
@@ -125,13 +128,15 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 static bool
 is_valid_type(const char *type_name)
 {
-    if (strcmp(type_name, "int") == 0)
-        return true;
     if (strcmp(type_name, "bool") == 0)
         return true;
-    if (strcmp(type_name, "string") == 0)
-        return true;
     if (strcmp(type_name, "double") == 0)
+        return true;
+    if (strcmp(type_name, "int") == 0)
+        return true;
+    if (strcmp(type_name, "long") == 0)
+        return true;
+    if (strcmp(type_name, "string") == 0)
         return true;
 
     return false;

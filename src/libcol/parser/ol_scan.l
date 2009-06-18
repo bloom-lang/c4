@@ -24,7 +24,7 @@ newline         [\n\r]
 non_newline     [^\n\r]
 
 /* "self" is the set of characters that are returned to the parser as-is. */
-self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=@]
+self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=@\{\}]
 
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
@@ -33,6 +33,8 @@ whitespace		({space}+|{comment})
 ident_start		[A-Za-z_]
 ident_cont		[A-Za-z_0-9]
 identifier		{ident_start}{ident_cont}*
+
+integer         {digit}+
 
 %x comment
 
@@ -50,8 +52,20 @@ identifier		{ident_start}{ident_cont}*
 "#delete"               { return OLG_HASH_DELETE; }
 "#insert"               { return OLG_HASH_INSERT; }
 
+{integer} {
+    char *endptr;
+
+    yylval.ival = strtol(yytext, &endptr, 10);
+    if (*endptr != '\0')
+        FAIL();
+
+    printf("ICONST = %ld\n", yylval.ival);
+    return ICONST;
+}
+
 {identifier} {
     yylval.str = downcase_buf(yytext, yyleng, SCANNER_POOL);
+    printf("yylval.str = %s\n", yylval.str);
 
     if (strcmp(yylval.str, "delete") == 0)
         return DELETE;

@@ -13,12 +13,12 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 
 %union
 {
-    int ival;
-    char *str;
-    List *list;
-    void *ptr;
-    bool boolean;
-    AstHashVariant hash_v;
+    apr_int64_t     ival;
+    char           *str;
+    List           *list;
+    void           *ptr;
+    bool            boolean;
+    AstHashVariant  hash_v;
 }
 
 %start program
