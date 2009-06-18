@@ -10,7 +10,8 @@ typedef enum AstNodeKind
     AST_RULE,
     AST_FACT,
     AST_TABLE_REF,
-    AST_COLUMN_REF
+    AST_COLUMN_REF,
+    AST_ASSIGN
 } AstNodeKind;
 
 typedef struct AstNode
@@ -68,5 +69,17 @@ typedef struct AstFact
     AstNode node;
     AstTableRef *head;
 } AstFact;
+
+typedef struct AstExpr
+{
+    AstNode node;
+} AstExpr;
+
+typedef struct AstAssign
+{
+    AstNode node;
+    AstColumnRef *lhs;
+    AstExpr *rhs;
+} AstAssign;
 
 #endif  /* AST_H */

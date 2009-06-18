@@ -34,7 +34,8 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %type <ptr>     clause define rule table_ref column_ref
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
-%type <list>    opt_keys table_ref_list column_ref_list opt_rule_body
+%type <list>    opt_keys column_ref_list opt_rule_body rule_body
+%type <ptr>     rule_body_elem assignment expr
 %type <boolean> opt_delete opt_loc_spec
 %type <hash_v>  opt_hash_variant
 
@@ -114,18 +115,23 @@ rule: opt_delete table_ref opt_rule_body {
     }
 };
 
-opt_rule_body: ':' '-' table_ref_list { $$ = $3; }
-| /* EMPTY */ { $$ = NULL; }
-;
-
 opt_delete: DELETE { $$ = true; }
 | /* EMPTY */ { $$ = false; }
 ;
 
-table_ref_list:
-  table_ref { $$ = list_make1($1, context->pool); }
-| table_ref_list ',' table_ref { $$ = list_append($1, $3); }
+opt_rule_body: ':' '-' rule_body { $$ = $3; }
+| /* EMPTY */ { $$ = NULL; }
 ;
+
+rule_body:
+  rule_body_elem { $$ = list_make1($1, context->pool); }
+| rule_body ',' rule_body_elem { $$ = list_append($1, $3); }
+;
+
+rule_body_elem:
+  table_ref
+| assignment
+  ;
 
 table_ref: IDENT opt_hash_variant '(' column_ref_list ')' {
     AstTableRef *n = parser_alloc(sizeof(*n));
@@ -135,6 +141,16 @@ table_ref: IDENT opt_hash_variant '(' column_ref_list ')' {
     n->cols = $4;
     $$ = n;
 };
+
+assignment: column_ref ':' '=' expr {
+    AstAssign *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_ASSIGN;
+    n->lhs = $1;
+    n->rhs = $4;
+    $$ = n;
+};
+
+expr: { $$ = NULL; };
 
 opt_hash_variant: OLG_HASH_DELETE { $$ = AST_HASH_DELETE; }
 | OLG_HASH_INSERT { $$ = AST_HASH_INSERT; }
