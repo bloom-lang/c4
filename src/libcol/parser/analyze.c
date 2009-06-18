@@ -10,6 +10,7 @@ typedef struct AnalyzeState
     apr_hash_t *define_tbl;
 } AnalyzeState;
 
+static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
 
 static void
@@ -66,25 +67,53 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
-    printf("RULE\n");
+    ListCell *lc;
+
+    printf("RULE => %s\n", rule->head->name);
+
+    if (rule->head->hash_variant != AST_HASH_NONE)
+        ERROR("Cannot specify \"#insert\" or \"#delete\" in rule head");
+
+    analyze_table_ref(rule->head, state);
+
+    foreach (lc, rule->body)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        switch (node->kind)
+        {
+            case AST_TABLE_REF:
+                break;
+
+            default:
+                ERROR("Unrecognized node kind: %d", node->kind);
+        }
+    }
 }
 
 static void
 analyze_fact(AstFact *fact, AnalyzeState *state)
 {
     AstTableRef *target = fact->head;
-    AstDefine *target_define;
 
     printf("FACT => %s\n", target->name);
 
     if (target->hash_variant != AST_HASH_NONE)
         ERROR("Cannot specify \"#insert\" or \"#delete\" in a fact");
 
+    analyze_table_ref(target, state);
+}
+
+static void
+analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
+{
+    AstDefine *define;
+
     /* Check that the specified table name exists */
-    target_define = apr_hash_get(state->define_tbl, target->name,
-                                 APR_HASH_KEY_STRING);
-    if (target_define == NULL)
-        ERROR("No such table \"%s\" in fact", target->name);
+    define = apr_hash_get(state->define_tbl, ref->name,
+                          APR_HASH_KEY_STRING);
+    if (define == NULL)
+        ERROR("No such table \"%s\" in fact", ref->name);
 }
 
 void
@@ -101,14 +130,24 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     printf("Program name: %s; # of clauses: %d\n",
            program->name, list_length(program->clauses));
 
+    /* Phase 1: process table definitions */
+    foreach (lc, program->clauses)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        if (node->kind == AST_DEFINE)
+            analyze_define((AstDefine *) node, state);
+    }
+
+    /* Phase 2: process remaining program clauses */
     foreach (lc, program->clauses)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
         switch (node->kind)
         {
+            /* Skip in phase 2, already processed */
             case AST_DEFINE:
-                analyze_define((AstDefine *) node, state);
                 break;
 
             case AST_RULE:
