@@ -35,15 +35,12 @@ do_parse(ColParser *parser, const char *str)
     buf_state = yy_scan_buffer(scan_buf, slen + 2, parser->yyscanner);
 
     parse_result = yyparse(parser, parser->yyscanner);
-    if (parse_result)
-    {
-        yy_delete_buffer(buf_state, parser->yyscanner);
-        yylex_destroy(parser->yyscanner);
-        return NULL;
-    }
-
     yy_delete_buffer(buf_state, parser->yyscanner);
     yylex_destroy(parser->yyscanner);
+
+    if (parse_result)
+        ERROR("parsing failed");
+
     return parser->result;
 }
 

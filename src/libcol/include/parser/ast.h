@@ -3,27 +3,31 @@
 
 #include "util/list.h"
 
+typedef enum AstNodeKind
+{
+    AST_PROGRAM,
+    AST_DEFINE,
+    AST_RULE,
+    AST_FACT,
+    AST_TABLE_REF,
+    AST_COLUMN_REF
+} AstNodeKind;
+
+typedef struct AstNode
+{
+    AstNodeKind kind;
+} AstNode;
+
 typedef struct AstProgram
 {
+    AstNode node;
     char *name;
     List *clauses;
 } AstProgram;
 
-typedef enum AstClauseType
-{
-    AST_DEFINE,
-    AST_RULE,
-    AST_FACT
-} AstClauseType;
-
-typedef struct AstClause
-{
-    AstClauseType type;
-} AstClause;
-
 typedef struct AstDefine
 {
-    AstClause parent;
+    AstNode node;
     char *name;
     List *keys;
     List *schema;
@@ -38,6 +42,7 @@ typedef enum AstHashVariant
 
 typedef struct AstTableRef
 {
+    AstNode node;
     char *name;
     AstHashVariant hash_variant;
     List *cols;
@@ -45,13 +50,14 @@ typedef struct AstTableRef
 
 typedef struct AstColumnRef
 {
+    AstNode node;
     bool has_loc_spec;
     char *name;
 } AstColumnRef;
 
 typedef struct AstRule
 {
-    AstClause parent;
+    AstNode node;
     bool is_delete;
     AstTableRef *head;
     List *body;
@@ -59,7 +65,7 @@ typedef struct AstRule
 
 typedef struct AstFact
 {
-    AstClause parent;
+    AstNode node;
     AstTableRef *head;
 } AstFact;
 

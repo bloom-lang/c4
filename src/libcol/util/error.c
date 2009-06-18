@@ -32,7 +32,7 @@ var_error(const char *file, int line_num, const char *fmt, ...)
     fflush(stderr);
 
     print_backtrace();
-    abort();
+    exit(1);
 }
 
 int

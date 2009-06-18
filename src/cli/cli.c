@@ -39,17 +39,18 @@ exec_file(const char *srcfile)
     ColStatus s;
 
     c = col_make(0);
-    col_start(c);
 #if 0
+    col_start(c);
+#endif
     s = col_install_file(c, srcfile);
     if (s)
-        printf("Failed to install file: %d", (int) s);
-#endif
-    s = col_install_str(c, "program bar; foo(X) :- baz(X);");
+        printf("Failed to install file: %d\n", (int) s);
 
+#if 0
     while (1)
         ;
 
+#endif
     col_destroy(c);
 }
 

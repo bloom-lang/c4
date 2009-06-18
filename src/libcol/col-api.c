@@ -70,7 +70,10 @@ col_install_file(ColInstance *col, const char *path)
     s = apr_file_open(&file, path, APR_READ|APR_BUFFERED,
                       APR_OS_DEFAULT, file_pool);
     if (s != APR_SUCCESS)
-        FAIL();
+    {
+        result = COL_ERROR;
+        goto done;
+    }
 
     /*
      * Get the file size, and allocate an appropriately-sized buffer to hold
@@ -91,8 +94,9 @@ col_install_file(ColInstance *col, const char *path)
 
     buf[file_size] = '\0';
     result = col_install_str(col, buf);
-    apr_pool_destroy(file_pool);
 
+done:
+    apr_pool_destroy(file_pool);
     return result;
 }
 

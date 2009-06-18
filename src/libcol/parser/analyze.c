@@ -100,24 +100,24 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 
     foreach (lc, program->clauses)
     {
-        AstClause *clause = (AstClause *) lc_ptr(lc);
+        AstNode *node = (AstNode *) lc_ptr(lc);
 
-        switch (clause->type)
+        switch (node->kind)
         {
             case AST_DEFINE:
-                analyze_define((AstDefine *) clause, state);
+                analyze_define((AstDefine *) node, state);
                 break;
 
             case AST_RULE:
-                analyze_rule((AstRule *) clause, state);
+                analyze_rule((AstRule *) node, state);
                 break;
 
             case AST_FACT:
-                analyze_fact((AstFact *) clause, state);
+                analyze_fact((AstFact *) node, state);
                 break;
 
             default:
-                ERROR("Unrecognized clause type: %d", clause->type);
+                ERROR("Unrecognized node kind: %d", node->kind);
         }
     }
 }
