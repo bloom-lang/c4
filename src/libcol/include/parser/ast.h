@@ -11,7 +11,12 @@ typedef enum AstNodeKind
     AST_FACT,
     AST_TABLE_REF,
     AST_COLUMN_REF,
-    AST_ASSIGN
+    AST_ASSIGN,
+    AST_OP_EXPR,
+    AST_CONST_EXPR_BOOL,
+    AST_CONST_EXPR_DOUBLE,
+    AST_CONST_EXPR_INT,
+    AST_CONST_EXPR_STRING
 } AstNodeKind;
 
 typedef struct AstNode
@@ -70,16 +75,42 @@ typedef struct AstFact
     AstTableRef *head;
 } AstFact;
 
-typedef struct AstExpr
-{
-    AstNode node;
-} AstExpr;
-
 typedef struct AstAssign
 {
     AstNode node;
     AstColumnRef *lhs;
-    AstExpr *rhs;
+    AstNode *rhs;
 } AstAssign;
+
+typedef struct AstOpExpr
+{
+    AstNode node;
+    AstNode *lhs;
+    AstNode *rhs;
+} AstOpExpr;
+
+typedef struct AstConstExprBool
+{
+    AstNode node;
+    bool val;
+} AstConstExprBool;
+
+typedef struct AstConstExprDouble
+{
+    AstNode node;
+    double val;
+} AstConstExprDouble;
+
+typedef struct AstConstExprInt
+{
+    AstNode node;
+    apr_int64_t val;
+} AstConstExprInt;
+
+typedef struct AstConstExprString
+{
+    AstNode node;
+    char *val;
+} AstConstExprString;
 
 #endif  /* AST_H */

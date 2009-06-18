@@ -35,7 +35,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
-%type <ptr>     rule_body_elem assignment expr
+%type <ptr>     rule_body_elem assignment expr const_expr op_expr
 %type <boolean> opt_delete opt_loc_spec
 %type <hash_v>  opt_hash_variant
 
@@ -150,11 +150,27 @@ assignment: column_ref ':' '=' expr {
     $$ = n;
 };
 
-expr: { $$ = NULL; };
+expr:
+  op_expr
+| const_expr
+;
 
-opt_hash_variant: OLG_HASH_DELETE { $$ = AST_HASH_DELETE; }
-| OLG_HASH_INSERT { $$ = AST_HASH_INSERT; }
-| /* EMPTY */ { $$ = AST_HASH_NONE; }
+op_expr: { $$ = NULL; };
+
+const_expr:
+  ICONST
+{
+    AstConstExprInt *n = (AstConstExprInt *) parser_alloc(sizeof(*n));
+    n->node.kind = AST_CONST_EXPR_INT;
+    n->val = $1;
+    $$ = n;
+}
+;
+
+opt_hash_variant:
+  OLG_HASH_DELETE       { $$ = AST_HASH_DELETE; }
+| OLG_HASH_INSERT       { $$ = AST_HASH_INSERT; }
+| /* EMPTY */           { $$ = AST_HASH_NONE; }
 ;
 
 column_ref_list:
@@ -162,7 +178,8 @@ column_ref_list:
 | column_ref_list ',' column_ref { $$ = list_append($1, $3); }
 ;
 
-column_ref: opt_loc_spec IDENT {
+column_ref: opt_loc_spec IDENT
+{
     AstColumnRef *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_COLUMN_REF;
     n->has_loc_spec = $1;
@@ -170,8 +187,8 @@ column_ref: opt_loc_spec IDENT {
     $$ = n;
 };
 
-opt_loc_spec: '@' { $$ = true; }
-| /* EMPTY */ { $$ = false; }
+opt_loc_spec: '@'       { $$ = true; }
+| /* EMPTY */           { $$ = false; }
 ;
 
 %%
