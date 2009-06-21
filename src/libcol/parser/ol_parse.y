@@ -7,6 +7,7 @@
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
+AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -27,16 +28,21 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE PROGRAM DELETE OLG_HASH_INSERT OLG_HASH_DELETE
+%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
 %token <str> IDENT FCONST SCONST
 %token <ival> ICONST
 
-%type <ptr>     clause define rule table_ref column_ref
+%left OL_EQ OL_NEQ
+%nonassoc OL_GT OL_GTE OL_LT OL_LTE
+%left '+' '-'
+%left '*' '/' '%'
+
+%type <ptr>     clause define rule table_ref column_ref join_clause
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem assignment expr const_expr op_expr
-%type <boolean> opt_delete opt_loc_spec
+%type <boolean> opt_delete opt_loc_spec opt_not
 %type <hash_v>  opt_hash_variant
 
 %%
@@ -129,24 +135,39 @@ rule_body:
 ;
 
 rule_body_elem:
-  table_ref
+  join_clause
 | assignment
-  ;
+;
 
-table_ref: IDENT opt_hash_variant '(' column_ref_list ')' {
-    AstTableRef *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_TABLE_REF;
-    n->name = $1;
-    n->hash_variant = $2;
-    n->cols = $4;
-    $$ = n;
+join_clause: opt_not IDENT opt_hash_variant '(' column_ref_list ')' {
+    JoinClause *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_JOIN_CLAUSE;
+    n->not = $1;
+    n->hash_variant = $3;
+    n->ref = make_table_ref(context, $2, $5);
 };
 
-assignment: column_ref ':' '=' expr {
+opt_not:
+  NOTIN                 { $$ = true; }
+| /* EMPTY */           { $$ = false; }
+;
+
+opt_hash_variant:
+  OL_HASH_DELETE       { $$ = AST_HASH_DELETE; }
+| OL_HASH_INSERT       { $$ = AST_HASH_INSERT; }
+| /* EMPTY */          { $$ = AST_HASH_NONE; }
+;
+
+table_ref: IDENT '(' column_ref_list ')' {
+    $$ = make_table_ref(context, $1, $3);
+};
+
+/* XXX: Temp hack to workaround parser issues */
+assignment: '%' column_ref ':' '=' expr {
     AstAssign *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_ASSIGN;
-    n->lhs = $1;
-    n->rhs = $4;
+    n->lhs = $2;
+    n->rhs = $5;
     $$ = n;
 };
 
@@ -155,7 +176,13 @@ expr:
 | const_expr
 ;
 
-op_expr: { $$ = NULL; };
+op_expr:
+  expr '+' expr
+| expr '-' expr
+| expr '*' expr
+| expr '/' expr
+| expr '%' expr
+;
 
 const_expr:
   ICONST
@@ -165,12 +192,6 @@ const_expr:
     n->val = $1;
     $$ = n;
 }
-;
-
-opt_hash_variant:
-  OLG_HASH_DELETE       { $$ = AST_HASH_DELETE; }
-| OLG_HASH_INSERT       { $$ = AST_HASH_INSERT; }
-| /* EMPTY */           { $$ = AST_HASH_NONE; }
 ;
 
 column_ref_list:
@@ -198,4 +219,14 @@ yyerror(ColParser *context, void *scanner, const char *message)
 {
     printf("Parse error: %s\n", message);
     return 0;   /* return value ignored */
+}
+
+AstTableRef *
+make_table_ref(ColParser *context, char *name, List *cols)
+{
+    AstTableRef *result = apr_pcalloc(context->pool, sizeof(*result));
+    result->node.kind = AST_TABLE_REF;
+    result->name = name;
+    result->cols = cols;
+    return result;
 }

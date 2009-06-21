@@ -24,7 +24,7 @@ newline         [\n\r]
 non_newline     [^\n\r]
 
 /* "self" is the set of characters that are returned to the parser as-is. */
-self			[,()\[\].;\:\+\-\*\/\%\^\<\>\=@\{\}]
+self			[,()\[\].;\:\+\-\*\/\%\^\=@\{\}]
 
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
@@ -49,8 +49,15 @@ integer         {digit}+
 
 {self}                  { return yytext[0]; }
 
-"#delete"               { return OLG_HASH_DELETE; }
-"#insert"               { return OLG_HASH_INSERT; }
+"#delete"               { return OL_HASH_DELETE; }
+"#insert"               { return OL_HASH_INSERT; }
+"<"                     { return OL_LT; }
+"<="                    { return OL_LTE; }
+">"                     { return OL_GT; }
+">="                    { return OL_GTE; }
+"!="                    { return OL_NEQ; }
+"<>"                    { return OL_NEQ; }
+"=="                    { return OL_EQ; }
 
 {integer} {
     char *endptr;
@@ -67,10 +74,12 @@ integer         {digit}+
     yylval.str = downcase_buf(yytext, yyleng, SCANNER_POOL);
     printf("yylval.str = %s\n", yylval.str);
 
-    if (strcmp(yylval.str, "delete") == 0)
-        return DELETE;
     if (strcmp(yylval.str, "define") == 0)
         return DEFINE;
+    if (strcmp(yylval.str, "delete") == 0)
+        return DELETE;
+    if (strcmp(yylval.str, "notin") == 0)
+        return NOTIN;
     if (strcmp(yylval.str, "keys") == 0)
         return KEYS;
     if (strcmp(yylval.str, "program") == 0)

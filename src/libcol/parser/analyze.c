@@ -71,9 +71,6 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     printf("RULE => %s\n", rule->head->name);
 
-    if (rule->head->hash_variant != AST_HASH_NONE)
-        ERROR("Cannot specify \"#insert\" or \"#delete\" in rule head");
-
     analyze_table_ref(rule->head, state);
 
     foreach (lc, rule->body)
@@ -97,9 +94,6 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
     AstTableRef *target = fact->head;
 
     printf("FACT => %s\n", target->name);
-
-    if (target->hash_variant != AST_HASH_NONE)
-        ERROR("Cannot specify \"#insert\" or \"#delete\" in a fact");
 
     analyze_table_ref(target, state);
 }

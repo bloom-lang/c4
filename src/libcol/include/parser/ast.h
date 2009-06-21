@@ -11,6 +11,7 @@ typedef enum AstNodeKind
     AST_FACT,
     AST_TABLE_REF,
     AST_COLUMN_REF,
+    AST_JOIN_CLAUSE,
     AST_ASSIGN,
     AST_OP_EXPR,
     AST_CONST_EXPR_BOOL,
@@ -39,6 +40,13 @@ typedef struct AstDefine
     List *schema;
 } AstDefine;
 
+typedef struct AstTableRef
+{
+    AstNode node;
+    char *name;
+    List *cols;
+} AstTableRef;
+
 typedef enum AstHashVariant
 {
     AST_HASH_NONE = 0,
@@ -46,13 +54,13 @@ typedef enum AstHashVariant
     AST_HASH_INSERT
 } AstHashVariant;
 
-typedef struct AstTableRef
+typedef struct JoinClause
 {
     AstNode node;
-    char *name;
+    AstTableRef *ref;
+    bool not;
     AstHashVariant hash_variant;
-    List *cols;
-} AstTableRef;
+} JoinClause;
 
 typedef struct AstColumnRef
 {
