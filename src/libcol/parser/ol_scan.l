@@ -24,7 +24,7 @@ newline         [\n\r]
 non_newline     [^\n\r]
 
 /* "self" is the set of characters that are returned to the parser as-is. */
-self			[,()\[\].;\:\+\-\*\/\%\^\=@\{\}]
+self			[,()\[\].;\:\+\-\*\/\%\^\=@\{\}\<\>]
 
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
@@ -51,13 +51,12 @@ integer         {digit}+
 
 "#delete"               { return OL_HASH_DELETE; }
 "#insert"               { return OL_HASH_INSERT; }
-"<"                     { return OL_LT; }
 "<="                    { return OL_LTE; }
-">"                     { return OL_GT; }
 ">="                    { return OL_GTE; }
 "!="                    { return OL_NEQ; }
 "<>"                    { return OL_NEQ; }
 "=="                    { return OL_EQ; }
+":="                    { return OL_ASSIGN; }
 
 {integer} {
     char *endptr;
@@ -78,10 +77,14 @@ integer         {digit}+
         return DEFINE;
     if (strcmp(yylval.str, "delete") == 0)
         return DELETE;
+    if (strcmp(yylval.str, "false") == 0)
+        return OL_FALSE;
     if (strcmp(yylval.str, "notin") == 0)
         return NOTIN;
     if (strcmp(yylval.str, "keys") == 0)
         return KEYS;
+    if (strcmp(yylval.str, "true") == 0)
+        return OL_TRUE;
     if (strcmp(yylval.str, "program") == 0)
         return PROGRAM;
 
@@ -92,7 +95,7 @@ integer         {digit}+
 
 /*
  * Setup an input buffer for Flex to scan. This is defined here mostly so
- * that we can use the YY_END_OF_BUFFER_CHAR #define, which Flex helpfully
+ * that we can use the YY_END_OF_BUFFER_CHAR #define, which Flex annoyingly
  * doesn't export. Return value is apr_palloc'd in the given pool.
  */
 char *

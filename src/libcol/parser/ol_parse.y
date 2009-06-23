@@ -28,12 +28,12 @@ AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
+%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE OL_ASSIGN OL_FALSE OL_TRUE
 %token <str> IDENT FCONST SCONST
 %token <ival> ICONST
 
 %left OL_EQ OL_NEQ
-%nonassoc OL_GT OL_GTE OL_LT OL_LTE
+%nonassoc '>' '<' OL_GTE OL_LTE
 %left '+' '-'
 %left '*' '/' '%'
 
@@ -42,7 +42,7 @@ AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem assignment expr const_expr op_expr
-%type <boolean> opt_delete opt_loc_spec opt_not
+%type <boolean> opt_delete opt_loc_spec opt_not bool_const
 %type <hash_v>  opt_hash_variant
 
 %%
@@ -163,11 +163,11 @@ table_ref: IDENT '(' column_ref_list ')' {
 };
 
 /* XXX: Temp hack to workaround parser issues */
-assignment: '%' column_ref ':' '=' expr {
+assignment: '%' column_ref OL_ASSIGN expr {
     AstAssign *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_ASSIGN;
     n->lhs = $2;
-    n->rhs = $5;
+    n->rhs = $4;
     $$ = n;
 };
 
@@ -176,22 +176,34 @@ expr:
 | const_expr
 ;
 
-op_expr:
-  expr '+' expr
-| expr '-' expr
-| expr '*' expr
-| expr '/' expr
-| expr '%' expr
-;
+op_expr: expr '+' expr {
+    AstOpExpr *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_OP_EXPR;
+    n->lhs = $1;
+    n->op_kind = AST_OP_PLUS;
+    n->rhs = $3;
+    $$ = n;
+};
 
 const_expr:
   ICONST
 {
-    AstConstExprInt *n = (AstConstExprInt *) parser_alloc(sizeof(*n));
+    AstConstExprInt *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_CONST_EXPR_INT;
     n->val = $1;
     $$ = n;
 }
+| bool_const
+{
+    AstConstExprBool *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_CONST_EXPR_INT;
+    n->val = $1;
+    $$ = n;
+}
+;
+
+bool_const: OL_TRUE { $$ = true; }
+| OL_FALSE { $$ = false; }
 ;
 
 column_ref_list:

@@ -90,11 +90,27 @@ typedef struct AstAssign
     AstNode *rhs;
 } AstAssign;
 
+typedef enum AstOperKind
+{
+    AST_OP_PLUS,
+    AST_OP_MINUS,
+    AST_OP_TIMES,
+    AST_OP_DIVIDE,
+    AST_OP_MODULUS,
+    AST_OP_LT,
+    AST_OP_LTE,
+    AST_OP_GT,
+    AST_OP_GTE,
+    AST_OP_EQ,
+    AST_OP_NEQ
+} AstOperKind;
+
 typedef struct AstOpExpr
 {
     AstNode node;
     AstNode *lhs;
     AstNode *rhs;
+    AstOperKind op_kind;
 } AstOpExpr;
 
 typedef struct AstConstExprBool
