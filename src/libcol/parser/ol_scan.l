@@ -36,7 +36,7 @@ identifier		{ident_start}{ident_cont}*
 
 integer         {digit}+
 decimal         {digit}+\.{digit}*
-real            ({integer}|{decimal})[Ee][-+]?{digit}+
+real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 
 %x comment
 
@@ -69,11 +69,6 @@ real            ({integer}|{decimal})[Ee][-+]?{digit}+
 
     printf("ICONST = %ld\n", yylval.ival);
     return ICONST;
-}
-
-{decimal} {
-    yylval.str = apr_pstrdup(SCANNER_POOL, yytext);
-    return FCONST;
 }
 
 {real} {
