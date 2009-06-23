@@ -122,7 +122,7 @@ typedef struct AstConstExprBool
 typedef struct AstConstExprDouble
 {
     AstNode node;
-    double val;
+    char *val;
 } AstConstExprDouble;
 
 typedef struct AstConstExprInt

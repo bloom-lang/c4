@@ -200,6 +200,13 @@ const_expr:
     n->val = $1;
     $$ = n;
 }
+| FCONST
+{
+    AstConstExprDouble *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_CONST_EXPR_DOUBLE;
+    n->val = $1;
+    $$ = n;
+}
 ;
 
 bool_const: OL_TRUE { $$ = true; }

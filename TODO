@@ -1,0 +1,7 @@
+Parser and lexer:
+
+* Support for parentheses
+* Negative integer and real constants => unary minus operator?
+* Exponents on real numbered input
+* Unicode identifiers and string literals
+* Locking / concurrency control

@@ -35,6 +35,8 @@ ident_cont		[A-Za-z_0-9]
 identifier		{ident_start}{ident_cont}*
 
 integer         {digit}+
+decimal         {digit}+\.{digit}*
+real            ({integer}|{decimal})[Ee][-+]?{digit}+
 
 %x comment
 
@@ -67,6 +69,16 @@ integer         {digit}+
 
     printf("ICONST = %ld\n", yylval.ival);
     return ICONST;
+}
+
+{decimal} {
+    yylval.str = apr_pstrdup(SCANNER_POOL, yytext);
+    return FCONST;
+}
+
+{real} {
+    yylval.str = apr_pstrdup(SCANNER_POOL, yytext);
+    return FCONST;
 }
 
 {identifier} {
