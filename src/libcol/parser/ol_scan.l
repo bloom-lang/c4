@@ -1,4 +1,5 @@
 %{
+#include <apr_strings.h>
 #include <string.h>
 
 #include "col-internal.h"

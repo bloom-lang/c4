@@ -12,7 +12,8 @@
                                                __FILE__, __LINE__))
 
 void simple_error(const char *file, int line_num);
-void var_error(const char *file, int line_num, const char *fmt, ...);
+void var_error(const char *file, int line_num,
+               const char *fmt, ...) __attribute__((format(printf, 3, 4)));
 int assert_fail(const char *cond, const char *file, int line_num);
 
 #endif  /* ERROR_H */
