@@ -8,10 +8,9 @@
  * kept NUL-terminated). "maxlen" holds the amount of storage allocated
  * (maxlen - len - 1 is the amount of currently-free storage).
  *
- * Because APR pools are braindamaged and don't provide an equivalent to
- * either free() or realloc(), we currently allocate the buffer's storage
- * via malloc(), and register a cleanup function with the pool specified in
- * sbuf_make().
+ * Because APR pools don't provide an equivalent to either free() or
+ * realloc(), we currently allocate the buffer's storage via malloc(), and
+ * register a cleanup function with the pool specified in sbuf_make().
  *
  * Based on the StringInfo data type in PostgreSQL.
  */
@@ -25,7 +24,6 @@ typedef struct StrBuf
 
 StrBuf *sbuf_make(apr_pool_t *pool);
 void sbuf_reset(StrBuf *sbuf);
-
 char *sbuf_dup(StrBuf *sbuf, apr_pool_t *pool);
 
 void sbuf_append(StrBuf *sbuf, const char *str);

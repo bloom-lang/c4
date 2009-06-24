@@ -121,12 +121,14 @@ rule: opt_delete table_ref opt_rule_body {
     }
 };
 
-opt_delete: DELETE { $$ = true; }
-| /* EMPTY */ { $$ = false; }
+opt_delete:
+  DELETE        { $$ = true; }
+| /* EMPTY */   { $$ = false; }
 ;
 
-opt_rule_body: ':' '-' rule_body { $$ = $3; }
-| /* EMPTY */ { $$ = NULL; }
+opt_rule_body:
+  ':' '-' rule_body     { $$ = $3; }
+| /* EMPTY */           { $$ = NULL; }
 ;
 
 rule_body:
@@ -174,6 +176,7 @@ assignment: '%' column_ref OL_ASSIGN expr {
 expr:
   op_expr
 | const_expr
+| column_ref
 ;
 
 op_expr: expr '+' expr {
@@ -216,8 +219,9 @@ const_expr:
 }
 ;
 
-bool_const: OL_TRUE { $$ = true; }
-| OL_FALSE { $$ = false; }
+bool_const:
+  OL_TRUE       { $$ = true; }
+| OL_FALSE      { $$ = false; }
 ;
 
 column_ref_list:
