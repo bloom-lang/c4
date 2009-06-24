@@ -5,10 +5,13 @@
 #include "util/socket.h"
 
 Tuple *
-tuple_make(void)
+tuple_make(Schema *s, Datum *values)
 {
-    Tuple *t = (Tuple *) ol_alloc(sizeof(Tuple));
+    Tuple *t;
+
+    t = ol_alloc(sizeof(Tuple) + (s->len * sizeof(Datum)));
     t->refcount = 1;
+    memcpy(t + 1, values, s->len * sizeof(Datum));
     return t;
 }
 
