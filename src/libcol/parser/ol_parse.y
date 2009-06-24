@@ -7,7 +7,9 @@
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
-AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
+static AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
+static AstOpExpr *make_op_expr(ColParser *context, AstNode *lhs,
+                               AstNode *rhs, AstOperKind op_kind);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -184,14 +186,19 @@ expr:
 | column_ref
 ;
 
-op_expr: expr '+' expr {
-    AstOpExpr *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_OP_EXPR;
-    n->lhs = $1;
-    n->op_kind = AST_OP_PLUS;
-    n->rhs = $3;
-    $$ = n;
-};
+op_expr:
+  expr '+' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_PLUS); }
+| expr '-' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_MINUS); }
+| expr '*' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_TIMES); }
+| expr '/' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_DIVIDE); }
+| expr '%' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_MODULUS); }
+| expr '<' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_LT); }
+| expr '>' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_GT); }
+| expr OL_LTE expr      { $$ = make_op_expr(context, $1, $3, AST_OP_LTE); }
+| expr OL_GTE expr      { $$ = make_op_expr(context, $1, $3, AST_OP_GTE); }
+| expr OL_EQ expr       { $$ = make_op_expr(context, $1, $3, AST_OP_EQ); }
+| expr OL_NEQ expr      { $$ = make_op_expr(context, $1, $3, AST_OP_NEQ); }
+;
 
 const_expr:
   ICONST
@@ -256,12 +263,23 @@ yyerror(ColParser *context, void *scanner, const char *message)
     return 0;   /* return value ignored */
 }
 
-AstTableRef *
+static AstTableRef *
 make_table_ref(ColParser *context, char *name, List *cols)
 {
     AstTableRef *result = apr_pcalloc(context->pool, sizeof(*result));
     result->node.kind = AST_TABLE_REF;
     result->name = name;
     result->cols = cols;
+    return result;
+}
+
+static AstOpExpr *
+make_op_expr(ColParser *context, AstNode *lhs, AstNode *rhs, AstOperKind op_kind)
+{
+    AstOpExpr *result = apr_pcalloc(context->pool, sizeof(*result));
+    result->node.kind = AST_OP_EXPR;
+    result->lhs = lhs;
+    result->rhs = rhs;
+    result->op_kind = op_kind;
     return result;
 }
