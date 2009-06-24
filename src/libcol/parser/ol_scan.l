@@ -9,6 +9,8 @@
 #include "ol_parse.h"
 
 #define SCANNER_POOL yyget_extra(yyscanner)->pool
+
+static char unescape_char(char c);
 %}
 
 %option 8bit
@@ -40,12 +42,37 @@ decimal         {digit}+\.{digit}*
 real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 
 %x comment
+%x string
 
 %%
 "/*"                    { BEGIN(comment); }
 <comment>[^*]*          /* eat anything that's not a '*' */
 <comment>"*"+[^*/]*     /* eat up '*'s not followed by '/'s */
 <comment>"*"+"/"        { BEGIN(INITIAL); }
+
+\" {
+    ColParser *context = yyget_extra(yyscanner);
+    sbuf_reset(context->lit_buf);
+    BEGIN(string);
+}
+
+<string>\\. {
+    ColParser *context = yyget_extra(yyscanner);
+    sbuf_append_char(context->lit_buf, unescape_char(yytext[1]));
+}
+
+<string>[^\\\"]+ {
+    ColParser *context = yyget_extra(yyscanner);
+    sbuf_append_data(context->lit_buf, yytext, yyleng);
+}
+
+<string>\" {
+    ColParser *context = yyget_extra(yyscanner);
+    yylval.str = sbuf_dup(context->lit_buf, SCANNER_POOL);
+    BEGIN(INITIAL);
+    printf("SCONST = %s\n", yylval.str);
+    return SCONST;
+}
 
 {whitespace}            /* ignore */
 <INITIAL><<EOF>>        { yyterminate(); }
@@ -116,4 +143,24 @@ setup_scan_buf(const char *str, apr_size_t len, apr_pool_t *pool)
 	scan_buf[len] = scan_buf[len + 1] = YY_END_OF_BUFFER_CHAR;
 
     return scan_buf;
+}
+
+static char
+unescape_char(char c)
+{
+    switch (c)
+    {
+        case 'b':
+            return '\b';
+        case 'f':
+            return '\f';
+        case 'n':
+            return '\n';
+        case 'r':
+            return '\r';
+        case 't':
+            return '\t';
+        default:
+            return c;
+    }
 }

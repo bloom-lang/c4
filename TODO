@@ -4,3 +4,6 @@ Parser and lexer:
 * Negative integer and real constants => unary minus operator?
 * Unicode identifiers and string literals
 * Locking / concurrency control
+* In string literals, support the "\000" syntax (Octal ASCII
+  character) from C89; or perhaps some syntax for specifying Unicode
+  code points?

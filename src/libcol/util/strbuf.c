@@ -1,3 +1,5 @@
+#include <apr_strings.h>
+
 #include "col-internal.h"
 #include "util/strbuf.h"
 
@@ -9,13 +11,13 @@ sbuf_make(apr_pool_t *pool)
 {
     StrBuf *sbuf = ol_alloc(sizeof(*sbuf));
     sbuf->pool = pool;
-    sbuf->max_len = 0;
     sbuf->buf = ol_alloc(256);
+    sbuf->max_len = 256;
     sbuf_reset(sbuf);
 
-    /* Ensure that the sbuf is released when the pool is destroyed/cleared */
     apr_pool_cleanup_register(sbuf->pool, sbuf, sbuf_cleanup,
                               apr_pool_cleanup_null);
+
     return sbuf;
 }
 
@@ -37,14 +39,28 @@ sbuf_reset(StrBuf *sbuf)
     sbuf->len = 0;
 }
 
+/*
+ * Note that we can do much better than apr_pstrdup() for long strings,
+ * because we know the string's length in advance.
+ */
+char *
+sbuf_dup(StrBuf *sbuf, apr_pool_t *pool)
+{
+    return apr_pmemdup(pool, sbuf->buf, sbuf->len + 1);
+}
+
 void
 sbuf_append(StrBuf *sbuf, const char *str)
 {
-    apr_size_t slen = strlen(str);
+    sbuf_append_data(sbuf, str, strlen(str));
+}
 
-    sbuf_enlarge(sbuf, slen);
-    memcpy(sbuf->buf + sbuf->len, str, slen);
-    sbuf->len += slen;
+void
+sbuf_append_data(StrBuf *sbuf, const char *data, apr_size_t len)
+{
+    sbuf_enlarge(sbuf, len);
+    memcpy(sbuf->buf + sbuf->len, data, len);
+    sbuf->len += len;
     sbuf->buf[sbuf->len] = '\0';
 }
 

@@ -207,6 +207,13 @@ const_expr:
     n->val = $1;
     $$ = n;
 }
+| SCONST
+{
+    AstConstExprString *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_CONST_EXPR_STRING;
+    n->val = $1;
+    $$ = n;
+}
 ;
 
 bool_const: OL_TRUE { $$ = true; }

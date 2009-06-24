@@ -17,6 +17,7 @@ parser_make(ColInstance *col)
     pool = make_subpool(col->pool);
     parser = apr_pcalloc(pool, sizeof(*parser));
     parser->pool = pool;
+    parser->lit_buf = sbuf_make(parser->pool);
     return parser;
 }
 
