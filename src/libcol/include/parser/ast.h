@@ -97,12 +97,14 @@ typedef enum AstOperKind
     AST_OP_TIMES,
     AST_OP_DIVIDE,
     AST_OP_MODULUS,
+    AST_OP_UMINUS,
     AST_OP_LT,
     AST_OP_LTE,
     AST_OP_GT,
     AST_OP_GTE,
     AST_OP_EQ,
-    AST_OP_NEQ
+    AST_OP_NEQ,
+    AST_OP_ASSIGN
 } AstOperKind;
 
 typedef struct AstOpExpr

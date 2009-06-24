@@ -1,7 +1,6 @@
 Parser and lexer:
 
 * Support for parentheses
-* Negative integer and real constants => unary minus operator?
 * Trinary operator ?:
 * Unicode identifiers and string literals
 * Locking / concurrency control

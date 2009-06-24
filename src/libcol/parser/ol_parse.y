@@ -35,16 +35,18 @@ static AstOpExpr *make_op_expr(ColParser *context, AstNode *lhs,
 %token <str> IDENT FCONST SCONST
 %token <ival> ICONST
 
+%nonassoc OL_ASSIGN
 %left OL_EQ OL_NEQ
 %nonassoc '>' '<' OL_GTE OL_LTE
 %left '+' '-'
 %left '*' '/' '%'
+%left UMINUS
 
 %type <ptr>     clause define rule table_ref column_ref join_clause
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
-%type <ptr>     rule_body_elem assignment expr const_expr op_expr
+%type <ptr>     rule_body_elem predicate expr const_expr op_expr pred_expr
 %type <boolean> opt_delete opt_loc_spec opt_not bool_const
 %type <hash_v>  opt_hash_variant
 
@@ -139,13 +141,13 @@ opt_rule_body:
 ;
 
 rule_body:
-  rule_body_elem { $$ = list_make1($1, context->pool); }
-| rule_body ',' rule_body_elem { $$ = list_append($1, $3); }
+  rule_body_elem                { $$ = list_make1($1, context->pool); }
+| rule_body ',' rule_body_elem  { $$ = list_append($1, $3); }
 ;
 
 rule_body_elem:
   join_clause
-| assignment
+| predicate
 ;
 
 join_clause: opt_not IDENT opt_hash_variant '(' column_ref_list ')' {
@@ -172,13 +174,7 @@ table_ref: IDENT '(' column_ref_list ')' {
 };
 
 /* XXX: Temp hack to workaround parser issues */
-assignment: '%' column_ref OL_ASSIGN expr {
-    AstAssign *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_ASSIGN;
-    n->lhs = $2;
-    n->rhs = $4;
-    $$ = n;
-};
+predicate: '^' pred_expr { $$ = $2; };
 
 expr:
   op_expr
@@ -192,12 +188,24 @@ op_expr:
 | expr '*' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_TIMES); }
 | expr '/' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_DIVIDE); }
 | expr '%' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_MODULUS); }
-| expr '<' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_LT); }
+| '-' expr              { $$ = make_op_expr(context, $2, NULL, AST_OP_UMINUS); }
+| pred_expr             { $$ = $1; }
+;
+
+/*
+ * Note that we treat assignment as a predicate in the parser, because it
+ * would be painful to teach Bison how to tell the difference. Instead, we
+ * distinguish between assigments and predicates in the semantic analysis
+ * phase, and construct an AstAssign node there.
+ */
+pred_expr:
+  expr '<' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_LT); }
 | expr '>' expr         { $$ = make_op_expr(context, $1, $3, AST_OP_GT); }
 | expr OL_LTE expr      { $$ = make_op_expr(context, $1, $3, AST_OP_LTE); }
 | expr OL_GTE expr      { $$ = make_op_expr(context, $1, $3, AST_OP_GTE); }
 | expr OL_EQ expr       { $$ = make_op_expr(context, $1, $3, AST_OP_EQ); }
 | expr OL_NEQ expr      { $$ = make_op_expr(context, $1, $3, AST_OP_NEQ); }
+| column_ref OL_ASSIGN expr { $$ = make_op_expr(context, $1, $3, AST_OP_ASSIGN); }
 ;
 
 const_expr:
