@@ -28,7 +28,8 @@ AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE OL_ASSIGN OL_FALSE OL_TRUE
+%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
+       OL_ASSIGN OL_FALSE OL_TRUE
 %token <str> IDENT FCONST SCONST
 %token <ival> ICONST
 
@@ -56,12 +57,14 @@ program: program_header program_body {
 
 program_header: PROGRAM IDENT ';' { $$ = $2; };
 
-program_body: clause ';' program_body { $$ = list_prepend($3, $1); }
-| /* EMPTY */ { $$ = list_make(context->pool); }
+program_body:
+  clause ';' program_body       { $$ = list_prepend($3, $1); }
+| /* EMPTY */                   { $$ = list_make(context->pool); }
 ;
 
-clause: define { $$ = $1; };
-| rule { $$ = $1; }
+clause:
+  define        { $$ = $1; }
+| rule          { $$ = $1; }
 ;
 
 define: DEFINE '(' IDENT ',' opt_keys define_schema ')' {
@@ -77,24 +80,26 @@ define: DEFINE '(' IDENT ',' opt_keys define_schema ')' {
  * Note that we currently equate an empty key list with an absent key list;
  * this is inconsistent with JOL
  */
-opt_keys: KEYS '(' opt_int_list ')' ',' { $$ = $3; }
+opt_keys:
+  KEYS '(' opt_int_list ')' ',' { $$ = $3; }
 | /* EMPTY */ { $$ = NULL; }
 ;
 
 define_schema: '{' ident_list '}' { $$ = $2; };
 
-opt_int_list: int_list { $$ = $1; }
-| /* EMPTY */ { $$ = NULL; }
+opt_int_list:
+  int_list      { $$ = $1; }
+| /* EMPTY */   { $$ = NULL; }
 ;
 
 int_list:
-  ICONST { $$ = list_make1_int($1, context->pool); }
-| int_list ',' ICONST { $$ = list_append_int($1, $3); }
+  ICONST                { $$ = list_make1_int($1, context->pool); }
+| int_list ',' ICONST   { $$ = list_append_int($1, $3); }
 ;
 
 ident_list:
-  IDENT { $$ = list_make1($1, context->pool); }
-| ident_list ',' IDENT { $$ = list_append($1, $3); }
+  IDENT                 { $$ = list_make1($1, context->pool); }
+| ident_list ',' IDENT  { $$ = list_append($1, $3); }
 ;
 
 rule: opt_delete table_ref opt_rule_body {

@@ -95,7 +95,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
     if (*endptr != '\0')
         FAIL();
 
-    printf("ICONST = %ld\n", yylval.ival);
+    printf("ICONST = %" APR_INT64_T_FMT "\n", yylval.ival);
     return ICONST;
 }
 
