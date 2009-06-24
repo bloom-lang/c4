@@ -17,7 +17,8 @@ typedef enum AstNodeKind
     AST_CONST_EXPR_BOOL,
     AST_CONST_EXPR_DOUBLE,
     AST_CONST_EXPR_INT,
-    AST_CONST_EXPR_STRING
+    AST_CONST_EXPR_STRING,
+    AST_VAR_EXPR
 } AstNodeKind;
 
 typedef struct AstNode
@@ -66,7 +67,7 @@ typedef struct AstColumnRef
 {
     AstNode node;
     bool has_loc_spec;
-    char *name;
+    AstNode *expr;
 } AstColumnRef;
 
 typedef struct AstRule
@@ -138,5 +139,11 @@ typedef struct AstConstExprString
     AstNode node;
     char *val;
 } AstConstExprString;
+
+typedef struct AstVarExpr
+{
+    AstNode node;
+    char *name;
+} AstVarExpr;
 
 #endif  /* AST_H */

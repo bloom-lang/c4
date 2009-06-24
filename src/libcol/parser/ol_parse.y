@@ -10,6 +10,8 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 static AstTableRef *make_table_ref(ColParser *context, char *name, List *cols);
 static AstOpExpr *make_op_expr(ColParser *context, AstNode *lhs,
                                AstNode *rhs, AstOperKind op_kind);
+static AstColumnRef *make_column_ref(ColParser *context, bool has_loc_spec,
+                                     AstNode *expr);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -46,8 +48,9 @@ static AstOpExpr *make_op_expr(ColParser *context, AstNode *lhs,
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
-%type <ptr>     rule_body_elem predicate expr const_expr op_expr pred_expr
-%type <boolean> opt_delete opt_loc_spec opt_not bool_const
+%type <ptr>     rule_body_elem predicate pred_expr expr const_expr op_expr
+%type <ptr>     var_expr column_ref_expr
+%type <boolean> opt_delete opt_not bool_const
 %type <hash_v>  opt_hash_variant
 
 %%
@@ -179,7 +182,7 @@ predicate: '^' pred_expr { $$ = $2; };
 expr:
   op_expr
 | const_expr
-| column_ref
+| var_expr
 ;
 
 op_expr:
@@ -244,22 +247,26 @@ bool_const:
 | OL_FALSE      { $$ = false; }
 ;
 
+var_expr: IDENT {
+    AstVarExpr *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_VAR_EXPR;
+    n->name = $1;
+    $$ = n;
+};
+
 column_ref_list:
   column_ref { $$ = list_make1($1, context->pool); }
 | column_ref_list ',' column_ref { $$ = list_append($1, $3); }
 ;
 
-column_ref: opt_loc_spec IDENT
-{
-    AstColumnRef *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_COLUMN_REF;
-    n->has_loc_spec = $1;
-    n->name = $2;
-    $$ = n;
-};
+column_ref:
+  '@' column_ref_expr   { $$ = make_column_ref(context, true, $2); }
+| column_ref_expr       { $$ = make_column_ref(context, false, $1); }
+;
 
-opt_loc_spec: '@'       { $$ = true; }
-| /* EMPTY */           { $$ = false; }
+column_ref_expr:
+  const_expr
+| var_expr
 ;
 
 %%
@@ -289,5 +296,15 @@ make_op_expr(ColParser *context, AstNode *lhs, AstNode *rhs, AstOperKind op_kind
     result->lhs = lhs;
     result->rhs = rhs;
     result->op_kind = op_kind;
+    return result;
+}
+
+static AstColumnRef *
+make_column_ref(ColParser *context, bool has_loc_spec, AstNode *expr)
+{
+    AstColumnRef *result = apr_pcalloc(context->pool, sizeof(*result));
+    result->node.kind = AST_COLUMN_REF;
+    result->has_loc_spec = has_loc_spec;
+    result->expr = expr;
     return result;
 }
