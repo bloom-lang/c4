@@ -42,7 +42,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 
     /* Validate the keys list */
     if (list_length(def->keys) > list_length(def->schema))
-        ERROR("Key list exceeds schema length for table %s",
+        ERROR("Key list exceeds schema length of table %s",
               def->name);
 
     seen_keys = list_make(state->pool);
@@ -54,10 +54,10 @@ analyze_define(AstDefine *def, AnalyzeState *state)
             ERROR("Negative key %d in table %s", key, def->name);
 
         if (list_member_int(seen_keys, key))
-            ERROR("Duplicate key %d for table %s", key, def->name);
+            ERROR("Duplicate key %d in table %s", key, def->name);
 
         if (key >= list_length(def->schema))
-            ERROR("Key index %d exceeds schema length for table %s",
+            ERROR("Key index %d exceeds schema length in table %s",
                   key, def->name);
 
         list_append_int(seen_keys, key);

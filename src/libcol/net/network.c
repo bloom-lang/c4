@@ -103,7 +103,7 @@ network_thread_main(apr_thread_t *thread, void *data)
 
         /*
          * We need to preallocate the RecvThread's pool, so that we can
-         * include the socket in it.
+         * allocate the client socket in it.
          */
         recv_pool = make_subpool(net->pool);
 

@@ -17,9 +17,12 @@
 struct ColInstance
 {
     apr_pool_t *pool;
+    struct ColCatalog *cat;
     struct ColRouter *router;
     struct ColNetwork *net;
     int port;
+
+    /* XXX: temporary */
     char target_loc_spec[128];
     int target_port;
 };

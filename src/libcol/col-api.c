@@ -5,6 +5,7 @@
 #include "parser/analyze.h"
 #include "parser/parser.h"
 #include "router.h"
+#include "types/catalog.h"
 
 void
 col_initialize(void)
@@ -33,6 +34,7 @@ col_make(int port)
 
     col = apr_pcalloc(pool, sizeof(*col));
     col->pool = pool;
+    col->cat = cat_make(col);
     col->router = router_make(col);
     col->net = network_make(col, port);
     col->port = port;
