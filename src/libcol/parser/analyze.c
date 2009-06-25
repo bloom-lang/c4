@@ -3,6 +3,7 @@
 
 #include "col-internal.h"
 #include "parser/analyze.h"
+#include "parser/makefuncs.h"
 #include "types/schema.h"
 
 typedef struct AnalyzeState
@@ -31,7 +32,9 @@ static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
-static AstVarExpr *make_anon_var(const char *prefix, AnalyzeState *state);
+static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
+static void add_predicate(char *lhs, char *rhs, AstOperKind op_kind,
+                          AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
 static bool is_dont_care_var(AstNode *node);
 static bool is_const_expr(AstNode *node);
@@ -186,10 +189,9 @@ define_var(AstVarExpr *var, AnalyzeState *state)
                  APR_HASH_KEY_STRING, var);
 }
 
-static AstVarExpr *
-make_anon_var(const char *prefix, AnalyzeState *state)
+static char *
+make_anon_var_name(const char *prefix, AnalyzeState *state)
 {
-    AstVarExpr *var;
     char var_name[128];
 
     while (true)
@@ -198,13 +200,8 @@ make_anon_var(const char *prefix, AnalyzeState *state)
                  prefix, state->tmp_varno++);
 
         if (!is_var_defined(var_name, state))
-            break;
+            return apr_pstrdup(state->pool, var_name);
     }
-
-    var = apr_pcalloc(state->pool, sizeof(*var));
-    var->node.kind = AST_VAR_EXPR;
-    var->name = apr_pstrdup(state->pool, var_name);
-    return var;
 }
 
 static void
@@ -237,24 +234,43 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
             ASSERT(cref->node.kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
 
-            /* Has this variable name already been used in this rule? */
+            /*
+             * Check if the variable name has already been used in this
+             * rule. If it has, then assign a new system-generated name to
+             * the variable, and add an equality predicate between the new
+             * and old variable names.
+             */
             if (!is_var_defined(var->name, state))
             {
                 define_var(var, state);
             }
             else
             {
-                AstVarExpr *new_var;
+                char *old_name = var->name;
 
-                new_var = make_anon_var(var->name, state);
-                cref->expr = (AstNode *) new_var;
-                define_var(new_var, state);
-#if 0
-                add_eq_predicate();
-#endif
+                var->name = make_anon_var_name(var->name, state);
+                define_var(var, state);
+                add_predicate(old_name, var->name, AST_OP_EQ, state);
             }
         }
     }
+}
+
+static void
+add_predicate(char *lhs, char *rhs,
+              AstOperKind op_kind, AnalyzeState *state)
+{
+    AstVarExpr *lhs_expr;
+    AstVarExpr *rhs_expr;
+    AstOpExpr *op_expr;
+    AstPredicate *pred;
+
+    lhs_expr = make_var_expr(lhs, state->pool);
+    rhs_expr = make_var_expr(rhs, state->pool);
+    op_expr = make_op_expr((AstNode *) lhs_expr, (AstNode *) rhs_expr, op_kind, state->pool);
+    pred = make_predicate((AstNode *) op_expr, state->pool);
+
+    list_append(state->program->clauses, pred);
 }
 
 static void
