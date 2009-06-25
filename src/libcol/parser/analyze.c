@@ -12,6 +12,9 @@ typedef struct AnalyzeState
     apr_hash_t *define_tbl;
     apr_hash_t *rule_tbl;
 
+    /* Current index for system-generated rule names */
+    int tmp_ruleno;
+
     /* Per-rule state: */
     /* Table mapping var name => AstVarExpr */
     apr_hash_t *var_tbl;
@@ -24,6 +27,8 @@ static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AnalyzeState *state);
 static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
 
+static char *make_anon_rule_name(AnalyzeState *state);
+static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(AstVarExpr *var, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static AstVarExpr *make_anon_var(const char *prefix, AnalyzeState *state);
@@ -98,6 +103,22 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     printf("RULE => %s\n", rule->head->name);
 
+    /*
+     * If the rule has a user-defined name, check that it is unique within
+     * the current program. If no name was provided, generate a unique name.
+     */
+    if (rule->name)
+    {
+        if (is_rule_defined(rule->name, state))
+            ERROR("Duplicate rule name: %s", rule->name);
+    }
+    else
+    {
+        rule->name = make_anon_rule_name(state);
+    }
+
+    apr_hash_set(state->rule_tbl, rule->name, APR_HASH_KEY_STRING, rule);
+
     /* Check the rule body */
     foreach (lc, rule->body)
     {
@@ -126,6 +147,21 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
         if (is_dont_care_var(col->expr))
             ERROR("Don't care variables (\"_\") cannot appear in rule heads");
+    }
+}
+
+static char *
+make_anon_rule_name(AnalyzeState *state)
+{
+    char rule_name[128];
+
+    while (true)
+    {
+        snprintf(rule_name, sizeof(rule_name), "r_%d_sys",
+                 state->tmp_ruleno++);
+
+        if (!is_rule_defined(rule_name, state))
+            return apr_pstrdup(state->pool, rule_name);
     }
 }
 
@@ -183,6 +219,13 @@ static bool
 is_var_defined(AstVarExpr *var, AnalyzeState *state)
 {
     return (bool) (apr_hash_get(state->var_tbl, var->name,
+                                APR_HASH_KEY_STRING) != NULL);
+}
+
+static bool
+is_rule_defined(const char *name, AnalyzeState *state)
+{
+    return (bool) (apr_hash_get(state->rule_tbl, name,
                                 APR_HASH_KEY_STRING) != NULL);
 }
 
@@ -254,6 +297,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
+    state->tmp_ruleno = 0;
 
     printf("Program name: %s; # of clauses: %d\n",
            program->name, list_length(program->clauses));
