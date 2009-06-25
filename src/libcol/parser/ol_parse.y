@@ -12,6 +12,8 @@ static AstOpExpr *make_op_expr(ColParser *context, AstNode *lhs,
                                AstNode *rhs, AstOperKind op_kind);
 static AstColumnRef *make_column_ref(ColParser *context, bool has_loc_spec,
                                      AstNode *expr);
+static AstRule *make_rule(ColParser *context, char *name,
+                          bool is_delete, AstTableRef *head);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -49,8 +51,8 @@ static AstColumnRef *make_column_ref(ColParser *context, bool has_loc_spec,
 %type <list>    program_body opt_int_list int_list ident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem predicate pred_expr expr const_expr op_expr
-%type <ptr>     var_expr column_ref_expr
-%type <boolean> opt_delete opt_not bool_const
+%type <ptr>     var_expr column_ref_expr rule_prefix
+%type <boolean> opt_not bool_const opt_delete
 %type <hash_v>  opt_hash_variant
 
 %%
@@ -109,33 +111,39 @@ ident_list:
 | ident_list ',' IDENT  { $$ = list_append($1, $3); }
 ;
 
-rule: opt_delete table_ref opt_rule_body {
-    if ($3 == NULL)
+rule: rule_prefix opt_rule_body {
+    AstRule *rule = (AstRule *) $1;
+
+    if ($2 == NULL)
     {
-        /* A rule without a body is a fact */
+        /* A rule without a body is actually a fact */
         AstFact *n = parser_alloc(sizeof(*n));
         n->node.kind = AST_FACT;
-        n->head = $2;
+        n->head = rule->head;
 
-        if ($1)
+        if (rule->name != NULL)
+            ERROR("Cannot assign a name to facts");
+        if (rule->is_delete)
             ERROR("Cannot specify \"delete\" in a fact");
 
         $$ = n;
     }
     else
     {
-        AstRule *n = parser_alloc(sizeof(*n));
-        n->node.kind = AST_RULE;
-        n->is_delete = $1;
-        n->head = $2;
-        n->body = $3;
-        $$ = n;
+        rule->body = $2;
+        $$ = rule;
     }
 };
 
+rule_prefix:
+  IDENT opt_delete table_ref    { $$ = make_rule(context, $1, $2, $3); }
+| DELETE table_ref              { $$ = make_rule(context, NULL, true, $2); }
+| table_ref                     { $$ = make_rule(context, NULL, false, $1); }
+;
+
 opt_delete:
-  DELETE        { $$ = true; }
-| /* EMPTY */   { $$ = false; }
+DELETE { $$ = true; }
+| { $$ = false; }
 ;
 
 opt_rule_body:
@@ -311,5 +319,15 @@ make_column_ref(ColParser *context, bool has_loc_spec, AstNode *expr)
     result->node.kind = AST_COLUMN_REF;
     result->has_loc_spec = has_loc_spec;
     result->expr = expr;
+    return result;
+}
+
+static AstRule *
+make_rule(ColParser *context, char *name, bool is_delete, AstTableRef *head)
+{
+    AstRule *result = apr_pcalloc(context->pool, sizeof(*result));
+    result->name = name;
+    result->is_delete = is_delete;
+    result->head = head;
     return result;
 }

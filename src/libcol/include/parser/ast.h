@@ -81,9 +81,10 @@ typedef struct AstColumnRef
 typedef struct AstRule
 {
     AstNode node;
-    bool is_delete;
+    char *name;
     AstTableRef *head;
     List *body;
+    bool is_delete;
 } AstRule;
 
 typedef struct AstFact

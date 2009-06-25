@@ -10,6 +10,7 @@ typedef struct AnalyzeState
     apr_pool_t *pool;
     AstProgram *program;
     apr_hash_t *define_tbl;
+    apr_hash_t *rule_tbl;
 
     /* Per-rule state: */
     /* Table mapping var name => AstVarExpr */
@@ -251,6 +252,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->pool = pool;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
+    state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
 
     printf("Program name: %s; # of clauses: %d\n",
