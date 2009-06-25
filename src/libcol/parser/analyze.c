@@ -29,7 +29,7 @@ static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
 
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
-static bool is_var_defined(AstVarExpr *var, AnalyzeState *state);
+static bool is_var_defined(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static AstVarExpr *make_anon_var(const char *prefix, AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
@@ -165,6 +165,48 @@ make_anon_rule_name(AnalyzeState *state)
     }
 }
 
+static bool
+is_rule_defined(const char *name, AnalyzeState *state)
+{
+    return (bool) (apr_hash_get(state->rule_tbl, name,
+                                APR_HASH_KEY_STRING) != NULL);
+}
+
+static bool
+is_var_defined(const char *name, AnalyzeState *state)
+{
+    return (bool) (apr_hash_get(state->var_tbl, name,
+                                APR_HASH_KEY_STRING) != NULL);
+}
+
+static void
+define_var(AstVarExpr *var, AnalyzeState *state)
+{
+    apr_hash_set(state->var_tbl, var->name,
+                 APR_HASH_KEY_STRING, var);
+}
+
+static AstVarExpr *
+make_anon_var(const char *prefix, AnalyzeState *state)
+{
+    AstVarExpr *var;
+    char var_name[128];
+
+    while (true)
+    {
+        snprintf(var_name, sizeof(var_name), "%s_%d",
+                 prefix, state->tmp_varno++);
+
+        if (!is_var_defined(var_name, state))
+            break;
+    }
+
+    var = apr_pcalloc(state->pool, sizeof(*var));
+    var->node.kind = AST_VAR_EXPR;
+    var->name = apr_pstrdup(state->pool, var_name);
+    return var;
+}
+
 static void
 analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
 {
@@ -196,7 +238,7 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
             var = (AstVarExpr *) cref->expr;
 
             /* Has this variable name already been used in this rule? */
-            if (is_var_defined(var, state) == false)
+            if (!is_var_defined(var->name, state))
             {
                 define_var(var, state);
             }
@@ -213,38 +255,6 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
             }
         }
     }
-}
-
-static bool
-is_var_defined(AstVarExpr *var, AnalyzeState *state)
-{
-    return (bool) (apr_hash_get(state->var_tbl, var->name,
-                                APR_HASH_KEY_STRING) != NULL);
-}
-
-static bool
-is_rule_defined(const char *name, AnalyzeState *state)
-{
-    return (bool) (apr_hash_get(state->rule_tbl, name,
-                                APR_HASH_KEY_STRING) != NULL);
-}
-
-static void
-define_var(AstVarExpr *var, AnalyzeState *state)
-{
-    apr_hash_set(state->var_tbl, var->name,
-                 APR_HASH_KEY_STRING, var);
-}
-
-static AstVarExpr *
-make_anon_var(const char *prefix, AnalyzeState *state)
-{
-    AstVarExpr *var = apr_pcalloc(state->pool, sizeof(*var));
-    var->node.kind = AST_VAR_EXPR;
-    var->name = apr_psprintf(state->pool, "%s_%d",
-                             prefix, state->tmp_varno++);
-    ASSERT(!is_var_defined(var, state));
-    return var;
 }
 
 static void
