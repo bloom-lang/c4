@@ -9,10 +9,10 @@ typedef enum DataType
 {
     TYPE_BOOL,
     TYPE_CHAR,
+    TYPE_DOUBLE,
     TYPE_INT2,
     TYPE_INT4,
     TYPE_INT8,
-    TYPE_DOUBLE,
     TYPE_STRING
 } DataType;
 

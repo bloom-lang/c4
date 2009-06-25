@@ -2,6 +2,7 @@
 
 #include "col-internal.h"
 #include "parser/analyze.h"
+#include "types/schema.h"
 
 typedef struct AnalyzeState
 {
@@ -13,6 +14,8 @@ typedef struct AnalyzeState
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
 static bool is_dont_care_var(AstNode *node);
+static DataType expr_get_type(AstNode *node, AnalyzeState *state);
+static DataType op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state);
 
 static void
 analyze_define(AstDefine *def, AnalyzeState *state)
@@ -183,6 +186,8 @@ is_valid_type(const char *type_name)
 {
     if (strcmp(type_name, "bool") == 0)
         return true;
+    if (strcmp(type_name, "char") == 0)
+        return true;
     if (strcmp(type_name, "double") == 0)
         return true;
     if (strcmp(type_name, "int") == 0)
@@ -209,4 +214,61 @@ is_dont_care_var(AstNode *node)
 
     var = (AstVarExpr *) node;
     return (bool) (strcmp(var->name, "_") == 0);
+}
+
+static DataType
+expr_get_type(AstNode *node, AnalyzeState *state)
+{
+    switch (node->kind)
+    {
+        case AST_OP_EXPR:
+            return op_expr_get_type((AstOpExpr *) node, state);
+
+        case AST_VAR_EXPR:
+            break;
+
+#if 0
+        case AST_CONST_EXPR:
+            break;
+#endif
+
+        default:
+            ERROR("unexpected node kind: %d", (int) node->kind);
+    }
+}
+
+static DataType
+op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
+{
+    switch (op_expr->op_kind)
+    {
+        case AST_OP_LT:
+        case AST_OP_LTE:
+        case AST_OP_GT:
+        case AST_OP_GTE:
+        case AST_OP_EQ:
+        case AST_OP_NEQ:
+            return TYPE_BOOL;
+
+        case AST_OP_UMINUS:
+            return expr_get_type(op_expr->lhs, state);
+
+        case AST_OP_PLUS:
+        case AST_OP_MINUS:
+        case AST_OP_TIMES:
+        case AST_OP_DIVIDE:
+        case AST_OP_MODULUS:
+        {
+            DataType lhs_type = expr_get_type(op_expr->lhs, state);
+            DataType rhs_type = expr_get_type(op_expr->rhs, state);
+
+            /* XXX: probably too strict; need to allow implicit casts */
+            ASSERT(lhs_type == rhs_type);
+            return lhs_type;
+        }
+
+        case AST_OP_ASSIGN:
+            FAIL();
+            break;
+    }
 }
