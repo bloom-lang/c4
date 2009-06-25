@@ -1,4 +1,5 @@
 #include <apr_hash.h>
+#include <apr_strings.h>
 
 #include "col-internal.h"
 #include "parser/analyze.h"
@@ -9,13 +10,30 @@ typedef struct AnalyzeState
     apr_pool_t *pool;
     AstProgram *program;
     apr_hash_t *define_tbl;
+
+    /* Per-rule state: */
+    /* Table mapping var name => AstVarExpr */
+    apr_hash_t *var_tbl;
+    /* Current index for system-assigned variable names */
+    int tmp_varno;
 } AnalyzeState;
 
+
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
+static void analyze_join_clause(AstJoinClause *join, AnalyzeState *state);
+static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
+
+static bool is_var_defined(AstVarExpr *var, AnalyzeState *state);
+static void define_var(AstVarExpr *var, AnalyzeState *state);
+static AstVarExpr *make_anon_var(const char *prefix, AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
 static bool is_dont_care_var(AstNode *node);
+static bool is_const_expr(AstNode *node);
 static DataType expr_get_type(AstNode *node, AnalyzeState *state);
 static DataType op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state);
+static DataType const_expr_get_type(AstNode *node, AnalyzeState *state);
+static DataType var_expr_get_type(AstVarExpr *var, AnalyzeState *state);
+
 
 static void
 analyze_define(AstDefine *def, AnalyzeState *state)
@@ -73,7 +91,31 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
 
+    /* Reset per-rule state */
+    apr_hash_clear(state->var_tbl);
+    state->tmp_varno = 0;
+
     printf("RULE => %s\n", rule->head->name);
+
+    /* Check the rule body */
+    foreach (lc, rule->body)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        switch (node->kind)
+        {
+            case AST_JOIN_CLAUSE:
+                analyze_join_clause((AstJoinClause *) node, state);
+                break;
+
+            case AST_PREDICATE:
+                analyze_predicate((AstPredicate *) node, state);
+                break;
+
+            default:
+                ERROR("Unrecognized node kind: %d", node->kind);
+        }
+    }
 
     /* Check the rule head */
     analyze_table_ref(rule->head, state);
@@ -84,21 +126,87 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         if (is_dont_care_var(col->expr))
             ERROR("Don't care variables (\"_\") cannot appear in rule heads");
     }
+}
 
-    /* Check the rule body */
-    foreach (lc, rule->body)
+static void
+analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
+{
+    AstDefine *define;
+    ListCell *lc;
+
+    define = apr_hash_get(state->define_tbl, join->ref->name,
+                          APR_HASH_KEY_STRING);
+    if (define == NULL)
+        ERROR("No such table \"%s\"", join->ref->name);
+
+    foreach (lc, join->ref->cols)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
 
-        switch (node->kind)
+        /*
+         * Rewrite constants in join clauses into an additional predicate "v
+         * = k" on a variable with a system-generated name "v".
+         */
+        if (is_const_expr(cref->expr))
         {
-            case AST_TABLE_REF:
-                break;
+            ;
+        }
+        else
+        {
+            AstVarExpr *var;
 
-            default:
-                ERROR("Unrecognized node kind: %d", node->kind);
+            ASSERT(cref->node.kind == AST_VAR_EXPR);
+            var = (AstVarExpr *) cref->expr;
+
+            /* Has this variable name already been used in this rule? */
+            if (is_var_defined(var, state) == false)
+            {
+                define_var(var, state);
+            }
+            else
+            {
+                AstVarExpr *new_var;
+
+                new_var = make_anon_var(var->name, state);
+                cref->expr = (AstNode *) new_var;
+                define_var(new_var, state);
+#if 0
+                add_eq_predicate();
+#endif
+            }
         }
     }
+}
+
+static bool
+is_var_defined(AstVarExpr *var, AnalyzeState *state)
+{
+    return (bool) (apr_hash_get(state->var_tbl, var->name,
+                                APR_HASH_KEY_STRING) != NULL);
+}
+
+static void
+define_var(AstVarExpr *var, AnalyzeState *state)
+{
+    apr_hash_set(state->var_tbl, var->name,
+                 APR_HASH_KEY_STRING, var);
+}
+
+static AstVarExpr *
+make_anon_var(const char *prefix, AnalyzeState *state)
+{
+    AstVarExpr *var = apr_pcalloc(state->pool, sizeof(*var));
+    var->node.kind = AST_VAR_EXPR;
+    var->name = apr_psprintf(state->pool, "%s_%d",
+                             prefix, state->tmp_varno++);
+    ASSERT(!is_var_defined(var, state));
+    return var;
+}
+
+static void
+analyze_predicate(AstPredicate *pred, AnalyzeState *state)
+{
+    ;
 }
 
 static void
@@ -143,6 +251,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->pool = pool;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
+    state->var_tbl = apr_hash_make(pool);
 
     printf("Program name: %s; # of clauses: %d\n",
            program->name, list_length(program->clauses));
@@ -225,15 +334,14 @@ expr_get_type(AstNode *node, AnalyzeState *state)
             return op_expr_get_type((AstOpExpr *) node, state);
 
         case AST_VAR_EXPR:
-            break;
-
-#if 0
-        case AST_CONST_EXPR:
-            break;
-#endif
+            return var_expr_get_type((AstVarExpr *) node, state);
 
         default:
+            if (is_const_expr(node))
+                return const_expr_get_type(node, state);
+
             ERROR("unexpected node kind: %d", (int) node->kind);
+            return 0;   /* keep compiler quiet */
     }
 }
 
@@ -268,7 +376,57 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
         }
 
         case AST_OP_ASSIGN:
+        default:
             FAIL();
-            break;
+            return 0;   /* keep compiler quiet */
     }
+}
+
+static bool
+is_const_expr(AstNode *node)
+{
+    switch (node->kind)
+    {
+        case AST_CONST_EXPR_BOOL:
+        case AST_CONST_EXPR_CHAR:
+        case AST_CONST_EXPR_DOUBLE:
+        case AST_CONST_EXPR_INT:
+        case AST_CONST_EXPR_STRING:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+static DataType
+const_expr_get_type(AstNode *node, AnalyzeState *state)
+{
+    switch (node->kind)
+    {
+        case AST_CONST_EXPR_BOOL:
+            return TYPE_BOOL;
+
+        case AST_CONST_EXPR_CHAR:
+            return TYPE_CHAR;
+
+        case AST_CONST_EXPR_DOUBLE:
+            return TYPE_DOUBLE;
+
+        case AST_CONST_EXPR_INT:
+            return TYPE_INT8;
+
+        case AST_CONST_EXPR_STRING:
+            return TYPE_STRING;
+
+        default:
+            ERROR("unexpected node kind: %d", (int) node->kind);
+            return 0;   /* keep compiler quiet */
+    }
+}
+
+static DataType
+var_expr_get_type(AstVarExpr *var, AnalyzeState *state)
+{
+    
 }

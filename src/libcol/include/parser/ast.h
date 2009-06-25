@@ -12,9 +12,11 @@ typedef enum AstNodeKind
     AST_TABLE_REF,
     AST_COLUMN_REF,
     AST_JOIN_CLAUSE,
+    AST_PREDICATE,
     AST_ASSIGN,
     AST_OP_EXPR,
     AST_CONST_EXPR_BOOL,
+    AST_CONST_EXPR_CHAR,
     AST_CONST_EXPR_DOUBLE,
     AST_CONST_EXPR_INT,
     AST_CONST_EXPR_STRING,
@@ -55,13 +57,19 @@ typedef enum AstHashVariant
     AST_HASH_INSERT
 } AstHashVariant;
 
-typedef struct JoinClause
+typedef struct AstJoinClause
 {
     AstNode node;
     AstTableRef *ref;
     bool not;
     AstHashVariant hash_variant;
-} JoinClause;
+} AstJoinClause;
+
+typedef struct AstPredicate
+{
+    AstNode node;
+    AstNode *expr;
+} AstPredicate;
 
 typedef struct AstColumnRef
 {
@@ -121,6 +129,12 @@ typedef struct AstConstExprBool
     AstNode node;
     bool val;
 } AstConstExprBool;
+
+typedef struct AstConstExprChar
+{
+    AstNode node;
+    unsigned char val;
+} AstConstExprChar;
 
 typedef struct AstConstExprDouble
 {

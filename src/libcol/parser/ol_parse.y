@@ -154,7 +154,7 @@ rule_body_elem:
 ;
 
 join_clause: opt_not IDENT opt_hash_variant '(' column_ref_list ')' {
-    JoinClause *n = parser_alloc(sizeof(*n));
+    AstJoinClause *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_JOIN_CLAUSE;
     n->not = $1;
     n->hash_variant = $3;
@@ -177,7 +177,12 @@ table_ref: IDENT '(' column_ref_list ')' {
 };
 
 /* XXX: Temp hack to workaround parser issues */
-predicate: '^' pred_expr { $$ = $2; };
+predicate: '^' pred_expr {
+    AstPredicate *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_PREDICATE;
+    n->expr = $2;
+    $$ = n;
+};
 
 expr:
   op_expr
