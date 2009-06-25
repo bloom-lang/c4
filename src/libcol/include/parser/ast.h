@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include "types/schema.h"
 #include "util/list.h"
 
 typedef enum AstNodeKind
@@ -159,6 +160,8 @@ typedef struct AstVarExpr
 {
     AstNode node;
     char *name;
+    /* Filled-in by the analysis phase */
+    DataType type;
 } AstVarExpr;
 
 #endif  /* AST_H */

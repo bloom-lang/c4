@@ -22,8 +22,8 @@ typedef struct Tuple
 {
     /*
      * XXX: This could be smaller, but APR's atomic ops are only defined for
-     * apr_uint32_t. (Atomic ops are for used because we might be touching
-     * the refcount from multiple threads concurrently.)
+     * apr_uint32_t. (Atomic ops are used because we might be touching the
+     * refcount from multiple threads concurrently.)
      */
     apr_uint32_t refcount;
     Schema *schema;

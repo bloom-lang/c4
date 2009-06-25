@@ -4,7 +4,6 @@
 #include "col-internal.h"
 #include "parser/analyze.h"
 #include "parser/makefuncs.h"
-#include "types/schema.h"
 
 typedef struct AnalyzeState
 {
@@ -33,6 +32,8 @@ static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
+static void set_var_type(AstVarExpr *var, AstDefine *table,
+                         int colno, AnalyzeState *state);
 static void add_predicate(char *lhs, char *rhs, AstOperKind op_kind,
                           AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
@@ -208,6 +209,7 @@ static void
 analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
 {
     AstDefine *define;
+    int col_idx;
     ListCell *lc;
 
     define = apr_hash_get(state->define_tbl, join->ref->name,
@@ -215,6 +217,7 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
     if (define == NULL)
         ERROR("No such table \"%s\"", join->ref->name);
 
+    col_idx = 0;
     foreach (lc, join->ref->cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
@@ -233,12 +236,13 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
 
             ASSERT(cref->node.kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
+            set_var_type(var, define, col_idx, state);
 
             /*
-             * Check if the variable name has already been used in this
-             * rule. If it has, then assign a new system-generated name to
-             * the variable, and add an equality predicate between the new
-             * and old variable names.
+             * Check if the variable name has already been used by a
+             * JoinClause in this rule.  If it has, then assign a new
+             * system-generated name to the variable, and add an equality
+             * predicate between the new and old variable names.
              */
             if (!is_var_defined(var->name, state))
             {
@@ -253,12 +257,19 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
                 add_predicate(old_name, var->name, AST_OP_EQ, state);
             }
         }
+
+        col_idx++;
     }
 }
 
 static void
-add_predicate(char *lhs, char *rhs,
-              AstOperKind op_kind, AnalyzeState *state)
+set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
+{
+    ;
+}
+
+static void
+add_predicate(char *lhs, char *rhs, AstOperKind op_kind, AnalyzeState *state)
 {
     AstVarExpr *lhs_expr;
     AstVarExpr *rhs_expr;
@@ -267,7 +278,8 @@ add_predicate(char *lhs, char *rhs,
 
     lhs_expr = make_var_expr(lhs, state->pool);
     rhs_expr = make_var_expr(rhs, state->pool);
-    op_expr = make_op_expr((AstNode *) lhs_expr, (AstNode *) rhs_expr, op_kind, state->pool);
+    op_expr = make_op_expr((AstNode *) lhs_expr, (AstNode *) rhs_expr,
+                           op_kind, state->pool);
     pred = make_predicate((AstNode *) op_expr, state->pool);
 
     list_append(state->program->clauses, pred);
@@ -309,8 +321,15 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
               "Expected: %d, encountered %d",
               ref->name, list_length(define->schema),
               list_length(ref->cols));
+
+    /* XXX: ... */
 }
 
+/*
+ * Invoke the semantic analyzer on the specified program. Note that the
+ * analysis phase is side-effecting: the input AstProgram is destructively
+ * modified.
+ */
 void
 analyze_ast(AstProgram *program, apr_pool_t *pool)
 {
