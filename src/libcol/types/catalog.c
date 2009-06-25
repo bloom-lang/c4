@@ -27,7 +27,17 @@ cat_make(ColInstance *col)
 }
 
 Schema *
-cat_get_schema(ColCatalog *cat, const char *schema_name)
+cat_get_schema(ColCatalog *cat, const char *name)
 {
-    return apr_hash_get(cat->schema_tbl, schema_name, APR_HASH_KEY_STRING);
+    return apr_hash_get(cat->schema_tbl, name, APR_HASH_KEY_STRING);
+}
+
+void
+cat_set_schema(ColCatalog *cat, const char *name, Schema *schema)
+{
+    if (cat_get_schema(cat, name) != NULL)
+        ERROR("duplicate schema definition: %s", name);
+
+    apr_hash_set(cat->schema_tbl, name,
+                 APR_HASH_KEY_STRING, schema);
 }

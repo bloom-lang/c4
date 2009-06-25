@@ -12,6 +12,7 @@ typedef struct AnalyzeState
 
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
+static bool is_dont_care_var(AstNode *node);
 
 static void
 analyze_define(AstDefine *def, AnalyzeState *state)
@@ -71,8 +72,17 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     printf("RULE => %s\n", rule->head->name);
 
+    /* Check the rule head */
     analyze_table_ref(rule->head, state);
+    foreach (lc, rule->head->cols)
+    {
+        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
+        if (is_dont_care_var(col->expr))
+            ERROR("Don't care variables (\"_\") cannot appear in rule heads");
+    }
+
+    /* Check the rule body */
     foreach (lc, rule->body)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
@@ -107,7 +117,17 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
     define = apr_hash_get(state->define_tbl, ref->name,
                           APR_HASH_KEY_STRING);
     if (define == NULL)
-        ERROR("No such table \"%s\" in fact", ref->name);
+        ERROR("No such table \"%s\"", ref->name);
+
+    /*
+     * Check that the reference data types are compatible with the table
+     * schema
+     */
+    if (list_length(define->schema) != list_length(ref->cols))
+        ERROR("Reference to table %s has incorrect # of columns. "
+              "Expected: %d, encountered %d",
+              ref->name, list_length(define->schema),
+              list_length(ref->cols));
 }
 
 void
@@ -167,10 +187,26 @@ is_valid_type(const char *type_name)
         return true;
     if (strcmp(type_name, "int") == 0)
         return true;
-    if (strcmp(type_name, "long") == 0)
+    if (strcmp(type_name, "int2") == 0)
+        return true;
+    if (strcmp(type_name, "int4") == 0)
+        return true;
+    if (strcmp(type_name, "int8") == 0)
         return true;
     if (strcmp(type_name, "string") == 0)
         return true;
 
     return false;
+}
+
+static bool
+is_dont_care_var(AstNode *node)
+{
+    AstVarExpr *var;
+
+    if (node->kind != AST_VAR_EXPR)
+        return false;
+
+    var = (AstVarExpr *) node;
+    return (bool) (strcmp(var->name, "_") == 0);
 }

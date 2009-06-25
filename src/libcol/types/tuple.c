@@ -9,7 +9,8 @@ tuple_make(Schema *s, Datum *values)
 {
     Tuple *t;
 
-    t = ol_alloc(sizeof(Tuple) + (s->len * sizeof(Datum)));
+    t = ol_alloc(sizeof(*t) + (s->len * sizeof(Datum)));
+    memset(t, 0, sizeof(*t));
     t->refcount = 1;
     memcpy(t + 1, values, s->len * sizeof(Datum));
     return t;
