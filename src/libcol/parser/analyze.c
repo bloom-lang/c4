@@ -4,6 +4,7 @@
 #include "col-internal.h"
 #include "parser/analyze.h"
 #include "parser/makefuncs.h"
+#include "types/catalog.h"
 
 typedef struct AnalyzeState
 {

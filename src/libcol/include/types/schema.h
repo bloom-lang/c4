@@ -28,7 +28,4 @@ typedef struct Schema
 
 Schema *schema_make(int len, DataType *type, apr_pool_t *pool);
 
-bool is_valid_type_name(const char *type_name);
-DataType lookup_type_name(const char *type_name);
-
 #endif  /* SCHEMA_H */
