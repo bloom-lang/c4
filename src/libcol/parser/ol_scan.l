@@ -32,10 +32,21 @@ self			[,()\[\].;\:\+\-\*\/\%\^\=@\{\}\<\>]
 comment			("//"{non_newline}*)
 whitespace		({space}+|{comment})
 
-/* No support for Unicode identifiers */
-ident_start		[A-Za-z_]
-ident_cont		[A-Za-z_0-9]
-identifier		{ident_start}{ident_cont}*
+/*
+ * Note that we distinguish between "table identifiers" and "variable
+ * identifiers"; the former must be entirely in lower-case, whereas the
+ * latter must begin with an upperchase letter. This is partly to simplify
+ * parsing, but arguably it enforces good naming discipline.
+ *
+ * XXX: No support for Unicode identifiers
+ */
+vident_start    [A-Z_]
+vident_cont     [A-Za-z_0-9]
+var_ident       {vident_start}{vident_cont}*
+
+tident_start    [a-z]
+tident_cont     [a-z_0-9]
+tbl_ident       {tident_start}{tident_cont}*
 
 integer         {digit}+
 decimal         {digit}+\.{digit}*
@@ -98,6 +109,14 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "=="                    { return OL_EQ; }
 ":="                    { return OL_ASSIGN; }
 
+"define"                { return DEFINE; }
+"delete"                { return DELETE; }
+"false"                 { return OL_FALSE; }
+"notin"                 { return NOTIN; }
+"keys"                  { return KEYS; }
+"true"                  { return OL_TRUE; }
+"program"               { return PROGRAM; }
+
 {integer} {
     char *endptr;
 
@@ -110,30 +129,18 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 }
 
 {real} {
-    yylval.str = apr_pstrdup(SCANNER_POOL, yytext);
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return FCONST;
 }
 
-{identifier} {
-    yylval.str = downcase_buf(yytext, yyleng, SCANNER_POOL);
-    printf("yylval.str = %s\n", yylval.str);
+{var_ident} {
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    return VAR_IDENT;
+}
 
-    if (strcmp(yylval.str, "define") == 0)
-        return DEFINE;
-    if (strcmp(yylval.str, "delete") == 0)
-        return DELETE;
-    if (strcmp(yylval.str, "false") == 0)
-        return OL_FALSE;
-    if (strcmp(yylval.str, "notin") == 0)
-        return NOTIN;
-    if (strcmp(yylval.str, "keys") == 0)
-        return KEYS;
-    if (strcmp(yylval.str, "true") == 0)
-        return OL_TRUE;
-    if (strcmp(yylval.str, "program") == 0)
-        return PROGRAM;
-
-    return IDENT;
+{tbl_ident} {
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    return TBL_IDENT;
 }
 
 %%

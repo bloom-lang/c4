@@ -31,7 +31,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 
 %token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
        OL_ASSIGN OL_FALSE OL_TRUE
-%token <str> IDENT FCONST SCONST
+%token <str> VAR_IDENT TBL_IDENT FCONST SCONST
 %token <chr> CCONST
 %token <ival> ICONST
 
@@ -44,7 +44,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 
 %type <ptr>     clause define rule table_ref column_ref join_clause
 %type <str>     program_header
-%type <list>    program_body opt_int_list int_list ident_list define_schema
+%type <list>    program_body opt_int_list int_list tident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem predicate pred_expr expr const_expr op_expr
 %type <ptr>     var_expr column_ref_expr rule_prefix
@@ -60,7 +60,7 @@ program: program_header program_body {
     context->result = n;
 };
 
-program_header: PROGRAM IDENT ';' { $$ = $2; };
+program_header: PROGRAM TBL_IDENT ';' { $$ = $2; };
 
 program_body:
   clause ';' program_body       { $$ = list_prepend($3, $1); }
@@ -72,7 +72,7 @@ clause:
 | rule          { $$ = $1; }
 ;
 
-define: DEFINE '(' IDENT ',' opt_keys define_schema ')' {
+define: DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
     AstDefine *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_DEFINE;
     n->name = $3;
@@ -90,7 +90,7 @@ opt_keys:
 | /* EMPTY */ { $$ = NULL; }
 ;
 
-define_schema: '{' ident_list '}' { $$ = $2; };
+define_schema: '{' tident_list '}' { $$ = $2; };
 
 opt_int_list:
   int_list      { $$ = $1; }
@@ -102,9 +102,9 @@ int_list:
 | int_list ',' ICONST   { $$ = list_append_int($1, $3); }
 ;
 
-ident_list:
-  IDENT                 { $$ = list_make1($1, context->pool); }
-| ident_list ',' IDENT  { $$ = list_append($1, $3); }
+tident_list:
+  TBL_IDENT                  { $$ = list_make1($1, context->pool); }
+| tident_list ',' TBL_IDENT  { $$ = list_append($1, $3); }
 ;
 
 rule: rule_prefix opt_rule_body {
@@ -132,9 +132,9 @@ rule: rule_prefix opt_rule_body {
 };
 
 rule_prefix:
-  IDENT opt_delete table_ref    { $$ = make_rule($1, $2, $3, context->pool); }
-| DELETE table_ref              { $$ = make_rule(NULL, true, $2, context->pool); }
-| table_ref                     { $$ = make_rule(NULL, false, $1, context->pool); }
+  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, $3, context->pool); }
+| DELETE table_ref               { $$ = make_rule(NULL, true, $2, context->pool); }
+| table_ref                      { $$ = make_rule(NULL, false, $1, context->pool); }
 ;
 
 opt_delete:
@@ -157,7 +157,7 @@ rule_body_elem:
 | predicate
 ;
 
-join_clause: opt_not IDENT opt_hash_variant '(' column_ref_list ')' {
+join_clause: opt_not TBL_IDENT opt_hash_variant '(' column_ref_list ')' {
     AstJoinClause *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_JOIN_CLAUSE;
     n->not = $1;
@@ -176,10 +176,9 @@ opt_hash_variant:
 | /* EMPTY */          { $$ = AST_HASH_NONE; }
 ;
 
-table_ref: IDENT '(' column_ref_list ')' { $$ = make_table_ref($1, $3, context->pool); };
+table_ref: TBL_IDENT '(' column_ref_list ')' { $$ = make_table_ref($1, $3, context->pool); };
 
-/* XXX: Temp hack to workaround parser issues */
-predicate: '^' pred_expr { $$ = make_predicate($2, context->pool); };
+predicate: pred_expr { $$ = make_predicate($1, context->pool); };
 
 expr:
   op_expr
@@ -256,7 +255,7 @@ bool_const:
 | OL_FALSE      { $$ = false; }
 ;
 
-var_expr: IDENT {
+var_expr: VAR_IDENT {
     AstVarExpr *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_VAR_EXPR;
     n->name = $1;
