@@ -2,6 +2,7 @@ Parser and lexer:
 
 * Support for parentheses
 * Type casts
+* Aggregation
 * Trinary operator ?:
 * Unicode identifiers and string literals
 * Locking / concurrency control

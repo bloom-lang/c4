@@ -15,10 +15,10 @@ typedef struct AnalyzeState
     /* Current index for system-generated rule names */
     int tmp_ruleno;
 
-    /* Per-rule state: */
-    /* Table mapping var name => AstVarExpr */
+    /* Per-clause state: */
+    /* Mapping from variable name => AstVarExpr */
     apr_hash_t *var_tbl;
-    /* Current index for system-assigned variable names */
+    /* Current index for system-generated variable names */
     int tmp_varno;
 } AnalyzeState;
 
@@ -99,10 +99,6 @@ static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
-
-    /* Reset per-rule state */
-    apr_hash_clear(state->var_tbl);
-    state->tmp_varno = 0;
 
     printf("RULE => %s\n", rule->head->name);
 
@@ -370,6 +366,10 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     foreach (lc, program->clauses)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
+
+        /* Reset per-clause state */
+        apr_hash_clear(state->var_tbl);
+        state->tmp_varno = 0;
 
         switch (node->kind)
         {
