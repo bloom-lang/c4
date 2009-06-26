@@ -27,6 +27,7 @@ typedef struct AnalyzeState
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AnalyzeState *state);
 static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
+static void analyze_expr(AstNode *node, AnalyzeState *state);
 
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
@@ -119,24 +120,25 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     apr_hash_set(state->rule_tbl, rule->name, APR_HASH_KEY_STRING, rule);
 
-    /* Check the rule body */
+    /*
+     * Check the rule body. Consider the join clauses first, and then
+     * examine the predicates (all join variables are "in-scope" for
+     * predicates, even if they appear before the join in the program text).
+     */
     foreach (lc, rule->body)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
-        switch (node->kind)
-        {
-            case AST_JOIN_CLAUSE:
-                analyze_join_clause((AstJoinClause *) node, state);
-                break;
+        if (node->kind == AST_JOIN_CLAUSE)
+            analyze_join_clause((AstJoinClause *) node, state);
+    }
 
-            case AST_PREDICATE:
-                analyze_predicate((AstPredicate *) node, state);
-                break;
+    foreach (lc, rule->body)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
 
-            default:
-                ERROR("Unrecognized node kind: %d", node->kind);
-        }
+        if (node->kind == AST_PREDICATE)
+            analyze_predicate((AstPredicate *) node, state);
     }
 
     /* Check the rule head */
@@ -295,7 +297,28 @@ add_predicate(char *lhs_name, AstNode *rhs,
 static void
 analyze_predicate(AstPredicate *pred, AnalyzeState *state)
 {
-    ;
+    analyze_expr(pred->expr, state);
+}
+
+static void
+analyze_expr(AstNode *node, AnalyzeState *state)
+{
+    switch (node->kind)
+    {
+        case AST_OP_EXPR:
+        {
+            AstOpExpr *op_expr = (AstOpExpr *) node;
+            break;
+        }
+
+        case AST_VAR_EXPR:
+            break;
+
+        default:
+            if (is_const_expr(node))
+                ;
+            break;
+    }
 }
 
 static void
@@ -326,6 +349,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
     AstDefine *define;
     ListCell *lc;
     int colno;
+    int loc_spec_count;
 
     /* Check that the specified table name exists */
     define = apr_hash_get(state->define_tbl, ref->name,
@@ -344,6 +368,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
               list_length(ref->cols));
 
     colno = 0;
+    loc_spec_count = 0;
     foreach (lc, ref->cols)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
@@ -352,8 +377,16 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         char *schema_type_name;
 
         expr_type = expr_get_type(col->expr, state);
-        if (col->has_loc_spec && expr_type == TYPE_STRING)
-            ERROR("Location specifiers must be of type \"string\"");
+        if (col->has_loc_spec)
+        {
+            if (expr_type != TYPE_STRING)
+                ERROR("Location specifiers must be of type \"string\"");
+
+            loc_spec_count++;
+            if (loc_spec_count > 1)
+                ERROR("Multiple location specifiers in a "
+                      "single clause are not allowed");
+        }
 
         schema_type_name = (char *) list_get(define->schema, colno);
         schema_type = get_type_id(schema_type_name);
