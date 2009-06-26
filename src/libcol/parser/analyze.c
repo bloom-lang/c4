@@ -273,7 +273,7 @@ set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
     char *type_name;
 
     type_name = list_get(table->schema, colno);
-    var->type = lookup_type_name(type_name);
+    var->type = get_type_id(type_name);
 }
 
 static void
@@ -302,16 +302,30 @@ static void
 analyze_fact(AstFact *fact, AnalyzeState *state)
 {
     AstTableRef *target = fact->head;
+    ListCell *lc;
 
     printf("FACT => %s\n", target->name);
 
     analyze_table_ref(target, state);
+
+    foreach (lc, target->cols)
+    {
+        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+
+        if (col->has_loc_spec)
+            ERROR("Columns in a fact cannot have location specifiers");
+
+        if (!is_const_expr(col->expr))
+            ERROR("Columns in a fact must be constants");
+    }
 }
 
 static void
 analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
 {
     AstDefine *define;
+    ListCell *lc;
+    int colno;
 
     /* Check that the specified table name exists */
     define = apr_hash_get(state->define_tbl, ref->name,
@@ -329,7 +343,26 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
               ref->name, list_length(define->schema),
               list_length(ref->cols));
 
-    /* XXX: ... */
+    colno = 0;
+    foreach (lc, ref->cols)
+    {
+        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        DataType expr_type;
+        DataType schema_type;
+        char *schema_type_name;
+
+        expr_type = expr_get_type(col->expr, state);
+        if (col->has_loc_spec && expr_type == TYPE_STRING)
+            ERROR("Location specifiers must be of type \"string\"");
+
+        schema_type_name = (char *) list_get(define->schema, colno);
+        schema_type = get_type_id(schema_type_name);
+
+        /* XXX: type compatibility check is far too strict */
+        if (schema_type != expr_type)
+            ERROR("Type mismatch in column list: %s in schema, %s in column list",
+                  schema_type_name, get_type_name(expr_type));
+    }
 }
 
 /*

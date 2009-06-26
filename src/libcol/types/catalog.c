@@ -45,11 +45,11 @@ cat_set_schema(ColCatalog *cat, const char *name, Schema *schema)
 bool
 is_valid_type_name(const char *type_name)
 {
-    return (bool) (lookup_type_name(type_name) != TYPE_INVALID);
+    return (bool) (get_type_id(type_name) != TYPE_INVALID);
 }
 
 DataType
-lookup_type_name(const char *type_name)
+get_type_id(const char *type_name)
 {
     if (strcmp(type_name, "bool") == 0)
         return TYPE_BOOL;
@@ -69,4 +69,32 @@ lookup_type_name(const char *type_name)
         return TYPE_STRING;
 
     return TYPE_INVALID;
+}
+
+char *
+get_type_name(DataType type_id)
+{
+    switch (type_id)
+    {
+        case TYPE_INVALID:
+            return "invalid";
+        case TYPE_BOOL:
+            return "bool";
+        case TYPE_CHAR:
+            return "char";
+        case TYPE_DOUBLE:
+            return "double";
+        case TYPE_INT2:
+            return "int2";
+        case TYPE_INT4:
+            return "int4";
+        case TYPE_INT8:
+            return "int8";
+        case TYPE_STRING:
+            return "string";
+
+        default:
+            ERROR("Unexpected type id: %d", type_id);
+            return NULL;        /* Keep compiler quiet */
+    }
 }
