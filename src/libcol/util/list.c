@@ -111,3 +111,35 @@ list_member_int(List *list, int datum)
 
     return false;
 }
+
+static ListCell *
+list_get_cell(List *list, int idx)
+{
+    ListCell *lc;
+
+    if (idx < 0 || idx >= list_length(list))
+        FAIL();
+
+    foreach (lc, list)
+    {
+        if (idx == 0)
+            return lc;
+
+        idx--;
+    }
+
+    FAIL();
+    return NULL;        /* keep compiler quiet */
+}
+
+void *
+list_get(List *list, int idx)
+{
+    return lc_ptr(list_get_cell(list, idx));
+}
+
+int
+list_get_int(List *list, int idx)
+{
+    return lc_int(list_get_cell(list, idx));
+}

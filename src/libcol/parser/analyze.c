@@ -36,7 +36,6 @@ static void set_var_type(AstVarExpr *var, AstDefine *table,
                          int colno, AnalyzeState *state);
 static void add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
                           AnalyzeState *state);
-static bool is_valid_type(const char *type_name);
 static bool is_dont_care_var(AstNode *node);
 static bool is_const_expr(AstNode *node);
 static DataType expr_get_type(AstNode *node, AnalyzeState *state);
@@ -67,7 +66,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     {
         char *type_name = (char *) lc_ptr(lc);
 
-        if (!is_valid_type(type_name))
+        if (!is_valid_type_name(type_name))
             ERROR("Undefined type %s in schema of table %s",
                   type_name, def->name);
     }
@@ -256,7 +255,6 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
-                define_var(var, state);
                 add_predicate(old_name, (AstNode *) var, AST_OP_EQ, state);
             }
         }
@@ -265,7 +263,7 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
         ASSERT(cref->expr->kind == AST_VAR_EXPR);
         var = (AstVarExpr *) cref->expr;
 
-        /* Fill-in variable's type, add to var table */
+        /* Fill-in variable's type, add to variable table */
         set_var_type((AstVarExpr *) cref->expr, define, colno, state);
         define_var(var, state);
         colno++;
@@ -275,11 +273,15 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
 static void
 set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 {
-    ;
+    char *type_name;
+
+    type_name = list_get(table->schema, colno);
+    var->type = lookup_type_name(type_name);
 }
 
 static void
-add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind, AnalyzeState *state)
+add_predicate(char *lhs_name, AstNode *rhs,
+              AstOperKind op_kind, AnalyzeState *state)
 {
     AstVarExpr *lhs;
     AstOpExpr *op_expr;
@@ -387,29 +389,6 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
                 ERROR("Unrecognized node kind: %d", node->kind);
         }
     }
-}
-
-static bool
-is_valid_type(const char *type_name)
-{
-    if (strcmp(type_name, "bool") == 0)
-        return true;
-    if (strcmp(type_name, "char") == 0)
-        return true;
-    if (strcmp(type_name, "double") == 0)
-        return true;
-    if (strcmp(type_name, "int") == 0)
-        return true;
-    if (strcmp(type_name, "int2") == 0)
-        return true;
-    if (strcmp(type_name, "int4") == 0)
-        return true;
-    if (strcmp(type_name, "int8") == 0)
-        return true;
-    if (strcmp(type_name, "string") == 0)
-        return true;
-
-    return false;
 }
 
 static bool
@@ -527,5 +506,6 @@ const_expr_get_type(AstNode *node, AnalyzeState *state)
 static DataType
 var_expr_get_type(AstVarExpr *var, AnalyzeState *state)
 {
-    
+    ASSERT(var->type != TYPE_INVALID);
+    return var->type;
 }

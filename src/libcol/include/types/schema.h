@@ -2,19 +2,19 @@
 #define SCHEMA_H
 
 /*
- * This effectively a set of type IDs. A more sophisticated type ID system
- * is probably a natural next step.
+ * This is effectively a set of type IDs. A more sophisticated type ID
+ * system is probably a natural next step.
  */
-typedef enum DataType
-{
-    TYPE_BOOL,
-    TYPE_CHAR,
-    TYPE_DOUBLE,
-    TYPE_INT2,
-    TYPE_INT4,
-    TYPE_INT8,
-    TYPE_STRING
-} DataType;
+typedef unsigned char DataType;
+
+#define TYPE_INVALID 0
+#define TYPE_BOOL    1
+#define TYPE_CHAR    2
+#define TYPE_DOUBLE  3
+#define TYPE_INT2    4
+#define TYPE_INT4    5
+#define TYPE_INT8    6
+#define TYPE_STRING  7
 
 typedef struct Schema
 {
@@ -24,8 +24,11 @@ typedef struct Schema
 } Schema;
 
 #define schema_get_data(s)      (((Schema *) s) + 1)
-#define schema_get_type(s, i)   (get_schema_data(s)[(i)])
+#define schema_get_type(s, i)   (schema_get_data(s)[(i)])
 
 Schema *schema_make(int len, DataType *type, apr_pool_t *pool);
+
+bool is_valid_type_name(const char *type_name);
+DataType lookup_type_name(const char *type_name);
 
 #endif  /* SCHEMA_H */

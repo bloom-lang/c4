@@ -1,5 +1,6 @@
 #include "col-internal.h"
 #include "parser/makefuncs.h"
+#include "types/schema.h"
 
 AstTableRef *
 make_table_ref(char *name, List *cols, apr_pool_t *pool)
@@ -49,6 +50,7 @@ make_var_expr(char *name, apr_pool_t *pool)
     AstVarExpr *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_VAR_EXPR;
     result->name = name;
+    result->type = TYPE_INVALID;        /* Should be filled-in by caller */
     return result;
 }
 
