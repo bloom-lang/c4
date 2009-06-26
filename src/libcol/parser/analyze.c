@@ -34,7 +34,7 @@ static void define_var(AstVarExpr *var, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void set_var_type(AstVarExpr *var, AstDefine *table,
                          int colno, AnalyzeState *state);
-static void add_predicate(char *lhs, char *rhs, AstOperKind op_kind,
+static void add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
                           AnalyzeState *state);
 static bool is_valid_type(const char *type_name);
 static bool is_dont_care_var(AstNode *node);
@@ -186,6 +186,7 @@ is_var_defined(const char *name, AnalyzeState *state)
 static void
 define_var(AstVarExpr *var, AnalyzeState *state)
 {
+    ASSERT(!is_var_defined(var->name, state));
     apr_hash_set(state->var_tbl, var->name,
                  APR_HASH_KEY_STRING, var);
 }
@@ -209,7 +210,7 @@ static void
 analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
 {
     AstDefine *define;
-    int col_idx;
+    int colno;
     ListCell *lc;
 
     define = apr_hash_get(state->define_tbl, join->ref->name,
@@ -217,26 +218,32 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
     if (define == NULL)
         ERROR("No such table \"%s\"", join->ref->name);
 
-    col_idx = 0;
+    colno = 0;
     foreach (lc, join->ref->cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        AstVarExpr *var;
 
         /*
-         * Rewrite constants in join clauses into an additional predicate "v
-         * = k" on a variable with a system-generated name "v".
+         * Replace constants in join clauses with a system-generated
+         * variable, and then add an equality predicate between the new
+         * variable and the constant value.
          */
         if (is_const_expr(cref->expr))
         {
-            ;
+            AstNode *const_expr = cref->expr;
+            char *var_name;
+
+            var_name = make_anon_var_name("const", state);
+            var = make_var_expr(var_name, state->pool);
+            cref->expr = (AstNode *) var;
+
+            add_predicate(var_name, const_expr, AST_OP_EQ, state);
         }
         else
         {
-            AstVarExpr *var;
-
             ASSERT(cref->node.kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
-            set_var_type(var, define, col_idx, state);
 
             /*
              * Check if the variable name has already been used by a
@@ -244,21 +251,24 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
              * system-generated name to the variable, and add an equality
              * predicate between the new and old variable names.
              */
-            if (!is_var_defined(var->name, state))
-            {
-                define_var(var, state);
-            }
-            else
+            if (is_var_defined(var->name, state))
             {
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
                 define_var(var, state);
-                add_predicate(old_name, var->name, AST_OP_EQ, state);
+                add_predicate(old_name, (AstNode *) var, AST_OP_EQ, state);
             }
         }
 
-        col_idx++;
+        /* We should now be left with a uniquely-occurring variable */
+        ASSERT(cref->expr->kind == AST_VAR_EXPR);
+        var = (AstVarExpr *) cref->expr;
+
+        /* Fill-in variable's type, add to var table */
+        set_var_type((AstVarExpr *) cref->expr, define, colno, state);
+        define_var(var, state);
+        colno++;
     }
 }
 
@@ -269,16 +279,14 @@ set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 }
 
 static void
-add_predicate(char *lhs, char *rhs, AstOperKind op_kind, AnalyzeState *state)
+add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind, AnalyzeState *state)
 {
-    AstVarExpr *lhs_expr;
-    AstVarExpr *rhs_expr;
+    AstVarExpr *lhs;
     AstOpExpr *op_expr;
     AstPredicate *pred;
 
-    lhs_expr = make_var_expr(lhs, state->pool);
-    rhs_expr = make_var_expr(rhs, state->pool);
-    op_expr = make_op_expr((AstNode *) lhs_expr, (AstNode *) rhs_expr,
+    lhs = make_var_expr(lhs_name, state->pool);
+    op_expr = make_op_expr((AstNode *) lhs, rhs,
                            op_kind, state->pool);
     pred = make_predicate((AstNode *) op_expr, state->pool);
 
