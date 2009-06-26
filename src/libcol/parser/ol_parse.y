@@ -19,6 +19,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
     List           *list;
     void           *ptr;
     bool            boolean;
+    unsigned char   chr;
     AstHashVariant  hash_v;
 }
 
@@ -31,6 +32,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
        OL_ASSIGN OL_FALSE OL_TRUE
 %token <str> IDENT FCONST SCONST
+%token <chr> CCONST
 %token <ival> ICONST
 
 %nonassoc OL_ASSIGN
@@ -237,6 +239,13 @@ const_expr:
 {
     AstConstExprString *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_CONST_EXPR_STRING;
+    n->val = $1;
+    $$ = n;
+}
+| CCONST
+{
+    AstConstExprChar *n = parser_alloc(sizeof(*n));
+    n->node.kind = AST_CONST_EXPR_CHAR;
     n->val = $1;
     $$ = n;
 }

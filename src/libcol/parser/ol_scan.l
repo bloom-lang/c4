@@ -10,7 +10,7 @@
 
 #define SCANNER_POOL yyget_extra(yyscanner)->pool
 
-static char unescape_char(char c);
+static unsigned char unescape_char(unsigned char c);
 %}
 
 %option 8bit
@@ -58,7 +58,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 
 <string>\\. {
     ColParser *context = yyget_extra(yyscanner);
-    sbuf_append_char(context->lit_buf, unescape_char(yytext[1]));
+    sbuf_append_char(context->lit_buf, unescape_char((unsigned char) yytext[1]));
 }
 
 <string>[^\\\"]+ {
@@ -72,6 +72,16 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
     BEGIN(INITIAL);
     printf("SCONST = %s\n", yylval.str);
     return SCONST;
+}
+
+\'[^\\\']\' {
+    yylval.chr = (unsigned char) yytext[1];
+    return CCONST;
+}
+
+\'\\.\' {
+    yylval.chr = unescape_char((unsigned char) yytext[2]);
+    return CCONST;
 }
 
 {whitespace}            /* ignore */
@@ -145,8 +155,8 @@ setup_scan_buf(const char *str, apr_size_t len, apr_pool_t *pool)
     return scan_buf;
 }
 
-static char
-unescape_char(char c)
+static unsigned char
+unescape_char(unsigned char c)
 {
     switch (c)
     {
