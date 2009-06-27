@@ -15,3 +15,5 @@ Broader issues:
 
 * Testing
 * Error handling
+* Add a "$LOCALHOST" variable that expands to the network address of
+  the evaluating COL instance

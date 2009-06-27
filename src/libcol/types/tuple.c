@@ -30,6 +30,18 @@ tuple_unpin(Tuple *tuple)
         ol_free(tuple);
 }
 
+bool
+tuple_eq(Tuple *t1, Tuple *t2)
+{
+    return false;
+}
+
+unsigned int
+tuple_hash(const char *key, apr_ssize_t *klen)
+{
+    return 0;
+}
+
 void
 tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
 {
