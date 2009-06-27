@@ -33,6 +33,8 @@ static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
 static void analyze_const_expr(AstNode *node, AnalyzeState *state);
 
+static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref);
+static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
@@ -104,6 +106,8 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
+    AstColumnRef *body_loc_spec;
+    AstColumnRef *head_loc_spec;
     ListCell *lc;
 
     printf("RULE => %s\n", rule->head->name);
@@ -154,6 +158,73 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         if (is_dont_care_var(col->expr))
             ERROR("Don't care variables (\"_\") cannot appear in rule heads");
     }
+
+    /*
+     * Check the consistency of the location specifiers. At most one
+     * distinct location specifier can be used in the rule body; if a
+     * location specifier is used in the body that is distinct from the
+     * head's location specifier, this is a network rule.
+     */
+    body_loc_spec = NULL;
+    foreach (lc, rule->body)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        if (node->kind == AST_JOIN_CLAUSE)
+        {
+            AstJoinClause *join = (AstJoinClause *) node;
+            AstColumnRef *loc_spec;
+
+            loc_spec = table_ref_get_loc_spec(join->ref);
+            if (loc_spec != NULL)
+            {
+                if (body_loc_spec != NULL &&
+                    !loc_spec_equal(loc_spec, body_loc_spec))
+                    ERROR("Distinct location specifiers in the body "
+                          "of a single rule are not allowed");
+
+                body_loc_spec = loc_spec;
+            }
+        }
+    }
+
+    head_loc_spec = table_ref_get_loc_spec(rule->head);
+    if (body_loc_spec != NULL && head_loc_spec != NULL &&
+        !loc_spec_equal(body_loc_spec, head_loc_spec))
+        rule->is_network = true;
+}
+
+static AstColumnRef *
+table_ref_get_loc_spec(AstTableRef *ref)
+{
+    ListCell *lc;
+
+    foreach (lc, ref->cols)
+    {
+        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+
+        if (cref->has_loc_spec)
+            return cref;
+    }
+
+    return NULL;
+}
+
+static bool
+loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2)
+{
+    ASSERT(s1->has_loc_spec);
+    ASSERT(s2->has_loc_spec);
+
+    /* Only variable location specifiers supported for now */
+    ASSERT(s1->expr->kind == AST_VAR_EXPR);
+    ASSERT(s2->expr->kind == AST_VAR_EXPR);
+
+    /*
+     * XXX: Implementing this is non-trivial, because it requires testing
+     * whether the two variables are equivalent.
+     */
+    return true;
 }
 
 static char *

@@ -86,6 +86,8 @@ typedef struct AstRule
     AstTableRef *head;
     List *body;
     bool is_delete;
+    /* Filled-in during parse-analysis */
+    bool is_network;
 } AstRule;
 
 typedef struct AstFact

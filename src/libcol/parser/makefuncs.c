@@ -41,6 +41,7 @@ make_rule(char *name, bool is_delete, AstTableRef *head, apr_pool_t *pool)
     result->name = name;
     result->is_delete = is_delete;
     result->head = head;
+    result->is_network = false;         /* Should be filled-in by caller */
     return result;
 }
 

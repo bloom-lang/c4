@@ -4,6 +4,7 @@ Parser and lexer:
 * Type casts
 * Aggregation
 * Trinary operator ?:
+* Allow location specifiers to be attached to constants
 * Unicode identifiers and string literals
 * Locking / concurrency control
 * In string literals, support the "\000" syntax (Octal ASCII
