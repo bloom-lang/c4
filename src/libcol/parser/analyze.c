@@ -29,6 +29,9 @@ static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
 static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
 static void analyze_expr(AstNode *node, AnalyzeState *state);
+static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
+static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
+static void analyze_const_expr(AstNode *node, AnalyzeState *state);
 
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
@@ -310,19 +313,67 @@ analyze_expr(AstNode *node, AnalyzeState *state)
     switch (node->kind)
     {
         case AST_OP_EXPR:
-        {
-            AstOpExpr *op_expr = (AstOpExpr *) node;
+            analyze_op_expr((AstOpExpr *) node, state);
             break;
-        }
 
         case AST_VAR_EXPR:
+            analyze_var_expr((AstVarExpr *) node, state);
             break;
 
         default:
             if (is_const_expr(node))
-                ;
+                analyze_const_expr(node, state);
+            else
+                ERROR("Unexpected expr node kind: %d", (int) node->kind);
+
             break;
     }
+}
+
+static void
+analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
+{
+    DataType lhs_type;
+    DataType rhs_type;
+
+    analyze_expr(op_expr->lhs, state);
+    analyze_expr(op_expr->rhs, state);
+
+    lhs_type = expr_get_type(op_expr->lhs, state);
+    rhs_type = expr_get_type(op_expr->rhs, state);
+
+    /* XXX: type compatibility check is far too strict */
+    if (lhs_type != rhs_type)
+        ERROR("Type mismatch in predicate: lhs is %s, rhs is %s",
+              get_type_name(lhs_type), get_type_name(rhs_type));
+
+    switch (op_expr->op_kind)
+    {
+        case AST_OP_PLUS:
+        case AST_OP_MINUS:
+        case AST_OP_TIMES:
+        case AST_OP_DIVIDE:
+        case AST_OP_MODULUS:
+            if (!is_numeric_type(lhs_type) || !is_numeric_type(rhs_type))
+                ERROR("Numeric operator must have numeric input");
+            break;
+
+        default:
+            break;
+    }
+}
+
+static void
+analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state)
+{
+    if (!is_var_defined(var_expr->name, state))
+        ERROR("Undefined variable \"%s\"", var_expr->name);
+}
+
+static void
+analyze_const_expr(AstNode *node, AnalyzeState *state)
+{
+    ;
 }
 
 static void
@@ -380,15 +431,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         DataType schema_type;
         char *schema_type_name;
 
-        if (col->expr->kind == AST_VAR_EXPR)
-        {
-            AstVarExpr *var = (AstVarExpr *) col->expr;
-
-            if (!is_var_defined(var->name, state))
-                ERROR("Undefined variable \"%s\" in table ref",
-                      var->name);
-        }
-
+        analyze_expr(col->expr, state);
         expr_type = expr_get_type(col->expr, state);
         if (col->has_loc_spec)
         {
@@ -468,7 +511,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
                 break;
 
             default:
-                ERROR("Unrecognized node kind: %d", node->kind);
+                ERROR("Unrecognized node kind: %d", (int) node->kind);
         }
     }
 }
@@ -588,7 +631,7 @@ const_expr_get_type(AstNode *node, AnalyzeState *state)
 /*
  * Note that we can't actually trust the type in the VarExpr itself, since
  * it might not have been computed; instead we consult the "canonical"
- * (definition-site) VarExpr in the rule's var table. This is somewhat ugly.
+ * (definition-site) VarExpr in the rule's var table. XXX: ugly.
  */
 static DataType
 var_expr_get_type(AstVarExpr *var, AnalyzeState *state)

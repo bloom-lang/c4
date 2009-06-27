@@ -43,6 +43,22 @@ cat_set_schema(ColCatalog *cat, const char *name, Schema *schema)
 }
 
 bool
+is_numeric_type(DataType type_id)
+{
+    switch (type_id)
+    {
+        case TYPE_DOUBLE:
+        case TYPE_INT2:
+        case TYPE_INT4:
+        case TYPE_INT8:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool
 is_valid_type_name(const char *type_name)
 {
     return (bool) (get_type_id(type_name) != TYPE_INVALID);
