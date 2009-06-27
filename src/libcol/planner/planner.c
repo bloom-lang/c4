@@ -1,3 +1,28 @@
+/*
+ * Basic planner algorithm is described below. Doesn't handle negation,
+ * aggregation, stratification, intelligent selection of join order; no
+ * significant optimization performed.
+ *
+ * Foreach rule r:
+ *  Foreach join clause j in r->body:
+ *    Make_op_chain(j, r->body - j, r->head);
+ *
+ * Make_op_chain(delta, body, head):
+ *  Divide body into join clauses J and qualifiers Q
+ *  Done = {delta}
+ *  Chain = []
+ *  while J != {}:
+ *    Select an element j from J which joins against a relation in Done with qualifier q
+ *    Remove j from J, remove q from Q
+ *    Done = Done U j
+ *    Chain << Make_Op(j, q)
+ *
+ *  { Handle additional qualifiers }
+ *  while Q != {}:
+ *    Remove q from Q
+ *    Push q down Chain until the first place in the Chain where all the
+ *    tables referenced in q have been joined against
+ */
 #include <apr_strings.h>
 
 #include "col-internal.h"
@@ -46,13 +71,27 @@ planner_state_make(AstProgram *ast, ColInstance *col)
     return state;
 }
 
+static void
+plan_rule(AstRule *rule, PlannerState *state)
+{
+    ;
+}
+
 ProgramPlan *
 plan_program(AstProgram *ast, ColInstance *col)
 {
     PlannerState *state;
     ProgramPlan *result;
+    ListCell *lc;
 
     state = planner_state_make(ast, col);
+
+    foreach (lc, state->plan->rules)
+    {
+        AstRule *rule = (AstRule *) lc_ptr(lc);
+
+        plan_rule(rule, state);
+    }
 
     result = state->plan;
     apr_pool_destroy(state->tmp_pool);
