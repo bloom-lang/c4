@@ -337,9 +337,18 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
     DataType rhs_type;
 
     analyze_expr(op_expr->lhs, state);
-    analyze_expr(op_expr->rhs, state);
-
     lhs_type = expr_get_type(op_expr->lhs, state);
+
+    /* Unary operators are simple */
+    if (op_expr->op_kind == AST_OP_UMINUS)
+    {
+        if (!is_numeric_type(lhs_type))
+            ERROR("Unary minus must have numeric input");
+
+        return;
+    }
+
+    analyze_expr(op_expr->rhs, state);
     rhs_type = expr_get_type(op_expr->rhs, state);
 
     /* XXX: type compatibility check is far too strict */
