@@ -57,12 +57,15 @@ make_ptr_cell(List *list, void *datum, ListCell *prev, ListCell *next)
 
     lc = apr_palloc(list->pool, sizeof(*lc));
     lc_ptr(lc) = datum;
-    lc->next = next;
 
+    lc->next = next;
     if (prev)
         prev->next = lc;
 
     list->length++;
+    if (list->length == 1)
+        list->head = list->tail = lc;
+
     return lc;
 }
 
@@ -81,6 +84,9 @@ make_int_cell(List *list, int datum, ListCell *prev, ListCell *next)
         prev->next = lc;
 
     list->length++;
+    if (list->length == 1)
+        list->head = list->tail = lc;
+
     return lc;
 }
 

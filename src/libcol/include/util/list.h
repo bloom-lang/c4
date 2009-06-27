@@ -40,8 +40,8 @@ struct ListCell
     for ((cell) = l->head; (cell) != NULL; (cell) = (cell)->next)
 
 List *list_make(apr_pool_t *pool);
-#define list_make1(datum, pool)         list_append(list_make(pool), datum)
-#define list_make1_int(datum, pool)     list_append_int(list_make(pool), datum)
+#define list_make1(datum, pool)         list_append(list_make(pool), (datum))
+#define list_make1_int(datum, pool)     list_append_int(list_make(pool), (datum))
 
 List *list_append(List *list, void *datum);
 List *list_append_int(List *list, int datum);

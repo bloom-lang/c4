@@ -25,7 +25,8 @@ typedef struct AnalyzeState
 
 
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
-static void analyze_join_clause(AstJoinClause *join, AnalyzeState *state);
+static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
+                                AnalyzeState *state);
 static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
 static void analyze_expr(AstNode *node, AnalyzeState *state);
 
@@ -37,7 +38,7 @@ static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void set_var_type(AstVarExpr *var, AstDefine *table,
                          int colno, AnalyzeState *state);
 static void add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
-                          AnalyzeState *state);
+                          AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(AstNode *node);
 static bool is_const_expr(AstNode *node);
 static DataType expr_get_type(AstNode *node, AnalyzeState *state);
@@ -130,7 +131,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         AstNode *node = (AstNode *) lc_ptr(lc);
 
         if (node->kind == AST_JOIN_CLAUSE)
-            analyze_join_clause((AstJoinClause *) node, state);
+            analyze_join_clause((AstJoinClause *) node, rule, state);
     }
 
     foreach (lc, rule->body)
@@ -205,7 +206,7 @@ make_anon_var_name(const char *prefix, AnalyzeState *state)
 }
 
 static void
-analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
+analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
 {
     AstDefine *define;
     int colno;
@@ -236,11 +237,11 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
             var = make_var_expr(var_name, state->pool);
             cref->expr = (AstNode *) var;
 
-            add_predicate(var_name, const_expr, AST_OP_EQ, state);
+            add_predicate(var_name, const_expr, AST_OP_EQ, rule, state);
         }
         else
         {
-            ASSERT(cref->node.kind == AST_VAR_EXPR);
+            ASSERT(cref->expr->kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
 
             /*
@@ -254,7 +255,8 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
-                add_predicate(old_name, (AstNode *) var, AST_OP_EQ, state);
+                add_predicate(old_name, (AstNode *) var,
+                              AST_OP_EQ, rule, state);
             }
         }
 
@@ -267,6 +269,8 @@ analyze_join_clause(AstJoinClause *join, AnalyzeState *state)
         define_var(var, state);
         colno++;
     }
+
+    analyze_table_ref(join->ref, state);
 }
 
 static void
@@ -279,8 +283,8 @@ set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 }
 
 static void
-add_predicate(char *lhs_name, AstNode *rhs,
-              AstOperKind op_kind, AnalyzeState *state)
+add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
+              AstRule *rule, AnalyzeState *state)
 {
     AstVarExpr *lhs;
     AstOpExpr *op_expr;
@@ -291,7 +295,7 @@ add_predicate(char *lhs_name, AstNode *rhs,
                            op_kind, state->pool);
     pred = make_predicate((AstNode *) op_expr, state->pool);
 
-    list_append(state->program->clauses, pred);
+    list_append(rule->body, pred);
 }
 
 static void
@@ -376,6 +380,15 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         DataType schema_type;
         char *schema_type_name;
 
+        if (col->expr->kind == AST_VAR_EXPR)
+        {
+            AstVarExpr *var = (AstVarExpr *) col->expr;
+
+            if (!is_var_defined(var->name, state))
+                ERROR("Undefined variable \"%s\" in table ref",
+                      var->name);
+        }
+
         expr_type = expr_get_type(col->expr, state);
         if (col->has_loc_spec)
         {
@@ -395,6 +408,8 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         if (schema_type != expr_type)
             ERROR("Type mismatch in column list: %s in schema, %s in column list",
                   schema_type_name, get_type_name(expr_type));
+
+        colno++;
     }
 }
 
@@ -570,9 +585,18 @@ const_expr_get_type(AstNode *node, AnalyzeState *state)
     }
 }
 
+/*
+ * Note that we can't actually trust the type in the VarExpr itself, since
+ * it might not have been computed; instead we consult the "canonical"
+ * (definition-site) VarExpr in the rule's var table. This is somewhat ugly.
+ */
 static DataType
 var_expr_get_type(AstVarExpr *var, AnalyzeState *state)
 {
-    ASSERT(var->type != TYPE_INVALID);
-    return var->type;
+    AstVarExpr *def_var;
+
+    def_var = apr_hash_get(state->var_tbl, var->name, APR_HASH_KEY_STRING);
+    ASSERT(def_var != NULL);
+    ASSERT(def_var->type != TYPE_INVALID);
+    return def_var->type;
 }

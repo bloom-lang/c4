@@ -163,6 +163,7 @@ join_clause: opt_not TBL_IDENT opt_hash_variant '(' column_ref_list ')' {
     n->not = $1;
     n->hash_variant = $3;
     n->ref = make_table_ref($2, $5, context->pool);
+    $$ = n;
 };
 
 opt_not:
