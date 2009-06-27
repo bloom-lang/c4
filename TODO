@@ -11,6 +11,9 @@ Parser and lexer:
   character) from C89; or perhaps some syntax for specifying Unicode
   code points?
 
+Planner:
+* Generate implied equalities from the qualifier list
+
 Broader issues:
 
 * Testing

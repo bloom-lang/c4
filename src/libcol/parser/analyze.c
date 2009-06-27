@@ -27,7 +27,7 @@ typedef struct AnalyzeState
 static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
-static void analyze_predicate(AstPredicate *pred, AnalyzeState *state);
+static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
 static void analyze_expr(AstNode *node, AnalyzeState *state);
 static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
@@ -42,8 +42,8 @@ static void define_var(AstVarExpr *var, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void set_var_type(AstVarExpr *var, AstDefine *table,
                          int colno, AnalyzeState *state);
-static void add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
-                          AstRule *rule, AnalyzeState *state);
+static void add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
+                     AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(AstNode *node);
 static bool is_const_expr(AstNode *node);
 static DataType expr_get_type(AstNode *node, AnalyzeState *state);
@@ -130,8 +130,8 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     /*
      * Check the rule body. Consider the join clauses first, and then
-     * examine the predicates (all join variables are "in-scope" for
-     * predicates, even if they appear before the join in the program text).
+     * examine the qualifiers (all join variables are "in-scope" for
+     * qualifiers, even if they appear before the join in the program text).
      */
     foreach (lc, rule->body)
     {
@@ -145,8 +145,8 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
-        if (node->kind == AST_PREDICATE)
-            analyze_predicate((AstPredicate *) node, state);
+        if (node->kind == AST_QUALIFIER)
+            analyze_qualifier((AstQualifier *) node, state);
     }
 
     /* Check the rule head */
@@ -299,7 +299,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
 
         /*
          * Replace constants in join clauses with a system-generated
-         * variable, and then add an equality predicate between the new
+         * variable, and then add an equality qualifier between the new
          * variable and the constant value.
          */
         if (is_const_expr(cref->expr))
@@ -311,7 +311,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
             var = make_var_expr(var_name, state->pool);
             cref->expr = (AstNode *) var;
 
-            add_predicate(var_name, const_expr, AST_OP_EQ, rule, state);
+            add_qual(var_name, const_expr, AST_OP_EQ, rule, state);
         }
         else
         {
@@ -322,15 +322,15 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
              * Check if the variable name has already been used by a
              * JoinClause in this rule.  If it has, then assign a new
              * system-generated name to the variable, and add an equality
-             * predicate between the new and old variable names.
+             * qualifier between the new and old variable names.
              */
             if (is_var_defined(var->name, state))
             {
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
-                add_predicate(old_name, (AstNode *) var,
-                              AST_OP_EQ, rule, state);
+                add_qual(old_name, (AstNode *) var,
+                         AST_OP_EQ, rule, state);
             }
         }
 
@@ -357,25 +357,25 @@ set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 }
 
 static void
-add_predicate(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
-              AstRule *rule, AnalyzeState *state)
+add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
+         AstRule *rule, AnalyzeState *state)
 {
     AstVarExpr *lhs;
     AstOpExpr *op_expr;
-    AstPredicate *pred;
+    AstQualifier *qual;
 
     lhs = make_var_expr(lhs_name, state->pool);
     op_expr = make_op_expr((AstNode *) lhs, rhs,
                            op_kind, state->pool);
-    pred = make_predicate((AstNode *) op_expr, state->pool);
+    qual = make_qualifier((AstNode *) op_expr, state->pool);
 
-    list_append(rule->body, pred);
+    list_append(rule->body, qual);
 }
 
 static void
-analyze_predicate(AstPredicate *pred, AnalyzeState *state)
+analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 {
-    analyze_expr(pred->expr, state);
+    analyze_expr(qual->expr, state);
 }
 
 static void
@@ -424,7 +424,7 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
 
     /* XXX: type compatibility check is far too strict */
     if (lhs_type != rhs_type)
-        ERROR("Type mismatch in predicate: lhs is %s, rhs is %s",
+        ERROR("Type mismatch in qualifier: lhs is %s, rhs is %s",
               get_type_name(lhs_type), get_type_name(rhs_type));
 
     switch (op_expr->op_kind)

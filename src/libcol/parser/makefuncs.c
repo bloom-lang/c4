@@ -55,11 +55,11 @@ make_var_expr(char *name, apr_pool_t *pool)
     return result;
 }
 
-AstPredicate *
-make_predicate(AstNode *expr, apr_pool_t *pool)
+AstQualifier *
+make_qualifier(AstNode *expr, apr_pool_t *pool)
 {
-    AstPredicate *result = apr_pcalloc(pool, sizeof(*result));
-    result->node.kind = AST_PREDICATE;
+    AstQualifier *result = apr_pcalloc(pool, sizeof(*result));
+    result->node.kind = AST_QUALIFIER;
     result->expr = expr;
     return result;
 }

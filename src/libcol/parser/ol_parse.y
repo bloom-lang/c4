@@ -46,7 +46,7 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 %type <str>     program_header
 %type <list>    program_body opt_int_list int_list tident_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
-%type <ptr>     rule_body_elem predicate pred_expr expr const_expr op_expr
+%type <ptr>     rule_body_elem qualifier qual_expr expr const_expr op_expr
 %type <ptr>     var_expr column_ref_expr rule_prefix
 %type <boolean> opt_not bool_const opt_delete
 %type <hash_v>  opt_hash_variant
@@ -154,7 +154,7 @@ rule_body:
 
 rule_body_elem:
   join_clause
-| predicate
+| qualifier
 ;
 
 join_clause: opt_not TBL_IDENT opt_hash_variant '(' column_ref_list ')' {
@@ -179,7 +179,7 @@ opt_hash_variant:
 
 table_ref: TBL_IDENT '(' column_ref_list ')' { $$ = make_table_ref($1, $3, context->pool); };
 
-predicate: pred_expr { $$ = make_predicate($1, context->pool); };
+qualifier: qual_expr { $$ = make_qualifier($1, context->pool); };
 
 expr:
   op_expr
@@ -194,16 +194,16 @@ op_expr:
 | expr '/' expr         { $$ = make_op_expr($1, $3, AST_OP_DIVIDE, context->pool); }
 | expr '%' expr         { $$ = make_op_expr($1, $3, AST_OP_MODULUS, context->pool); }
 | '-' expr              { $$ = make_op_expr($2, NULL, AST_OP_UMINUS, context->pool); }
-| pred_expr             { $$ = $1; }
+| qual_expr             { $$ = $1; }
 ;
 
 /*
- * Note that we treat assignment as a predicate in the parser, because it
+ * Note that we treat assignment as a qualifier in the parser, because it
  * would be painful to teach Bison how to tell the difference. Instead, we
- * distinguish between assigments and predicates in the semantic analysis
+ * distinguish between assigments and qualifiers in the semantic analysis
  * phase, and construct an AstAssign node there.
  */
-pred_expr:
+qual_expr:
   expr '<' expr         { $$ = make_op_expr($1, $3, AST_OP_LT, context->pool); }
 | expr '>' expr         { $$ = make_op_expr($1, $3, AST_OP_GT, context->pool); }
 | expr OL_LTE expr      { $$ = make_op_expr($1, $3, AST_OP_LTE, context->pool); }

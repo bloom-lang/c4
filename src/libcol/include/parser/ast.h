@@ -13,7 +13,7 @@ typedef enum AstNodeKind
     AST_TABLE_REF,
     AST_COLUMN_REF,
     AST_JOIN_CLAUSE,
-    AST_PREDICATE,
+    AST_QUALIFIER,
     AST_ASSIGN,
     AST_OP_EXPR,
     AST_CONST_EXPR_BOOL,
@@ -83,11 +83,11 @@ typedef struct AstJoinClause
     AstHashVariant hash_variant;
 } AstJoinClause;
 
-typedef struct AstPredicate
+typedef struct AstQualifier
 {
     AstNode node;
     AstNode *expr;
-} AstPredicate;
+} AstQualifier;
 
 typedef struct AstColumnRef
 {
