@@ -51,6 +51,23 @@ typedef struct AstTableRef
     List *cols;
 } AstTableRef;
 
+typedef struct AstFact
+{
+    AstNode node;
+    AstTableRef *head;
+} AstFact;
+
+typedef struct AstRule
+{
+    AstNode node;
+    char *name;
+    AstTableRef *head;
+    List *body;
+    bool is_delete;
+    /* Filled-in during parse-analysis */
+    bool is_network;
+} AstRule;
+
 typedef enum AstHashVariant
 {
     AST_HASH_NONE = 0,
@@ -78,23 +95,6 @@ typedef struct AstColumnRef
     bool has_loc_spec;
     AstNode *expr;
 } AstColumnRef;
-
-typedef struct AstRule
-{
-    AstNode node;
-    char *name;
-    AstTableRef *head;
-    List *body;
-    bool is_delete;
-    /* Filled-in during parse-analysis */
-    bool is_network;
-} AstRule;
-
-typedef struct AstFact
-{
-    AstNode node;
-    AstTableRef *head;
-} AstFact;
 
 typedef struct AstAssign
 {

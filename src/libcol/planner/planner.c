@@ -49,7 +49,9 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
     pplan = apr_pcalloc(pool, sizeof(*pplan));
     pplan->pool = pool;
     pplan->name = apr_pstrdup(pool, ast->name);
-    /* XXX ... */
+    pplan->defines = list_make(pool);
+    pplan->facts = list_make(pool);
+    pplan->rules = list_make(pool);
 
     return pplan;
 }
@@ -77,24 +79,57 @@ plan_rule(AstRule *rule, PlannerState *state)
     ;
 }
 
+static void
+split_program_clauses(List *clauses, List **defines,
+                      List **facts, List **rules)
+{
+    ListCell *lc;
+
+    foreach (lc, clauses)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        switch (node->kind)
+        {
+            case AST_DEFINE:
+                list_append(*defines, node);
+                break;
+
+            case AST_FACT:
+                list_append(*facts, node);
+                break;
+
+            case AST_RULE:
+                list_append(*rules, node);
+                break;
+
+            default:
+                ERROR("Unexpected node kind: %d", (int) node->kind);
+        }
+    }
+}
+
 ProgramPlan *
 plan_program(AstProgram *ast, ColInstance *col)
 {
     PlannerState *state;
-    ProgramPlan *result;
+    ProgramPlan *plan;
     ListCell *lc;
 
     state = planner_state_make(ast, col);
+    plan = state->plan;
 
-    foreach (lc, state->plan->rules)
+    split_program_clauses(ast->clauses, &plan->defines,
+                          &plan->facts, &plan->rules);
+
+    foreach (lc, plan->rules)
     {
         AstRule *rule = (AstRule *) lc_ptr(lc);
 
         plan_rule(rule, state);
     }
 
-    result = state->plan;
     apr_pool_destroy(state->tmp_pool);
-    return result;
+    return plan;
 }
 
