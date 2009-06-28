@@ -15,6 +15,9 @@ Parser and lexer:
 Planner:
 * Generate implied equalities from the qualifier list
 
+Executor/Router/Operators:
+* Consider writing a specialized allocator for Tuples
+
 Broader issues:
 
 * Testing
