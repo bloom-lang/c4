@@ -10,6 +10,7 @@ Parser and lexer:
 * In string literals, support the "\000" syntax (Octal ASCII
   character) from C89; or perhaps some syntax for specifying Unicode
   code points?
+* Error reporting; location of syntax error
 
 Planner:
 * Generate implied equalities from the qualifier list

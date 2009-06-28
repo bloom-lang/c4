@@ -555,44 +555,37 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->var_tbl = apr_hash_make(pool);
     state->tmp_ruleno = 0;
 
-    printf("Program name: %s; # of clauses: %d\n",
-           program->name, list_length(program->clauses));
+    printf("Program name: %s\n", program->name);
 
     /* Phase 1: process table definitions */
-    foreach (lc, program->clauses)
+    foreach (lc, program->defines)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstDefine *def = (AstDefine *) lc_ptr(lc);
 
-        if (node->kind == AST_DEFINE)
-            analyze_define((AstDefine *) node, state);
+        analyze_define(def, state);
     }
 
     /* Phase 2: process remaining program clauses */
-    foreach (lc, program->clauses)
+    foreach (lc, program->facts)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstFact *fact = (AstFact *) lc_ptr(lc);
 
         /* Reset per-clause state */
         apr_hash_clear(state->var_tbl);
         state->tmp_varno = 0;
 
-        switch (node->kind)
-        {
-            /* Skip in phase 2, already processed */
-            case AST_DEFINE:
-                break;
+        analyze_fact(fact, state);
+    }
 
-            case AST_RULE:
-                analyze_rule((AstRule *) node, state);
-                break;
+    foreach (lc, program->rules)
+    {
+        AstRule *rule = (AstRule *) lc_ptr(lc);
 
-            case AST_FACT:
-                analyze_fact((AstFact *) node, state);
-                break;
+        /* Reset per-clause state */
+        apr_hash_clear(state->var_tbl);
+        state->tmp_varno = 0;
 
-            default:
-                ERROR("Unrecognized node kind: %d", (int) node->kind);
-        }
+        analyze_rule(rule, state);
     }
 }
 

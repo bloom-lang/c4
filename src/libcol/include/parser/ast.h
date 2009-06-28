@@ -33,7 +33,9 @@ typedef struct AstProgram
 {
     AstNode node;
     char *name;
-    List *clauses;
+    List *defines;
+    List *facts;
+    List *rules;
 } AstProgram;
 
 typedef struct AstDefine

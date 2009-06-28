@@ -1,4 +1,5 @@
 #include "col-internal.h"
+#include "parser/copyfuncs.h"
 #include "util/list.h"
 
 static ListCell *make_ptr_cell(List *list, void *datum,
@@ -148,4 +149,52 @@ int
 list_get_int(List *list, int idx)
 {
     return lc_int(list_get_cell(list, idx));
+}
+
+static ListCell *
+list_remove_first_cell(List *list)
+{
+    ListCell *head;
+
+    if (list->length == 0)
+        FAIL();
+
+    head = list->head;
+    list->head = head->next;
+    list->length--;
+
+    if (list->length == 0)
+        list->tail = NULL;
+
+    return head;
+}
+
+/*
+ * XXX: Note that we leak the ListCell that is removed
+ */
+void *
+list_remove_head(List *list)
+{
+    return lc_ptr(list_remove_first_cell(list));
+}
+
+int
+list_remove_head_int(List *list)
+{
+    return lc_int(list_remove_first_cell(list));
+}
+
+List *
+list_deep_copy(List *list, apr_pool_t *pool)
+{
+    List *result;
+    ListCell *lc;
+
+    result = list_make(pool);
+    foreach (lc, list)
+    {
+        list_append(result, node_deep_copy(lc_ptr(lc), pool));
+    }
+
+    return result;
 }

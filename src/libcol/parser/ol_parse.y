@@ -8,6 +8,8 @@
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
+static void split_program_clauses(List *clauses, List **defines,
+                                  List **facts, List **rules);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -56,7 +58,8 @@ program: program_header program_body {
     AstProgram *n = parser_alloc(sizeof(*n));
     n->node.kind = AST_PROGRAM;
     n->name = $1;
-    n->clauses = $2;
+    split_program_clauses($2, &n->defines, &n->facts, &n->rules);
+
     context->result = n;
 };
 
@@ -286,3 +289,34 @@ yyerror(ColParser *context, void *scanner, const char *message)
     printf("Parse error: %s\n", message);
     return 0;   /* return value ignored */
 }
+
+static void
+split_program_clauses(List *clauses, List **defines,
+                      List **facts, List **rules)
+{
+    ListCell *lc;
+
+    foreach (lc, clauses)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        switch (node->kind)
+        {
+            case AST_DEFINE:
+                list_append(*defines, node);
+                break;
+
+            case AST_FACT:
+                list_append(*facts, node);
+                break;
+
+            case AST_RULE:
+                list_append(*rules, node);
+                break;
+
+            default:
+                ERROR("Unexpected node kind: %d", (int) node->kind);
+        }
+    }
+}
+

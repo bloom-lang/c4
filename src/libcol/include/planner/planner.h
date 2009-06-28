@@ -13,18 +13,33 @@ typedef struct ProgramPlan
     List *rules;
 } ProgramPlan;
 
+typedef struct RulePlan
+{
+    List *chains;
+    /* Separated AST nodes */
+    List *ast_joins;
+    List *ast_quals;
+} RulePlan;
+
+typedef struct Operator
+{
+    struct Operator *next;
+} Operator;
+
 /*
- * A RuleChain is a sequence of operators that begins with a "delta
+ * An OpChain is a sequence of operators that begins with a "delta
  * table". When a new tuple is inserted into a table, the tuple is passed
- * down each rule chain that begins with that delta table. Any tuples that
+ * down each op chain that begins with that delta table. Any tuples that
  * emerge from the tail of the operator chain are to be inserted into the
  * "head_tbl".
  */
-typedef struct RuleChain
+typedef struct OpChain
 {
     char *delta_tbl;
     char *head_tbl;
-} RuleChain;
+    Operator *chain_start;
+    int length;
+} OpChain;
 
 ProgramPlan *plan_program(AstProgram *ast, ColInstance *col);
 

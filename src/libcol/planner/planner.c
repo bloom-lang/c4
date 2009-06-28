@@ -26,13 +26,19 @@
 #include <apr_strings.h>
 
 #include "col-internal.h"
+#include "parser/copyfuncs.h"
 #include "parser/parser.h"
 #include "planner/planner.h"
 
 typedef struct PlannerState
 {
     ProgramPlan *plan;
+    List *join_set_todo;
+    List *qual_set_todo;
+    List *join_set;
+    List *qual_set;
 
+    apr_pool_t *plan_pool;
     /*
      * Storage for temporary allocations made during the planning
      * process. This is a subpool of the plan pool; it is deleted when
@@ -67,6 +73,7 @@ planner_state_make(AstProgram *ast, ColInstance *col)
     tmp_pool = make_subpool(plan_pool);
 
     state = apr_pcalloc(tmp_pool, sizeof(*state));
+    state->plan_pool = plan_pool;
     state->tmp_pool = tmp_pool;
     state->plan = program_plan_make(ast, plan_pool);
 
@@ -74,33 +81,23 @@ planner_state_make(AstProgram *ast, ColInstance *col)
 }
 
 static void
-plan_rule(AstRule *rule, PlannerState *state)
-{
-    ;
-}
-
-static void
-split_program_clauses(List *clauses, List **defines,
-                      List **facts, List **rules)
+split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
 {
     ListCell *lc;
 
-    foreach (lc, clauses)
+    foreach (lc, body)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
+        node = node_deep_copy(node, pool);
         switch (node->kind)
         {
-            case AST_DEFINE:
-                list_append(*defines, node);
+            case AST_JOIN_CLAUSE:
+                list_append(*joins, node);
                 break;
 
-            case AST_FACT:
-                list_append(*facts, node);
-                break;
-
-            case AST_RULE:
-                list_append(*rules, node);
+            case AST_QUALIFIER:
+                list_append(*quals, node);
                 break;
 
             default:
@@ -109,27 +106,140 @@ split_program_clauses(List *clauses, List **defines,
     }
 }
 
+static List *
+make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
+{
+    List *result;
+    ListCell *lc;
+    bool seen_delta;
+
+    result = list_make(state->tmp_pool);
+    seen_delta = false;
+    foreach (lc, all_joins)
+    {
+        AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
+
+        if (join == delta_tbl && !seen_delta)
+        {
+            seen_delta = true;
+            continue;
+        }
+
+        list_append(result, node_deep_copy(join, state->tmp_pool));
+    }
+
+    return result;
+}
+
+static void
+extract_matching_quals(PlannerState *state, List **join_quals, List **quals)
+{
+    ;
+}
+
+static void
+add_join_op(AstJoinClause *ast_join, List *join_quals, List *quals,
+            OpChain *op_chain, PlannerState *state)
+{
+    ;
+}
+
+static void
+extend_op_chain(OpChain *op_chain, PlannerState *state)
+{
+    AstJoinClause *candidate;
+    List *join_quals;
+    List *quals;
+
+    /*
+     * Choose a new relation from the TODO list to add to the join
+     * set. Right now we just take the first element of the TODO list.
+     */
+    candidate = list_remove_head(state->join_set_todo);
+    list_append(state->join_set, candidate);
+
+    extract_matching_quals(state, &join_quals, &quals);
+    add_join_op(candidate, quals, join_quals, op_chain, state);
+}
+
+/*
+ * Return an operator chain that begins with the given delta table. We need
+ * to select the set of necessary operators and choose their order. We do
+ * naive qualifier pushdown (qualifiers are associated with the first node
+ * whose output contains all the variables in the qualifier); we utilize
+ * indexes for qualifier evaluation in this way.
+ */
+static OpChain *
+plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
+              RulePlan *rplan, PlannerState *state)
+{
+    OpChain *op_chain;
+    ListCell *lc;
+
+    state->join_set_todo = make_join_set(delta_tbl, rplan->ast_joins, state);
+    state->qual_set_todo = list_deep_copy(rplan->ast_quals, state->tmp_pool);
+
+    state->join_set = list_make1(delta_tbl, state->tmp_pool);
+    state->qual_set = list_make(state->tmp_pool);
+
+    op_chain = apr_pcalloc(state->plan_pool, sizeof(*op_chain));
+    op_chain->delta_tbl = node_deep_copy(delta_tbl, state->plan_pool);
+    op_chain->chain_start = NULL;
+    op_chain->length = 0;
+
+    while (list_length(state->join_set_todo) > 0)
+        extend_op_chain(op_chain, state);
+
+    return op_chain;
+}
+
+static RulePlan *
+plan_rule(AstRule *rule, PlannerState *state)
+{
+    RulePlan *rplan;
+    ListCell *lc;
+
+    rplan = apr_pcalloc(state->plan_pool, sizeof(*rplan));
+    rplan->chains = list_make(state->plan_pool);
+    rplan->ast_joins = list_make(state->plan_pool);
+    rplan->ast_quals = list_make(state->plan_pool);
+
+    split_rule_body(rule->body, &rplan->ast_joins,
+                    &rplan->ast_quals, state->plan_pool);
+
+    foreach (lc, rplan->ast_joins)
+    {
+        AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
+        OpChain *op_chain;
+
+        op_chain = plan_op_chain(delta_tbl, rule, rplan, state);
+        list_append(rplan->chains, op_chain);
+    }
+
+    return rplan;
+}
+
 ProgramPlan *
 plan_program(AstProgram *ast, ColInstance *col)
 {
     PlannerState *state;
-    ProgramPlan *plan;
+    ProgramPlan *pplan;
     ListCell *lc;
 
     state = planner_state_make(ast, col);
-    plan = state->plan;
+    pplan = state->plan;
 
-    split_program_clauses(ast->clauses, &plan->defines,
-                          &plan->facts, &plan->rules);
+    /* XXX: Fill-in pplan->defines and pplan->facts */
 
-    foreach (lc, plan->rules)
+    foreach (lc, ast->rules)
     {
         AstRule *rule = (AstRule *) lc_ptr(lc);
+        RulePlan *rplan;
 
-        plan_rule(rule, state);
+        rplan = plan_rule(rule, state);
+        list_append(pplan->rules, rplan);
     }
 
     apr_pool_destroy(state->tmp_pool);
-    return plan;
+    return pplan;
 }
-

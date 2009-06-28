@@ -55,4 +55,9 @@ bool list_member_int(List *list, int datum);
 void *list_get(List *list, int idx);
 int list_get_int(List *list, int idx);
 
+void *list_remove_head(List *list);
+int list_remove_head_int(List *list);
+
+List *list_deep_copy(List *list, apr_pool_t *pool);
+
 #endif  /* LIST_H */
