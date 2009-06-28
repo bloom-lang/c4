@@ -37,6 +37,7 @@ typedef struct PlannerState
     List *qual_set_todo;
     List *join_set;
     List *qual_set;
+    List *join_set_refs;
 
     apr_pool_t *plan_pool;
     /*
@@ -131,14 +132,34 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
     return result;
 }
 
-static void
-extract_matching_quals(PlannerState *state, List **join_quals, List **quals)
+static bool
+join_set_satisfies_qual(AstQualifier *qual, PlannerState *state)
 {
-    ;
+    return false;
+}
+
+/*
+ * Extract all the quals in "qual_set_todo" that can be applied to the
+ * output of the join represented by "join_set".
+ */
+static void
+extract_matching_quals(PlannerState *state, List **quals)
+{
+    ListCell *lc;
+
+    foreach (lc, state->qual_set_todo)
+    {
+        AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
+
+        if (join_set_satisfies_qual(qual, state))
+        {
+            ;
+        }
+    }
 }
 
 static void
-add_join_op(AstJoinClause *ast_join, List *join_quals, List *quals,
+add_join_op(AstJoinClause *ast_join, List *quals,
             OpChain *op_chain, PlannerState *state)
 {
     ;
@@ -148,7 +169,6 @@ static void
 extend_op_chain(OpChain *op_chain, PlannerState *state)
 {
     AstJoinClause *candidate;
-    List *join_quals;
     List *quals;
 
     /*
@@ -157,9 +177,10 @@ extend_op_chain(OpChain *op_chain, PlannerState *state)
      */
     candidate = list_remove_head(state->join_set_todo);
     list_append(state->join_set, candidate);
+    list_append(state->join_set_refs, candidate->ref);
 
-    extract_matching_quals(state, &join_quals, &quals);
-    add_join_op(candidate, quals, join_quals, op_chain, state);
+    extract_matching_quals(state, &quals);
+    add_join_op(candidate, quals, op_chain, state);
 }
 
 /*
@@ -180,6 +201,7 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     state->qual_set_todo = list_deep_copy(rplan->ast_quals, state->tmp_pool);
 
     state->join_set = list_make1(delta_tbl, state->tmp_pool);
+    state->join_set_refs = list_make1(delta_tbl->ref, state->tmp_pool);
     state->qual_set = list_make(state->tmp_pool);
 
     op_chain = apr_pcalloc(state->plan_pool, sizeof(*op_chain));
@@ -189,6 +211,10 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
 
     while (list_length(state->join_set_todo) > 0)
         extend_op_chain(op_chain, state);
+
+    if (list_length(state->qual_set_todo) > 0)
+        ERROR("Failed to match %d qualifiers to an operator",
+              list_length(state->qual_set_todo));
 
     return op_chain;
 }

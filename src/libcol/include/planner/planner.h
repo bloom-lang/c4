@@ -1,6 +1,7 @@
 #ifndef PLANNER_H
 #define PLANNER_H
 
+#include "operator/operator.h"
 #include "parser/ast.h"
 #include "util/list.h"
 
@@ -20,11 +21,6 @@ typedef struct RulePlan
     List *ast_joins;
     List *ast_quals;
 } RulePlan;
-
-typedef struct Operator
-{
-    struct Operator *next;
-} Operator;
 
 /*
  * An OpChain is a sequence of operators that begins with a "delta
