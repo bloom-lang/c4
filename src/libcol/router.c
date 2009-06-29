@@ -3,7 +3,9 @@
 
 #include "col-internal.h"
 #include "net/network.h"
+#include "operator/operator.h"
 #include "router.h"
+#include "util/list.h"
 
 struct ColRouter
 {
@@ -69,6 +71,31 @@ router_start(ColRouter *router)
         FAIL();
 }
 
+static List *
+tuple_get_op_chains(Tuple *tuple, ColRouter *router)
+{
+    return NULL;
+}
+
+static void
+route_tuple(Tuple *tuple, ColRouter *router)
+{
+    List *op_chains;
+    ListCell *lc;
+
+    op_chains = tuple_get_op_chains(tuple, router);
+    foreach (lc, op_chains)
+    {
+        OpChain *op_chain = (OpChain *) lc_ptr(lc);
+        OpChainElement *start;
+
+        start = op_chain->chain_start;
+        start->op->invoke(op, tuple);
+    }
+
+    router->ntuple_routed++;
+}
+
 static void * APR_THREAD_FUNC
 router_thread_start(apr_thread_t *thread, void *data)
 {
@@ -88,12 +115,7 @@ router_thread_start(apr_thread_t *thread, void *data)
         if (s != APR_SUCCESS)
             FAIL();
 
-        /* Route the new tuple */
-        network_send(router->col->net, router->col->target_loc_spec, NULL);
-        router->ntuple_routed++;
-
-        if (router->ntuple_routed == 100000)
-            exit(0);
+        route_tuple(tuple, router);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
@@ -109,6 +131,8 @@ router_thread_start(apr_thread_t *thread, void *data)
 void
 router_enqueue(ColRouter *router, Tuple *tuple)
 {
+    tuple_pin(tuple);
+
     while (true)
     {
         apr_status_t s = apr_queue_push(router->queue, tuple);

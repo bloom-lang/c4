@@ -51,5 +51,6 @@ tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
 Tuple *
 tuple_from_buf(const char *buf, apr_size_t len)
 {
+    /* NB: Result should be pinned */
     return NULL;
 }

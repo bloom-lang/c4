@@ -23,4 +23,3 @@ scan_op_make(apr_pool_t *pool)
 
     return scan_op;
 }
-
