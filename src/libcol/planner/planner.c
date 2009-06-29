@@ -26,6 +26,7 @@
 #include <apr_strings.h>
 
 #include "col-internal.h"
+#include "operator/operator.h"
 #include "parser/copyfuncs.h"
 #include "parser/parser.h"
 #include "planner/planner.h"

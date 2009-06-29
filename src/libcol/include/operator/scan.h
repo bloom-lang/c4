@@ -8,6 +8,6 @@ typedef struct ScanOperator
     Operator op;
 } ScanOperator;
 
-ScanOperator *scan_op_make(void);
+ScanOperator *scan_op_make(apr_pool_t *pool);
 
 #endif  /* SCAN_H */

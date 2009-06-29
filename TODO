@@ -14,6 +14,7 @@ Parser and lexer:
 
 Planner:
 * Generate implied equalities from the qualifier list
+* Avoid Cartesian products, if possible
 
 Executor/Router/Operators:
 * Consider writing a specialized allocator for Tuples
@@ -24,3 +25,5 @@ Broader issues:
 * Error handling
 * Add a "$LOCALHOST" variable that expands to the network address of
   the evaluating COL instance
+* Invent something similar to makeNode() from Postgres: infer node
+  size from node type tag
