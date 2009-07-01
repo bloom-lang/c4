@@ -115,7 +115,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
         /* Convert to tuple format, route tuple */
         tuple = tuple_from_buf(rt->buf, msg_len);
-        router_enqueue(rt->col->router, tuple);
+        router_enqueue_tuple(rt->col->router, tuple);
         tuple_unpin(tuple);
     }
 

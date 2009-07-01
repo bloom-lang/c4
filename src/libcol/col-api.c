@@ -135,5 +135,5 @@ col_set_other(ColInstance *col, int target_port)
 void
 col_do_ping(ColInstance *col)
 {
-    router_enqueue(col->router, NULL);
+    router_enqueue_tuple(col->router, NULL);
 }

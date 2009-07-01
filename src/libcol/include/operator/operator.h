@@ -32,7 +32,7 @@ typedef enum OpKind
     OPER_SCAN
 } OpKind;
 
-typedef void (*op_invoke_func)(Operator *op, Tuple *t);
+typedef void (*op_invoke_func)(OpChainElem *elem, Tuple *t);
 typedef void (*op_destroy_func)(Operator *op);
 
 struct Operator

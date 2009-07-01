@@ -18,6 +18,7 @@ Planner:
 
 Executor/Router/Operators:
 * Consider writing a specialized allocator for Tuples
+* Don't copy WorkItem in the router: have the queue store kind + pointer directly
 
 Broader issues:
 
