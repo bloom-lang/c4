@@ -2,9 +2,9 @@
 #include "operator/scan.h"
 
 static void
-scan_invoke(OpChainElem *elem, Tuple *t)
+scan_invoke(Operator *op, Tuple *t)
 {
-    ScanOperator *scan_op = (ScanOperator *) elem->op;
+    ScanOperator *scan_op = (ScanOperator *) op;
 }
 
 static void

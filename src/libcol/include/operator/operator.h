@@ -3,7 +3,6 @@
 
 #include "types/tuple.h"
 
-typedef struct OpChainElem OpChainElem;
 typedef struct Operator Operator;
 
 /*
@@ -17,28 +16,24 @@ typedef struct OpChain
 {
     char *delta_tbl;
     char *head_tbl;
-    OpChainElem *chain_start;
+    Operator *chain_start;
     int length;
 } OpChain;
 
-struct OpChainElem
-{
-    OpChainElem *next;
-    Operator *op;
-};
-
 typedef enum OpKind
 {
-    OPER_SCAN
+    OPER_SCAN,
+    OPER_FILTER
 } OpKind;
 
-typedef void (*op_invoke_func)(OpChainElem *elem, Tuple *t);
+typedef void (*op_invoke_func)(Operator *op, Tuple *t);
 typedef void (*op_destroy_func)(Operator *op);
 
 struct Operator
 {
     OpKind op_kind;
     apr_pool_t *pool;
+    Operator *next;
 
     op_invoke_func invoke;
     op_destroy_func destroy;

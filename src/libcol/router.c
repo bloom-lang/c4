@@ -106,10 +106,10 @@ route_tuple(Tuple *tuple, ColRouter *router)
     foreach (lc, op_chains)
     {
         OpChain *op_chain = (OpChain *) lc_ptr(lc);
-        OpChainElem *start;
+        Operator *start;
 
         start = op_chain->chain_start;
-        start->op->invoke(start, tuple);
+        start->invoke(start, tuple);
     }
 
     router->ntuple_routed++;
