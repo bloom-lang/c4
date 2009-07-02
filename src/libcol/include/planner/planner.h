@@ -22,5 +22,6 @@ typedef struct RulePlan
 } RulePlan;
 
 ProgramPlan *plan_program(AstProgram *ast, ColInstance *col);
+void plan_destroy(ProgramPlan *plan);
 
 #endif  /* PLANNER_H */

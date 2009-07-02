@@ -33,11 +33,13 @@ typedef enum WorkItemKind
 typedef struct WorkItem
 {
     WorkItemKind kind;
-    union
-    {
-        Tuple *tuple;
-        ProgramPlan *plan;
-    } data;
+
+    /* WI_TUPLE: */
+    Tuple *tuple;
+    char *tbl_name;
+
+    /* WI_PLAN: */
+    ProgramPlan *plan;
 } WorkItem;
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
@@ -91,18 +93,18 @@ router_start(ColRouter *router)
 }
 
 static List *
-tuple_get_op_chains(Tuple *tuple, ColRouter *router)
+tuple_get_op_chains(const char *tbl_name, ColRouter *router)
 {
     return NULL;
 }
 
 static void
-route_tuple(Tuple *tuple, ColRouter *router)
+route_tuple(Tuple *tuple, const char *tbl_name, ColRouter *router)
 {
     List *op_chains;
     ListCell *lc;
 
-    op_chains = tuple_get_op_chains(tuple, router);
+    op_chains = tuple_get_op_chains(tbl_name, router);
     foreach (lc, op_chains)
     {
         OpChain *op_chain = (OpChain *) lc_ptr(lc);
@@ -113,7 +115,30 @@ route_tuple(Tuple *tuple, ColRouter *router)
     }
 
     router->ntuple_routed++;
-    tuple_unpin(tuple);
+}
+
+static void
+workitem_destroy(WorkItem *wi)
+{
+    switch (wi->kind)
+    {
+        case WI_TUPLE:
+            tuple_unpin(wi->tuple);
+            ol_free(wi->tbl_name);
+            break;
+
+        case WI_PLAN:
+            plan_destroy(wi->plan);
+            break;
+
+        case WI_SHUTDOWN:
+            break;
+
+        default:
+            ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
+    }
+
+    ol_free(wi);
 }
 
 static void * APR_THREAD_FUNC
@@ -138,11 +163,11 @@ router_thread_start(apr_thread_t *thread, void *data)
         switch (wi->kind)
         {
             case WI_TUPLE:
-                route_tuple(wi->data.tuple, router);
+                route_tuple(wi->tuple, wi->tbl_name, router);
                 break;
 
             case WI_PLAN:
-                install_plan(wi->data.plan, router->col);
+                install_plan(wi->plan, router->col);
                 break;
 
             case WI_SHUTDOWN:
@@ -152,7 +177,7 @@ router_thread_start(apr_thread_t *thread, void *data)
                 ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
         }
 
-        ol_free(wi);
+        workitem_destroy(wi);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
@@ -166,13 +191,14 @@ router_enqueue_plan(ColRouter *router, ProgramPlan *plan)
 
     wi = ol_alloc(sizeof(*wi));
     wi->kind = WI_PLAN;
-    wi->data.plan = plan;
+    wi->plan = plan;
 
     router_enqueue(router, wi);
 }
 
 void
-router_enqueue_tuple(ColRouter *router, Tuple *tuple)
+router_enqueue_tuple(ColRouter *router, Tuple *tuple,
+                     const char *tbl_name)
 {
     WorkItem *wi;
 
@@ -181,7 +207,8 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple)
 
     wi = ol_alloc(sizeof(*wi));
     wi->kind = WI_TUPLE;
-    wi->data.tuple = tuple;
+    wi->tuple = tuple;
+    wi->tbl_name = ol_strdup(tbl_name);
 
     router_enqueue(router, wi);
 }

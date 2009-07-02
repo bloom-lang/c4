@@ -28,3 +28,4 @@ Broader issues:
   the evaluating COL instance
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
+* Make use of profile-guided optimization

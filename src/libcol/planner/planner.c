@@ -270,3 +270,9 @@ plan_program(AstProgram *ast, ColInstance *col)
     apr_pool_destroy(state->tmp_pool);
     return pplan;
 }
+
+void
+plan_destroy(ProgramPlan *plan)
+{
+    apr_pool_destroy(plan->pool);
+}

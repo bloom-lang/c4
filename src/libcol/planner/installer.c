@@ -31,7 +31,7 @@ plan_install_facts(ProgramPlan *plan, ColInstance *col)
         Tuple *t;
 
         t = fact_make_tuple(fact, col);
-        router_enqueue_tuple(col->router, t);
+        router_enqueue_tuple(col->router, t, fact->head->name);
         tuple_unpin(t);
     }
 }
