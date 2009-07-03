@@ -21,6 +21,9 @@ table_make(const char *name, apr_pool_t *pool)
     return tbl;
 }
 
+/*
+ * Unpin the tuples formerly contained in this table.
+ */
 static apr_status_t
 table_cleanup(void *data)
 {
@@ -47,6 +50,13 @@ table_cleanup(void *data)
 bool
 table_insert(ColTable *tbl, Tuple *t)
 {
-    tuple_pin(t);
+#if 0
+    Tuple *val;
+
+    val = apr_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
+    tuple_pin(val);
+
+    return (bool) (t == val);
+#endif
     return true;
 }
