@@ -110,6 +110,23 @@ void col_hash_set(col_hash_t *ht, const void *key,
                   apr_ssize_t klen, const void *val);
 
 /**
+ * Associated a value with a key in the hash table, iff the key is not
+ * already in the hash table.
+ * @param ht The hash table
+ * @param key Pointer to the key
+ * @param klen Length of the key. Can be COL_HASH_KEY_STRING to use the
+ *             string length.
+ * @param val Value to associate with the key, if the key is not already in
+ *            the hash table. Cannot be NULL.
+ * @return The value associated with the key. If key is new, this is "val";
+ *         otherwise, the hash table is unmodified, and the result is
+ *         equivalent to col_hash_get(ht, key, klen).
+ */
+void *col_hash_set_if_new(col_hash_t *ht, const void *key,
+                          apr_ssize_t klen, const void *val);
+
+
+/**
  * Look up the value associated with a key in a hash table.
  * @param ht The hash table
  * @param key Pointer to the key

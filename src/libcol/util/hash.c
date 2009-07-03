@@ -355,6 +355,18 @@ void col_hash_set(col_hash_t *ht, const void *key,
     /* else key not present and val==NULL */
 }
 
+void *col_hash_set_if_new(col_hash_t *ht,
+                          const void *key,
+                          apr_ssize_t klen,
+                          const void *val)
+{
+    col_hash_entry_t *he;
+
+    ASSERT(val != NULL);
+    he = *find_entry(ht, key, klen, val);
+    return (void *)he->val;
+}
+
 unsigned int col_hash_count(col_hash_t *ht)
 {
     return ht->count;
