@@ -18,6 +18,11 @@ typedef union Datum
     char          *s;
 } Datum;
 
+/*
+ * XXX: Note that tuple refcounts are not currently tracked by the APR pool
+ * cleanup mechanism. Therefore, modules keeping a tuple pinned should be
+ * sure to release their pin in a cleanup function.
+ */
 typedef struct Tuple
 {
     /*

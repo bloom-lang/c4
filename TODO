@@ -29,3 +29,4 @@ Broader issues:
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
 * Make use of profile-guided optimization
+* Consider caching per-tuple hash code
