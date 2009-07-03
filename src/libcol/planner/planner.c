@@ -134,6 +134,10 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
     return result;
 }
 
+/*
+ * Given the currently-joined tables in "state->join_set", are we in a
+ * position to be able to evaluate "qual"?
+ */
 static bool
 join_set_satisfies_qual(AstQualifier *qual, PlannerState *state)
 {
@@ -174,8 +178,8 @@ extend_op_chain(OpChain *op_chain, PlannerState *state)
     List *quals;
 
     /*
-     * Choose a new relation from the TODO list to add to the join
-     * set. Right now we just take the first element of the TODO list.
+     * Choose a new relation from the TODO list to add to the join set. XXX:
+     * for now we just take the first element of the list.
      */
     candidate = list_remove_head(state->join_set_todo);
     list_append(state->join_set, candidate);
@@ -199,7 +203,7 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     ListCell *lc;
 
     state->join_set_todo = make_join_set(delta_tbl, rplan->ast_joins, state);
-    state->qual_set_todo = list_copy_deep(rplan->ast_quals, state->tmp_pool);
+    state->qual_set_todo = list_copy(rplan->ast_quals, state->tmp_pool);
 
     state->join_set = list_make1(delta_tbl, state->tmp_pool);
     state->join_set_refs = list_make1(delta_tbl->ref, state->tmp_pool);
@@ -227,13 +231,18 @@ plan_rule(AstRule *rule, PlannerState *state)
     ListCell *lc;
 
     rplan = apr_pcalloc(state->plan_pool, sizeof(*rplan));
-    rplan->chains = list_make(state->plan_pool);
     rplan->ast_joins = list_make(state->plan_pool);
     rplan->ast_quals = list_make(state->plan_pool);
 
     split_rule_body(rule->body, &rplan->ast_joins,
                     &rplan->ast_quals, state->plan_pool);
 
+    /*
+     * For each table referenced by the rule, generate an OpChain that has
+     * that table at its delta table. That is, we produce a fixed list of
+     * operators that are evaluated when we see a new tuple in that table.
+     */
+    rplan->chains = list_make(state->plan_pool);
     foreach (lc, rplan->ast_joins)
     {
         AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
@@ -256,7 +265,7 @@ plan_program(AstProgram *ast, ColInstance *col)
     state = planner_state_make(ast, col);
     pplan = state->plan;
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
-    pplan->rules = list_copy_deep(ast->rules, pplan->pool);
+    pplan->facts = list_copy_deep(ast->facts, pplan->pool);
 
     foreach (lc, ast->rules)
     {
