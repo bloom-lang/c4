@@ -14,6 +14,7 @@ typedef struct Operator Operator;
  */
 typedef struct OpChain
 {
+    apr_pool_t *pool;
     char *delta_tbl;
     char *head_tbl;
     Operator *chain_start;

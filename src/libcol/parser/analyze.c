@@ -161,9 +161,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     /*
      * Check the consistency of the location specifiers. At most one
-     * distinct location specifier can be used in the rule body; if a
-     * location specifier is used in the body that is distinct from the
-     * head's location specifier, this is a network rule.
+     * distinct location specifier can be used in the rule body.
      */
     body_loc_spec = NULL;
     foreach (lc, rule->body)
@@ -188,6 +186,10 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         }
     }
 
+    /*
+     * If a location specifier is used in the body that is distinct from the
+     * head's location specifier, this is a network rule.
+     */
     head_loc_spec = table_ref_get_loc_spec(rule->head);
     if (body_loc_spec != NULL && head_loc_spec != NULL &&
         !loc_spec_equal(body_loc_spec, head_loc_spec))
@@ -493,8 +495,8 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         ERROR("No such table \"%s\"", ref->name);
 
     /*
-     * Check that the reference data types are compatible with the table
-     * schema
+     * Check that the data types of the table reference are compatible with
+     * the schema of the table
      */
     if (list_length(define->schema) != list_length(ref->cols))
         ERROR("Reference to table %s has incorrect # of columns. "

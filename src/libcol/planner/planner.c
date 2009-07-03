@@ -26,7 +26,6 @@
 #include <apr_strings.h>
 
 #include "col-internal.h"
-#include "operator/operator.h"
 #include "parser/copyfuncs.h"
 #include "parser/parser.h"
 #include "planner/planner.h"
@@ -166,13 +165,40 @@ extract_matching_quals(PlannerState *state, List **quals)
 
 static void
 add_join_op(AstJoinClause *ast_join, List *quals,
-            OpChain *op_chain, PlannerState *state)
+            OpChainPlan *chain_plan, PlannerState *state)
 {
     ;
 }
 
 static void
-extend_op_chain(OpChain *op_chain, PlannerState *state)
+add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
+{
+    FilterOpPlan *fplan;
+
+    fplan = apr_pcalloc(state->plan_pool, sizeof(*fplan));
+    fplan->op_plan.op_kind = OPER_FILTER;
+    fplan->quals = list_copy_deep(quals, state->plan_pool);
+    fplan->tbl_name = chain_plan->delta_tbl;
+
+    list_append(chain_plan->chain, fplan);
+}
+
+static void
+add_delta_filter(OpChainPlan *chain_plan, PlannerState *state)
+{
+    List *quals;
+
+    /* Should be the first op in the chain */
+    ASSERT(list_is_empty(state->join_set));
+    ASSERT(list_is_empty(chain_plan->chain));
+
+    extract_matching_quals(state, &quals);
+    if (!list_is_empty(quals))
+        add_filter_op(quals, chain_plan, state);
+}
+
+static void
+extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
 {
     AstJoinClause *candidate;
     List *quals;
@@ -186,20 +212,20 @@ extend_op_chain(OpChain *op_chain, PlannerState *state)
     list_append(state->join_set_refs, candidate->ref);
 
     extract_matching_quals(state, &quals);
-    add_join_op(candidate, quals, op_chain, state);
+    add_join_op(candidate, quals, chain_plan, state);
 }
 
 /*
- * Return an operator chain that begins with the given delta table. We need
- * to select the set of necessary operators and choose their order. We do
- * naive qualifier pushdown (qualifiers are associated with the first node
- * whose output contains all the variables in the qualifier).
+ * Return an operator chain plan that begins with the given delta table. We
+ * need to select the set of necessary operators and choose their order. We
+ * do naive qualifier pushdown (qualifiers are associated with the first
+ * node whose output contains all the variables in the qualifier).
  */
-static OpChain *
+static OpChainPlan *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
               RulePlan *rplan, PlannerState *state)
 {
-    OpChain *op_chain;
+    OpChainPlan *chain_plan;
     ListCell *lc;
 
     state->join_set_todo = make_join_set(delta_tbl, rplan->ast_joins, state);
@@ -209,19 +235,25 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     state->join_set_refs = list_make1(delta_tbl->ref, state->tmp_pool);
     state->qual_set = list_make(state->tmp_pool);
 
-    op_chain = apr_pcalloc(state->plan_pool, sizeof(*op_chain));
-    op_chain->delta_tbl = copy_node(delta_tbl, state->plan_pool);
-    op_chain->chain_start = NULL;
-    op_chain->length = 0;
+    chain_plan = apr_pcalloc(state->plan_pool, sizeof(*chain_plan));
+    chain_plan->delta_tbl = apr_pstrdup(state->plan_pool,
+                                        delta_tbl->ref->name);
+    chain_plan->chain = list_make(state->plan_pool);
+
+    /*
+     * If there are any quals that can be applied directly to the delta
+     * table, implement them via an initial Filter op.
+     */
+    add_delta_filter(chain_plan, state);
 
     while (!list_is_empty(state->join_set_todo))
-        extend_op_chain(op_chain, state);
+        extend_op_chain(chain_plan, state);
 
     if (!list_is_empty(state->qual_set_todo))
         ERROR("Failed to match %d qualifiers to an operator",
               list_length(state->qual_set_todo));
 
-    return op_chain;
+    return chain_plan;
 }
 
 static RulePlan *
@@ -238,18 +270,19 @@ plan_rule(AstRule *rule, PlannerState *state)
                     &rplan->ast_quals, state->plan_pool);
 
     /*
-     * For each table referenced by the rule, generate an OpChain that has
-     * that table at its delta table. That is, we produce a fixed list of
-     * operators that are evaluated when we see a new tuple in that table.
+     * For each table referenced by the rule, generate an OpChainPlan that
+     * has that table at its delta table. That is, we produce a fixed list
+     * of operators that are evaluated when we see a new tuple in that
+     * table.
      */
     rplan->chains = list_make(state->plan_pool);
     foreach (lc, rplan->ast_joins)
     {
         AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
-        OpChain *op_chain;
+        OpChainPlan *chain_plan;
 
-        op_chain = plan_op_chain(delta_tbl, rule, rplan, state);
-        list_append(rplan->chains, op_chain);
+        chain_plan = plan_op_chain(delta_tbl, rule, rplan, state);
+        list_append(rplan->chains, chain_plan);
     }
 
     return rplan;

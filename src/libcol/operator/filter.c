@@ -1,5 +1,6 @@
 #include "col-internal.h"
 #include "operator/filter.h"
+#include "parser/copyfuncs.h"
 
 static void
 filter_invoke(Operator *op, Tuple *t)
@@ -14,7 +15,7 @@ filter_destroy(Operator *op)
 }
 
 FilterOperator *
-filter_op_make(apr_pool_t *pool)
+filter_op_make(FilterOpPlan *plan, apr_pool_t *pool)
 {
     FilterOperator *filter_op;
 
@@ -23,6 +24,7 @@ filter_op_make(apr_pool_t *pool)
                                                  filter_invoke,
                                                  filter_destroy,
                                                  pool);
+    filter_op->plan = copy_node(plan, pool);
 
     return filter_op;
 }
