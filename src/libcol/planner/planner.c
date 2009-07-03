@@ -189,8 +189,7 @@ extend_op_chain(OpChain *op_chain, PlannerState *state)
  * Return an operator chain that begins with the given delta table. We need
  * to select the set of necessary operators and choose their order. We do
  * naive qualifier pushdown (qualifiers are associated with the first node
- * whose output contains all the variables in the qualifier); we utilize
- * indexes for qualifier evaluation in this way.
+ * whose output contains all the variables in the qualifier).
  */
 static OpChain *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
@@ -211,10 +210,10 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     op_chain->chain_start = NULL;
     op_chain->length = 0;
 
-    while (list_length(state->join_set_todo) > 0)
+    while (!list_is_empty(state->join_set_todo))
         extend_op_chain(op_chain, state);
 
-    if (list_length(state->qual_set_todo) > 0)
+    if (!list_is_empty(state->qual_set_todo))
         ERROR("Failed to match %d qualifiers to an operator",
               list_length(state->qual_set_todo));
 

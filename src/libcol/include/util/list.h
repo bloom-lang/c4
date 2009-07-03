@@ -18,6 +18,7 @@ typedef struct
 #define list_head(list)         (list)->head
 #define list_tail(list)         (list)->tail
 #define list_length(list)       (list)->length
+#define list_is_empty(list)     (list_length(list) == 0)
 
 struct ListCell
 {
