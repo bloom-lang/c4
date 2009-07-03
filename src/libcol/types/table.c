@@ -2,8 +2,10 @@
 
 #include "col-internal.h"
 #include "types/table.h"
+#include "types/tuple.h"
 
 static apr_status_t table_cleanup(void *data);
+static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 
 ColTable *
 table_make(const char *name, apr_pool_t *pool)
@@ -13,7 +15,9 @@ table_make(const char *name, apr_pool_t *pool)
     tbl = apr_pcalloc(pool, sizeof(*tbl));
     tbl->pool = pool;
     tbl->name = apr_pstrdup(pool, name);
-    tbl->tuples = col_hash_make(pool);
+    tbl->tuples = col_hash_make_custom(pool,
+                                       tuple_hash,
+                                       table_cmp_tuple);
 
     apr_pool_cleanup_register(pool, tbl, table_cleanup,
                               apr_pool_cleanup_null);
@@ -40,6 +44,15 @@ table_cleanup(void *data)
     }
 
     return APR_SUCCESS;
+}
+
+static int
+table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
+{
+    Tuple *t1 = (Tuple *) k1;
+    Tuple *t2 = (Tuple *) k2;
+
+    return 0;
 }
 
 /*

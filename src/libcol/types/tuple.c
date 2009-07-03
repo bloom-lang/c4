@@ -31,7 +31,7 @@ tuple_unpin(Tuple *tuple)
 }
 
 bool
-tuple_eq(Tuple *t1, Tuple *t2)
+tuple_equal(Tuple *t1, Tuple *t2)
 {
     return false;
 }
