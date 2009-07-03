@@ -192,7 +192,7 @@ list_copy(List *list, apr_pool_t *pool)
 
 /*
  * Return a deep copy of "list", allocated from "pool". The input list is
- * assumed to hold pointers to nodes that can be copied using node_copy().
+ * assumed to hold pointers to nodes that can be copied using copy_node().
  */
 List *
 list_copy_deep(List *list, apr_pool_t *pool)
@@ -204,7 +204,7 @@ list_copy_deep(List *list, apr_pool_t *pool)
     foreach (lc, list)
     {
         void *data = lc_ptr(lc);
-        list_append(result, node_copy(data, pool));
+        list_append(result, copy_node(data, pool));
     }
 
     return result;

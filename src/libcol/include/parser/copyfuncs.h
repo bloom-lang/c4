@@ -1,6 +1,6 @@
 #ifndef COPYFUNCS_H
 #define COPYFUNCS_H
 
-void *node_copy(void *n, apr_pool_t *pool);
+void *copy_node(void *n, apr_pool_t *pool);
 
 #endif  /* COPYFUNCS_H */

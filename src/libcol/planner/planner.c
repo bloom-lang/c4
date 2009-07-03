@@ -92,7 +92,7 @@ split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
-        node = node_copy(node, pool);
+        node = copy_node(node, pool);
         switch (node->kind)
         {
             case AST_JOIN_CLAUSE:
@@ -128,7 +128,7 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
             continue;
         }
 
-        list_append(result, node_copy(join, state->tmp_pool));
+        list_append(result, copy_node(join, state->tmp_pool));
     }
 
     return result;
@@ -207,7 +207,7 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     state->qual_set = list_make(state->tmp_pool);
 
     op_chain = apr_pcalloc(state->plan_pool, sizeof(*op_chain));
-    op_chain->delta_tbl = node_copy(delta_tbl, state->plan_pool);
+    op_chain->delta_tbl = copy_node(delta_tbl, state->plan_pool);
     op_chain->chain_start = NULL;
     op_chain->length = 0;
 
