@@ -4,6 +4,8 @@
 #include "types/schema.h"
 #include "util/list.h"
 
+typedef struct AstTableRef AstTableRef;
+
 typedef enum AstNodeKind
 {
     AST_PROGRAM,
@@ -46,13 +48,6 @@ typedef struct AstDefine
     List *schema;
 } AstDefine;
 
-typedef struct AstTableRef
-{
-    AstNode node;
-    char *name;
-    List *cols;
-} AstTableRef;
-
 typedef struct AstFact
 {
     AstNode node;
@@ -77,6 +72,20 @@ typedef enum AstHashVariant
     AST_HASH_INSERT
 } AstHashVariant;
 
+struct AstTableRef
+{
+    AstNode node;
+    char *name;
+    List *cols;
+};
+
+typedef struct AstColumnRef
+{
+    AstNode node;
+    bool has_loc_spec;
+    AstNode *expr;
+} AstColumnRef;
+
 typedef struct AstJoinClause
 {
     AstNode node;
@@ -90,13 +99,6 @@ typedef struct AstQualifier
     AstNode node;
     AstNode *expr;
 } AstQualifier;
-
-typedef struct AstColumnRef
-{
-    AstNode node;
-    bool has_loc_spec;
-    AstNode *expr;
-} AstColumnRef;
 
 typedef struct AstAssign
 {

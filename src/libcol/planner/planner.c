@@ -40,11 +40,12 @@ typedef struct PlannerState
     List *qual_set;
     List *join_set_refs;
 
+    /* The pool in which the output plan is allocated */
     apr_pool_t *plan_pool;
     /*
      * Storage for temporary allocations made during the planning
      * process. This is a subpool of the plan pool; it is deleted when
-     * planning completes.
+     * planning is complete.
      */
     apr_pool_t *tmp_pool;
 } PlannerState;
@@ -91,7 +92,7 @@ split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
     {
         AstNode *node = (AstNode *) lc_ptr(lc);
 
-        node = node_deep_copy(node, pool);
+        node = node_copy(node, pool);
         switch (node->kind)
         {
             case AST_JOIN_CLAUSE:
@@ -127,7 +128,7 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
             continue;
         }
 
-        list_append(result, node_deep_copy(join, state->tmp_pool));
+        list_append(result, node_copy(join, state->tmp_pool));
     }
 
     return result;
@@ -199,14 +200,14 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     ListCell *lc;
 
     state->join_set_todo = make_join_set(delta_tbl, rplan->ast_joins, state);
-    state->qual_set_todo = list_deep_copy(rplan->ast_quals, state->tmp_pool);
+    state->qual_set_todo = list_copy_deep(rplan->ast_quals, state->tmp_pool);
 
     state->join_set = list_make1(delta_tbl, state->tmp_pool);
     state->join_set_refs = list_make1(delta_tbl->ref, state->tmp_pool);
     state->qual_set = list_make(state->tmp_pool);
 
     op_chain = apr_pcalloc(state->plan_pool, sizeof(*op_chain));
-    op_chain->delta_tbl = node_deep_copy(delta_tbl, state->plan_pool);
+    op_chain->delta_tbl = node_copy(delta_tbl, state->plan_pool);
     op_chain->chain_start = NULL;
     op_chain->length = 0;
 
@@ -255,8 +256,8 @@ plan_program(AstProgram *ast, ColInstance *col)
 
     state = planner_state_make(ast, col);
     pplan = state->plan;
-
-    /* XXX: Fill-in pplan->defines and pplan->facts */
+    pplan->defines = list_copy_deep(ast->defines, pplan->pool);
+    pplan->rules = list_copy_deep(ast->rules, pplan->pool);
 
     foreach (lc, ast->rules)
     {

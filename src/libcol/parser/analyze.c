@@ -308,7 +308,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
             char *var_name;
 
             var_name = make_anon_var_name("const", state);
-            var = make_var_expr(var_name, state->pool);
+            var = make_var_expr(var_name, TYPE_INVALID, state->pool);
             cref->expr = (AstNode *) var;
 
             add_qual(var_name, const_expr, AST_OP_EQ, rule, state);
@@ -364,7 +364,7 @@ add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
     AstOpExpr *op_expr;
     AstQualifier *qual;
 
-    lhs = make_var_expr(lhs_name, state->pool);
+    lhs = make_var_expr(lhs_name, TYPE_INVALID, state->pool);
     op_expr = make_op_expr((AstNode *) lhs, rhs,
                            op_kind, state->pool);
     qual = make_qualifier((AstNode *) op_expr, state->pool);

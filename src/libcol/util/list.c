@@ -1,11 +1,10 @@
+#include <apr_strings.h>
+
 #include "col-internal.h"
 #include "parser/copyfuncs.h"
 #include "util/list.h"
 
-static ListCell *make_ptr_cell(List *list, void *datum,
-                               ListCell *prev, ListCell *next);
-static ListCell *make_int_cell(List *list, int datum,
-                               ListCell *prev, ListCell *next);
+static ListCell *make_new_cell(List *list, ListCell *prev, ListCell *next);
 
 List *
 list_make(apr_pool_t *pool)
@@ -24,63 +23,49 @@ list_make(apr_pool_t *pool)
 List *
 list_append(List *list, void *datum)
 {
-    list->tail = make_ptr_cell(list, datum, list->tail, NULL);
+    list->tail = make_new_cell(list, list->tail, NULL);
+    lc_ptr(list->tail) = datum;
     return list;
 }
 
 List *
 list_append_int(List *list, int datum)
 {
-    list->tail = make_int_cell(list, datum, list->tail, NULL);
+    list->tail = make_new_cell(list, list->tail, NULL);
+    lc_int(list->tail) = datum;
     return list;
 }
 
 List *
 list_prepend(List *list, void *datum)
 {
-    list->head = make_ptr_cell(list, datum, NULL, list->head);
+    list->head = make_new_cell(list, NULL, list->head);
+    lc_ptr(list->head) = datum;
     return list;
 }
 
 List *
 list_prepend_int(List *list, int datum)
 {
-    list->head = make_int_cell(list, datum, NULL, list->head);
+    list->head = make_new_cell(list, NULL, list->head);
+    lc_int(list->head) = datum;
     return list;
 }
 
+/*
+ * Add a new cell to the list, with the given "prev" and "next" cells (which
+ * might be NULL). The caller should fill-in the "data" field of the
+ * returned ListCell.
+ */
 static ListCell *
-make_ptr_cell(List *list, void *datum, ListCell *prev, ListCell *next)
+make_new_cell(List *list, ListCell *prev, ListCell *next)
 {
     ListCell *lc;
 
     ASSERT(list != NULL);
 
     lc = apr_palloc(list->pool, sizeof(*lc));
-    lc_ptr(lc) = datum;
-
     lc->next = next;
-    if (prev)
-        prev->next = lc;
-
-    list->length++;
-    if (list->length == 1)
-        list->head = list->tail = lc;
-
-    return lc;
-}
-
-static ListCell *
-make_int_cell(List *list, int datum, ListCell *prev, ListCell *next)
-{
-    ListCell *lc;
-
-    ASSERT(list != NULL);
-
-    lc = apr_palloc(list->pool, sizeof(*lc));
-    lc_int(lc) = datum;
-    lc->next = next;
-
     if (prev)
         prev->next = lc;
 
@@ -184,8 +169,12 @@ list_remove_head_int(List *list)
     return lc_int(list_remove_first_cell(list));
 }
 
+/*
+ * Return a shallow copy of "list", allocated from "pool". The data in the
+ * input list cells is not copied, just the list structure.
+ */
 List *
-list_deep_copy(List *list, apr_pool_t *pool)
+list_copy(List *list, apr_pool_t *pool)
 {
     List *result;
     ListCell *lc;
@@ -193,7 +182,49 @@ list_deep_copy(List *list, apr_pool_t *pool)
     result = list_make(pool);
     foreach (lc, list)
     {
-        list_append(result, node_deep_copy(lc_ptr(lc), pool));
+        ListCell *new_tail = make_new_cell(result, list_tail(result), NULL);
+        result->tail = new_tail;
+        new_tail->data = lc->data;
+    }
+
+    return result;
+}
+
+/*
+ * Return a deep copy of "list", allocated from "pool". The input list is
+ * assumed to hold pointers to nodes that can be copied using node_copy().
+ */
+List *
+list_copy_deep(List *list, apr_pool_t *pool)
+{
+    List *result;
+    ListCell *lc;
+
+    result = list_make(pool);
+    foreach (lc, list)
+    {
+        void *data = lc_ptr(lc);
+        list_append(result, node_copy(data, pool));
+    }
+
+    return result;
+}
+
+/*
+ * Return a deep copy of "list", allocated from "pool". The input list is
+ * assumed to hold pointers to NUL-terminated strings.
+ */
+List *
+list_copy_str(List *list, apr_pool_t *pool)
+{
+    List *result;
+    ListCell *lc;
+
+    result = list_make(pool);
+    foreach (lc, list)
+    {
+        char *str = (char *) lc_ptr(lc);
+        list_append(result, apr_pstrdup(pool, str));
     }
 
     return result;

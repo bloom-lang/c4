@@ -55,12 +55,12 @@ static void split_program_clauses(List *clauses, List **defines,
 
 %%
 program: program_header program_body {
-    AstProgram *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_PROGRAM;
-    n->name = $1;
-    split_program_clauses($2, &n->defines, &n->facts, &n->rules);
+    List *defines;
+    List *facts;
+    List *rules;
 
-    context->result = n;
+    split_program_clauses($2, &defines, &facts, &rules);
+    context->result = make_program($1, defines, facts, rules, context->pool);
 };
 
 program_header: PROGRAM TBL_IDENT ';' { $$ = $2; };
@@ -76,12 +76,7 @@ clause:
 ;
 
 define: DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
-    AstDefine *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_DEFINE;
-    n->name = $3;
-    n->keys = $5;
-    n->schema = $6;
-    $$ = n;
+    $$ = make_define($3, $5, $6, context->pool);
 };
 
 /*
@@ -125,7 +120,7 @@ rule: rule_prefix opt_rule_body {
         if (rule->is_delete)
             ERROR("Cannot specify \"delete\" in a fact");
 
-        $$ = n;
+        $$ = make_fact(rule->head, context->pool);
     }
     else
     {
@@ -135,9 +130,9 @@ rule: rule_prefix opt_rule_body {
 };
 
 rule_prefix:
-  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, $3, context->pool); }
-| DELETE table_ref               { $$ = make_rule(NULL, true, $2, context->pool); }
-| table_ref                      { $$ = make_rule(NULL, false, $1, context->pool); }
+  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, false, $3, NULL, context->pool); }
+| DELETE table_ref               { $$ = make_rule(NULL, true, false, $2, NULL, context->pool); }
+| table_ref                      { $$ = make_rule(NULL, false, false, $1, NULL, context->pool); }
 ;
 
 opt_delete:
@@ -161,12 +156,8 @@ rule_body_elem:
 ;
 
 join_clause: opt_not TBL_IDENT opt_hash_variant '(' column_ref_list ')' {
-    AstJoinClause *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_JOIN_CLAUSE;
-    n->not = $1;
-    n->hash_variant = $3;
-    n->ref = make_table_ref($2, $5, context->pool);
-    $$ = n;
+    AstTableRef *ref = make_table_ref($2, $5, context->pool);
+    $$ = make_join_clause(ref, $1, $3, context->pool);
 };
 
 opt_not:
@@ -259,12 +250,7 @@ bool_const:
 | OL_FALSE      { $$ = false; }
 ;
 
-var_expr: VAR_IDENT {
-    AstVarExpr *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_VAR_EXPR;
-    n->name = $1;
-    $$ = n;
-};
+var_expr: VAR_IDENT { $$ = make_var_expr($1, TYPE_INVALID, context->pool); };
 
 column_ref_list:
   column_ref { $$ = list_make1($1, context->pool); }
