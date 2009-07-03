@@ -19,24 +19,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "apr_private.h"
-
-#include "apr_general.h"
-#include "apr_pools.h"
-
-#include "apr_hash.h"
-
-#if APR_HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-#if APR_HAVE_STRING_H
 #include <string.h>
-#endif
 
-#if APR_POOL_DEBUG && APR_HAVE_STDIO_H
-#include <stdio.h>
-#endif
+#include "col-internal.h"
+#include "util/hash.h"
 
 /*
  * The internal form of a hash table.
@@ -47,10 +33,10 @@
  * isn't too bad given that pools have a low allocation overhead.
  */
 
-typedef struct apr_hash_entry_t apr_hash_entry_t;
+typedef struct col_hash_entry_t col_hash_entry_t;
 
-struct apr_hash_entry_t {
-    apr_hash_entry_t *next;
+struct col_hash_entry_t {
+    col_hash_entry_t *next;
     unsigned int      hash;
     const void       *key;
     apr_ssize_t       klen;
@@ -62,11 +48,11 @@ struct apr_hash_entry_t {
  *
  * We keep a pointer to the next hash entry here to allow the current
  * hash entry to be freed or otherwise mangled between calls to
- * apr_hash_next().
+ * col_hash_next().
  */
-struct apr_hash_index_t {
-    apr_hash_t         *ht;
-    apr_hash_entry_t   *this, *next;
+struct col_hash_index_t {
+    col_hash_t         *ht;
+    col_hash_entry_t   *this, *next;
     unsigned int        index;
 };
 
@@ -77,13 +63,13 @@ struct apr_hash_index_t {
  * The count of hash entries may be greater depending on the chosen
  * collision rate.
  */
-struct apr_hash_t {
+struct col_hash_t {
     apr_pool_t          *pool;
-    apr_hash_entry_t   **array;
-    apr_hash_index_t     iterator;  /* For apr_hash_first(NULL, ...) */
+    col_hash_entry_t   **array;
+    col_hash_index_t     iterator;  /* For col_hash_first(NULL, ...) */
     unsigned int         count, max;
-    apr_hashfunc_t       hash_func;
-    apr_hash_entry_t    *free;  /* List of recycled entries */
+    col_hashfunc_t       hash_func;
+    col_hash_entry_t    *free;  /* List of recycled entries */
 };
 
 #define INITIAL_MAX 15 /* tunable == 2^n - 1 */
@@ -93,28 +79,28 @@ struct apr_hash_t {
  * Hash creation functions.
  */
 
-static apr_hash_entry_t **alloc_array(apr_hash_t *ht, unsigned int max)
+static col_hash_entry_t **alloc_array(col_hash_t *ht, unsigned int max)
 {
    return apr_pcalloc(ht->pool, sizeof(*ht->array) * (max + 1));
 }
 
-APR_DECLARE(apr_hash_t *) apr_hash_make(apr_pool_t *pool)
+col_hash_t *col_hash_make(apr_pool_t *pool)
 {
-    apr_hash_t *ht;
-    ht = apr_palloc(pool, sizeof(apr_hash_t));
+    col_hash_t *ht;
+    ht = apr_palloc(pool, sizeof(col_hash_t));
     ht->pool = pool;
     ht->free = NULL;
     ht->count = 0;
     ht->max = INITIAL_MAX;
     ht->array = alloc_array(ht, ht->max);
-    ht->hash_func = apr_hashfunc_default;
+    ht->hash_func = col_hashfunc_default;
     return ht;
 }
 
-APR_DECLARE(apr_hash_t *) apr_hash_make_custom(apr_pool_t *pool,
-                                               apr_hashfunc_t hash_func)
+col_hash_t *col_hash_make_custom(apr_pool_t *pool,
+                                 col_hashfunc_t hash_func)
 {
-    apr_hash_t *ht = apr_hash_make(pool);
+    col_hash_t *ht = col_hash_make(pool);
     ht->hash_func = hash_func;
     return ht;
 }
@@ -124,7 +110,7 @@ APR_DECLARE(apr_hash_t *) apr_hash_make_custom(apr_pool_t *pool,
  * Hash iteration functions.
  */
 
-APR_DECLARE(apr_hash_index_t *) apr_hash_next(apr_hash_index_t *hi)
+col_hash_index_t *col_hash_next(col_hash_index_t *hi)
 {
     hi->this = hi->next;
     while (!hi->this) {
@@ -137,9 +123,9 @@ APR_DECLARE(apr_hash_index_t *) apr_hash_next(apr_hash_index_t *hi)
     return hi;
 }
 
-APR_DECLARE(apr_hash_index_t *) apr_hash_first(apr_pool_t *p, apr_hash_t *ht)
+col_hash_index_t *col_hash_first(apr_pool_t *p, col_hash_t *ht)
 {
-    apr_hash_index_t *hi;
+    col_hash_index_t *hi;
     if (p)
         hi = apr_palloc(p, sizeof(*hi));
     else
@@ -149,13 +135,13 @@ APR_DECLARE(apr_hash_index_t *) apr_hash_first(apr_pool_t *p, apr_hash_t *ht)
     hi->index = 0;
     hi->this = NULL;
     hi->next = NULL;
-    return apr_hash_next(hi);
+    return col_hash_next(hi);
 }
 
-APR_DECLARE(void) apr_hash_this(apr_hash_index_t *hi,
-                                const void **key,
-                                apr_ssize_t *klen,
-                                void **val)
+void col_hash_this(col_hash_index_t *hi,
+                   const void **key,
+                   apr_ssize_t *klen,
+                   void **val)
 {
     if (key)  *key  = hi->this->key;
     if (klen) *klen = hi->this->klen;
@@ -167,15 +153,15 @@ APR_DECLARE(void) apr_hash_this(apr_hash_index_t *hi,
  * Expanding a hash table
  */
 
-static void expand_array(apr_hash_t *ht)
+static void expand_array(col_hash_t *ht)
 {
-    apr_hash_index_t *hi;
-    apr_hash_entry_t **new_array;
+    col_hash_index_t *hi;
+    col_hash_entry_t **new_array;
     unsigned int new_max;
 
     new_max = ht->max * 2 + 1;
     new_array = alloc_array(ht, new_max);
-    for (hi = apr_hash_first(NULL, ht); hi; hi = apr_hash_next(hi)) {
+    for (hi = col_hash_first(NULL, ht); hi; hi = col_hash_next(hi)) {
         unsigned int i = hi->this->hash & new_max;
         hi->this->next = new_array[i];
         new_array[i] = hi->this;
@@ -184,8 +170,8 @@ static void expand_array(apr_hash_t *ht)
     ht->max = new_max;
 }
 
-APR_DECLARE_NONSTD(unsigned int) apr_hashfunc_default(const char *char_key,
-                                                      apr_ssize_t *klen)
+unsigned int col_hashfunc_default(const char *char_key,
+                                  apr_ssize_t *klen)
 {
     unsigned int hash = 0;
     const unsigned char *key = (const unsigned char *)char_key;
@@ -230,7 +216,7 @@ APR_DECLARE_NONSTD(unsigned int) apr_hashfunc_default(const char *char_key,
      *                  -- Ralf S. Engelschall <rse@engelschall.com>
      */
      
-    if (*klen == APR_HASH_KEY_STRING) {
+    if (*klen == COL_HASH_KEY_STRING) {
         for (p = key; *p; p++) {
             hash = hash * 33 + *p;
         }
@@ -255,12 +241,12 @@ APR_DECLARE_NONSTD(unsigned int) apr_hashfunc_default(const char *char_key,
  * that hash entries can be removed.
  */
 
-static apr_hash_entry_t **find_entry(apr_hash_t *ht,
+static col_hash_entry_t **find_entry(col_hash_t *ht,
                                      const void *key,
                                      apr_ssize_t klen,
                                      const void *val)
 {
-    apr_hash_entry_t **hep, *he;
+    col_hash_entry_t **hep, *he;
     unsigned int hash;
 
     hash = ht->hash_func(key, &klen);
@@ -291,29 +277,29 @@ static apr_hash_entry_t **find_entry(apr_hash_t *ht,
     return hep;
 }
 
-APR_DECLARE(apr_hash_t *) apr_hash_copy(apr_pool_t *pool,
-                                        const apr_hash_t *orig)
+col_hash_t *col_hash_copy(apr_pool_t *pool,
+                          const col_hash_t *orig)
 {
-    apr_hash_t *ht;
-    apr_hash_entry_t *new_vals;
+    col_hash_t *ht;
+    col_hash_entry_t *new_vals;
     unsigned int i, j;
 
-    ht = apr_palloc(pool, sizeof(apr_hash_t) +
+    ht = apr_palloc(pool, sizeof(col_hash_t) +
                     sizeof(*ht->array) * (orig->max + 1) +
-                    sizeof(apr_hash_entry_t) * orig->count);
+                    sizeof(col_hash_entry_t) * orig->count);
     ht->pool = pool;
     ht->free = NULL;
     ht->count = orig->count;
     ht->max = orig->max;
     ht->hash_func = orig->hash_func;
-    ht->array = (apr_hash_entry_t **)((char *)ht + sizeof(apr_hash_t));
+    ht->array = (col_hash_entry_t **)((char *)ht + sizeof(col_hash_t));
 
-    new_vals = (apr_hash_entry_t *)((char *)(ht) + sizeof(apr_hash_t) +
+    new_vals = (col_hash_entry_t *)((char *)(ht) + sizeof(col_hash_t) +
                                     sizeof(*ht->array) * (orig->max + 1));
     j = 0;
     for (i = 0; i <= ht->max; i++) {
-        apr_hash_entry_t **new_entry = &(ht->array[i]);
-        apr_hash_entry_t *orig_entry = orig->array[i];
+        col_hash_entry_t **new_entry = &(ht->array[i]);
+        col_hash_entry_t *orig_entry = orig->array[i];
         while (orig_entry) {
             *new_entry = &new_vals[j++];
             (*new_entry)->hash = orig_entry->hash;
@@ -328,11 +314,9 @@ APR_DECLARE(apr_hash_t *) apr_hash_copy(apr_pool_t *pool,
     return ht;
 }
 
-APR_DECLARE(void *) apr_hash_get(apr_hash_t *ht,
-                                 const void *key,
-                                 apr_ssize_t klen)
+void *col_hash_get(col_hash_t *ht, const void *key, apr_ssize_t klen)
 {
-    apr_hash_entry_t *he;
+    col_hash_entry_t *he;
     he = *find_entry(ht, key, klen, NULL);
     if (he)
         return (void *)he->val;
@@ -340,17 +324,15 @@ APR_DECLARE(void *) apr_hash_get(apr_hash_t *ht,
         return NULL;
 }
 
-APR_DECLARE(void) apr_hash_set(apr_hash_t *ht,
-                               const void *key,
-                               apr_ssize_t klen,
-                               const void *val)
+void col_hash_set(col_hash_t *ht, const void *key,
+                  apr_ssize_t klen, const void *val)
 {
-    apr_hash_entry_t **hep;
+    col_hash_entry_t **hep;
     hep = find_entry(ht, key, klen, val);
     if (*hep) {
         if (!val) {
             /* delete entry */
-            apr_hash_entry_t *old = *hep;
+            col_hash_entry_t *old = *hep;
             *hep = (*hep)->next;
             old->next = ht->free;
             ht->free = old;
@@ -368,60 +350,43 @@ APR_DECLARE(void) apr_hash_set(apr_hash_t *ht,
     /* else key not present and val==NULL */
 }
 
-APR_DECLARE(unsigned int) apr_hash_count(apr_hash_t *ht)
+unsigned int col_hash_count(col_hash_t *ht)
 {
     return ht->count;
 }
 
-APR_DECLARE(void) apr_hash_clear(apr_hash_t *ht)
+void col_hash_clear(col_hash_t *ht)
 {
-    apr_hash_index_t *hi;
-    for (hi = apr_hash_first(NULL, ht); hi; hi = apr_hash_next(hi))
-        apr_hash_set(ht, hi->this->key, hi->this->klen, NULL);
+    col_hash_index_t *hi;
+    for (hi = col_hash_first(NULL, ht); hi; hi = col_hash_next(hi))
+        col_hash_set(ht, hi->this->key, hi->this->klen, NULL);
 }
 
-APR_DECLARE(apr_hash_t*) apr_hash_overlay(apr_pool_t *p,
-                                          const apr_hash_t *overlay,
-                                          const apr_hash_t *base)
+col_hash_t *col_hash_overlay(apr_pool_t *p,
+                             const col_hash_t *overlay,
+                             const col_hash_t *base)
 {
-    return apr_hash_merge(p, overlay, base, NULL, NULL);
+    return col_hash_merge(p, overlay, base, NULL, NULL);
 }
 
-APR_DECLARE(apr_hash_t *) apr_hash_merge(apr_pool_t *p,
-                                         const apr_hash_t *overlay,
-                                         const apr_hash_t *base,
-                                         void * (*merger)(apr_pool_t *p,
-                                                     const void *key,
-                                                     apr_ssize_t klen,
-                                                     const void *h1_val,
-                                                     const void *h2_val,
-                                                     const void *data),
-                                         const void *data)
+col_hash_t *col_hash_merge(apr_pool_t *p,
+                           const col_hash_t *overlay,
+                           const col_hash_t *base,
+                           void * (*merger)(apr_pool_t *p,
+                                            const void *key,
+                                            apr_ssize_t klen,
+                                            const void *h1_val,
+                                            const void *h2_val,
+                                            const void *data),
+                           const void *data)
 {
-    apr_hash_t *res;
-    apr_hash_entry_t *new_vals = NULL;
-    apr_hash_entry_t *iter;
-    apr_hash_entry_t *ent;
+    col_hash_t *res;
+    col_hash_entry_t *new_vals = NULL;
+    col_hash_entry_t *iter;
+    col_hash_entry_t *ent;
     unsigned int i,j,k;
 
-#if APR_POOL_DEBUG
-    /* we don't copy keys and values, so it's necessary that
-     * overlay->a.pool and base->a.pool have a life span at least
-     * as long as p
-     */
-    if (!apr_pool_is_ancestor(overlay->pool, p)) {
-        fprintf(stderr,
-                "apr_hash_merge: overlay's pool is not an ancestor of p\n");
-        abort();
-    }
-    if (!apr_pool_is_ancestor(base->pool, p)) {
-        fprintf(stderr,
-                "apr_hash_merge: base's pool is not an ancestor of p\n");
-        abort();
-    }
-#endif
-
-    res = apr_palloc(p, sizeof(apr_hash_t));
+    res = apr_palloc(p, sizeof(col_hash_t));
     res->pool = p;
     res->free = NULL;
     res->hash_func = base->hash_func;
@@ -432,7 +397,7 @@ APR_DECLARE(apr_hash_t *) apr_hash_merge(apr_pool_t *p,
     }
     res->array = alloc_array(res, res->max);
     if (base->count + overlay->count) {
-        new_vals = apr_palloc(p, sizeof(apr_hash_entry_t) *
+        new_vals = apr_palloc(p, sizeof(col_hash_entry_t) *
                               (base->count + overlay->count));
     }
     j = 0;
@@ -488,23 +453,23 @@ APR_DECLARE(apr_hash_t *) apr_hash_merge(apr_pool_t *p,
  * Like with apr_table_do, the comp callback is called for each and every
  * element of the hash table.
  */
-APR_DECLARE(int) apr_hash_do(apr_hash_do_callback_fn_t *comp,
-                             void *rec, const apr_hash_t *ht)
+int col_hash_do(col_hash_do_callback_fn_t *comp,
+                void *rec, const col_hash_t *ht)
 {
-    apr_hash_index_t  hix;
-    apr_hash_index_t *hi;
+    col_hash_index_t  hix;
+    col_hash_index_t *hi;
     int rv, dorv  = 1;
 
-    hix.ht    = (apr_hash_t *)ht;
+    hix.ht    = (col_hash_t *)ht;
     hix.index = 0;
     hix.this  = NULL;
     hix.next  = NULL;
 
-    if ((hi = apr_hash_next(&hix))) {
+    if ((hi = col_hash_next(&hix))) {
         /* Scan the entire table */
         do {
             rv = (*comp)(rec, hi->this->key, hi->this->klen, hi->this->val);
-        } while (rv && (hi = apr_hash_next(hi)));
+        } while (rv && (hi = col_hash_next(hi)));
 
         if (rv == 0) {
             dorv = 0;
@@ -512,5 +477,3 @@ APR_DECLARE(int) apr_hash_do(apr_hash_do_callback_fn_t *comp,
     }
     return dorv;
 }
-
-APR_POOL_IMPLEMENT_ACCESSOR(hash)
