@@ -18,6 +18,8 @@ typedef union Datum
     char          *s;
 } Datum;
 
+bool datum_equal(Datum d1, Datum d2, DataType type);
+
 /*
  * XXX: Note that tuple refcounts are not currently tracked by the APR pool
  * cleanup mechanism. Therefore, modules keeping a tuple pinned should be

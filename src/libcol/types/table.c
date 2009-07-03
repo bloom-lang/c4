@@ -52,7 +52,10 @@ table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
 
-    return 0;
+    if (tuple_equal(t1, t2))
+        return 0;
+    else
+        return 1;
 }
 
 /*

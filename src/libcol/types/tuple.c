@@ -33,7 +33,23 @@ tuple_unpin(Tuple *tuple)
 bool
 tuple_equal(Tuple *t1, Tuple *t2)
 {
-    return false;
+    Schema *s;
+
+    /* XXX: Should we support this case? */
+    ASSERT(schema_equal(t1->schema, t2->schema));
+    s = t1->schema;
+
+    for (i = 0; i < s1->len; i++)
+    {
+        DataType dt = schema_get_type(s, i);
+
+        if (!datum_equal(tuple_get_val(t1, i),
+                         tuple_get_val(t2, i),
+                         dt))
+            return false;
+    }
+
+    return true;
 }
 
 unsigned int
