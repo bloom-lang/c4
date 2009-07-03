@@ -54,6 +54,19 @@ typedef struct col_hash_index_t col_hash_index_t;
 typedef unsigned int (*col_hashfunc_t)(const char *key, apr_ssize_t *klen);
 
 /**
+ * Callback functions for determining whether two hash table keys are equal.
+ * @param k1 First key
+ * @param k2 Second key
+ * @param klen The length of both keys; the keys must be of equal length to
+ *             be candidates for equality. The length will never be
+ *             COL_HASH_KEY_STRING.
+ * @return Zero if the two keys should be considered equal, non-zero otherwise.
+ * @remark The default key comparison function is memcmp().
+ */
+typedef int (*col_keycomp_func_t)(const void *k1, const void *k2,
+                                  apr_size_t klen);
+
+/**
  * The default hash function.
  */
 unsigned int col_hashfunc_default(const char *key, apr_ssize_t *klen);
@@ -68,11 +81,13 @@ col_hash_t *col_hash_make(apr_pool_t *pool);
 /**
  * Create a hash table with a custom hash function
  * @param pool The pool to allocate the hash table out of
- * @param hash_func A custom hash function.
+ * @param hash_func A custom hash function
+ * @param cmp_func A custom key comparison function
  * @return The hash table just created
   */
 col_hash_t *col_hash_make_custom(apr_pool_t *pool, 
-                                 col_hashfunc_t hash_func);
+                                 col_hashfunc_t hash_func,
+                                 col_keycomp_func_t cmp_func);
 
 /**
  * Make a copy of a hash table

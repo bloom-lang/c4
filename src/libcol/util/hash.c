@@ -69,6 +69,7 @@ struct col_hash_t {
     col_hash_index_t     iterator;  /* For col_hash_first(NULL, ...) */
     unsigned int         count, max;
     col_hashfunc_t       hash_func;
+    col_keycomp_func_t   cmp_func;
     col_hash_entry_t    *free;  /* List of recycled entries */
 };
 
@@ -94,14 +95,17 @@ col_hash_t *col_hash_make(apr_pool_t *pool)
     ht->max = INITIAL_MAX;
     ht->array = alloc_array(ht, ht->max);
     ht->hash_func = col_hashfunc_default;
+    ht->cmp_func = memcmp;
     return ht;
 }
 
 col_hash_t *col_hash_make_custom(apr_pool_t *pool,
-                                 col_hashfunc_t hash_func)
+                                 col_hashfunc_t hash_func,
+                                 col_keycomp_func_t cmp_func)
 {
     col_hash_t *ht = col_hash_make(pool);
     ht->hash_func = hash_func;
+    ht->cmp_func = cmp_func;
     return ht;
 }
 
@@ -256,7 +260,7 @@ static col_hash_entry_t **find_entry(col_hash_t *ht,
          he; hep = &he->next, he = *hep) {
         if (he->hash == hash
             && he->klen == klen
-            && memcmp(he->key, key, klen) == 0)
+            && ht->cmp_func(he->key, key, klen) == 0)
             break;
     }
     if (he || !val)
@@ -292,6 +296,7 @@ col_hash_t *col_hash_copy(apr_pool_t *pool,
     ht->count = orig->count;
     ht->max = orig->max;
     ht->hash_func = orig->hash_func;
+    ht->cmp_func = orig->cmp_func;
     ht->array = (col_hash_entry_t **)((char *)ht + sizeof(col_hash_t));
 
     new_vals = (col_hash_entry_t *)((char *)(ht) + sizeof(col_hash_t) +
@@ -390,6 +395,7 @@ col_hash_t *col_hash_merge(apr_pool_t *p,
     res->pool = p;
     res->free = NULL;
     res->hash_func = base->hash_func;
+    res->cmp_func = base->cmp_func;
     res->count = base->count;
     res->max = (overlay->max > base->max) ? overlay->max : base->max;
     if (base->count + overlay->count > res->max) {
@@ -419,7 +425,7 @@ col_hash_t *col_hash_merge(apr_pool_t *p,
             i = iter->hash & res->max;
             for (ent = res->array[i]; ent; ent = ent->next) {
                 if ((ent->klen == iter->klen) &&
-                    (memcmp(ent->key, iter->key, iter->klen) == 0)) {
+                    (base->cmp_func(ent->key, iter->key, iter->klen) == 0)) {
                     if (merger) {
                         ent->val = (*merger)(p, iter->key, iter->klen,
                                              iter->val, ent->val, data);
