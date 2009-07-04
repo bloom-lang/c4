@@ -1,6 +1,6 @@
 /*
  * Basic planner algorithm is described below. Doesn't handle negation,
- * aggregation, stratification, intelligent selection of join order; no
+ * aggregation, stratification, or intelligent selection of join order; no
  * significant optimization performed.
  *
  * Foreach rule r:
