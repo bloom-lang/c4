@@ -33,7 +33,7 @@ void tuple_pin(Tuple *tuple);
 void tuple_unpin(Tuple *tuple);
 
 bool tuple_equal(Tuple *t1, Tuple *t2);
-unsigned int tuple_hash(const char *key, apr_ssize_t *klen);
+apr_uint32_t tuple_hash(Tuple *t);
 
 Tuple *tuple_from_buf(const char *buf, apr_size_t len);
 void tuple_socket_send(Tuple *tuple, apr_socket_t *sock);

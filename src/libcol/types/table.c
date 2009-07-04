@@ -6,6 +6,7 @@
 
 static apr_status_t table_cleanup(void *data);
 static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
+static unsigned int table_hash_tuple(const char *key, apr_ssize_t *klen);
 
 ColTable *
 table_make(const char *name, apr_pool_t *pool)
@@ -16,7 +17,7 @@ table_make(const char *name, apr_pool_t *pool)
     tbl->pool = pool;
     tbl->name = apr_pstrdup(pool, name);
     tbl->tuples = col_hash_make_custom(pool,
-                                       tuple_hash,
+                                       table_hash_tuple,
                                        table_cmp_tuple);
 
     apr_pool_cleanup_register(pool, tbl, table_cleanup,
@@ -56,6 +57,15 @@ table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
         return 0;
     else
         return 1;
+}
+
+static unsigned int
+table_hash_tuple(const char *key, apr_ssize_t *klen)
+{
+    Tuple *t = (Tuple *) key;
+
+    ASSERT(*klen == sizeof(Tuple));
+    return tuple_hash(t);
 }
 
 /*

@@ -3,7 +3,7 @@ Parser and lexer:
 * Support for parentheses
 * Type casts
 * Aggregation
-* Trinary operator ?:
+* Trinary conditional operator ("?:")
 * Allow location specifiers to be attached to constants
 * Unicode identifiers and string literals
 * Locking / concurrency control
@@ -22,11 +22,18 @@ Executor/Router/Operators:
 
 Broader issues:
 
-* Testing
+* Testing framework
 * Error handling
 * Add a "$LOCALHOST" variable that expands to the network address of
   the evaluating COL instance
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
-* Make use of profile-guided optimization
+* Generalize node support from parser/ to nodes/
+* Make use of profile-guided optimization with GCC
 * Consider caching per-tuple hash code
+* Consider using a variable-size length word for ColString: more
+  storage-efficient for short strings, which is the common case (or
+  special-case just for network input/output?)
+* Measure the performance difference between looking up a function
+  pointer and doing a table-style lookup (switch statement) for
+  functions like datum_equal(), datum_hash()

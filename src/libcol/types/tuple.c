@@ -53,10 +53,26 @@ tuple_equal(Tuple *t1, Tuple *t2)
     return true;
 }
 
-unsigned int
-tuple_hash(const char *key, apr_ssize_t *klen)
+apr_uint32_t
+tuple_hash(Tuple *tuple)
 {
-    return 0;
+    apr_uint32_t result;
+    Schema *s;
+    int i;
+
+    s = tuple->schema;
+    result = 37;
+    for (i = 0; i < s->len; i++)
+    {
+        DataType type = schema_get_type(s, i);
+        Datum val = tuple_get_val(tuple, i);
+        apr_uint32_t h = datum_hash(val, type);
+
+        /* XXX: choose a better mixing function than XOR */
+        result ^= h;
+    }
+
+    return result;
 }
 
 void

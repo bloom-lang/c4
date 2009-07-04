@@ -23,5 +23,6 @@ typedef union Datum
 } Datum;
 
 bool datum_equal(Datum d1, Datum d2, DataType type);
+apr_uint32_t datum_hash(Datum d1, DataType type);
 
 #endif  /* DATUM_H */

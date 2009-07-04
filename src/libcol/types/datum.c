@@ -81,3 +81,9 @@ datum_equal(Datum d1, Datum d2, DataType type)
             return false;       /* Keep compiler quiet */
     }
 }
+
+apr_uint32_t
+datum_hash(Datum d, DataType type)
+{
+    return 0;
+}
