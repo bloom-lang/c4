@@ -2,16 +2,24 @@
 #include "types/schema.h"
 
 Schema *
-schema_make(int len, DataType *type, apr_pool_t *pool)
+schema_make(int len, DataType *types, apr_pool_t *pool)
 {
     Schema *schema;
 
-    schema = apr_palloc(pool, sizeof(*schema) + (len * sizeof(DataType)));
-    memset(schema, 0, sizeof(*schema));
+    schema = apr_palloc(pool, sizeof(*schema));
     schema->len = len;
-    memcpy(schema_get_data(schema), type, len * sizeof(DataType));
+    schema->types = apr_pmemdup(pool, types, len * sizeof(DataType));
 
     return schema;
+}
+
+DataType
+schema_get_type(Schema *s, int idx)
+{
+    if (idx >= s->len || idx < 0)
+        ERROR("Illegal schema index: %d", idx);
+
+    return s->types[idx];
 }
 
 bool

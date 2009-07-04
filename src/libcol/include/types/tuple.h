@@ -39,7 +39,7 @@ typedef struct Tuple
     /* Tuple data follows, as a variable-length array of Datum */
 } Tuple;
 
-#define tuple_get_data(t)       (((Tuple *) t) + 1)
+#define tuple_get_data(t)       ((Datum *) (((Tuple *) t) + 1))
 #define tuple_get_val(t, i)     (tuple_get_data(t)[(i)])
 
 Tuple *tuple_make(Schema *s, Datum *values);

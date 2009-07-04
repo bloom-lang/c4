@@ -19,14 +19,11 @@ typedef unsigned char DataType;
 typedef struct Schema
 {
     int len;
-    /* XXX: Unnecessary padding on a 32-bit machine */
-    char c[1];
+    DataType *types;
 } Schema;
 
-#define schema_get_data(s)      (((Schema *) s) + 1)
-#define schema_get_type(s, i)   ((DataType) schema_get_data(s)[(i)])
-
-Schema *schema_make(int len, DataType *type, apr_pool_t *pool);
+Schema *schema_make(int len, DataType *types, apr_pool_t *pool);
+DataType schema_get_type(Schema *s, int idx);
 bool schema_equal(Schema *s1, Schema *s2);
 
 #endif  /* SCHEMA_H */

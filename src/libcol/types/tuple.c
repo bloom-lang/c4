@@ -34,12 +34,13 @@ bool
 tuple_equal(Tuple *t1, Tuple *t2)
 {
     Schema *s;
+    int i;
 
     /* XXX: Should we support this case? */
     ASSERT(schema_equal(t1->schema, t2->schema));
     s = t1->schema;
 
-    for (i = 0; i < s1->len; i++)
+    for (i = 0; i < s->len; i++)
     {
         DataType dt = schema_get_type(s, i);
 
