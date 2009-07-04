@@ -37,3 +37,5 @@ Broader issues:
 * Measure the performance difference between looking up a function
   pointer and doing a table-style lookup (switch statement) for
   functions like datum_equal(), datum_hash()
+* Change the node system to work with strict aliasing per C99
+

@@ -5,6 +5,7 @@
 
 typedef struct ColString
 {
+    /* The number of bytes in "data"; XXX: including NUL terminator? */
     apr_uint32_t len;
     char data[1];       /* Variable-sized */
 } ColString;
