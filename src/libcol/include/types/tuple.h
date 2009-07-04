@@ -3,22 +3,8 @@
 
 #include <apr_network_io.h>
 
+#include "types/datum.h"
 #include "types/schema.h"
-
-typedef union Datum
-{
-    /* Pass-by-value types (unboxed) */
-    bool           b;
-    unsigned char  c;
-    apr_int16_t    i2;
-    apr_int32_t    i4;
-    apr_int64_t    i8;
-    double         d8;
-    /* Pass-by-ref types (boxed) */
-    char          *s;
-} Datum;
-
-bool datum_equal(Datum d1, Datum d2, DataType type);
 
 /*
  * XXX: Note that tuple refcounts are not currently tracked by the APR pool
