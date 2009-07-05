@@ -31,7 +31,7 @@ static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
 static void analyze_expr(AstNode *node, AnalyzeState *state);
 static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
-static void analyze_const_expr(AstNode *node, AnalyzeState *state);
+static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
@@ -45,10 +45,9 @@ static void set_var_type(AstVarExpr *var, AstDefine *table,
 static void add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(AstNode *node);
-static bool is_const_expr(AstNode *node);
 static DataType expr_get_type(AstNode *node, AnalyzeState *state);
 static DataType op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state);
-static DataType const_expr_get_type(AstNode *node, AnalyzeState *state);
+static DataType const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state);
 static DataType var_expr_get_type(AstVarExpr *var, AnalyzeState *state);
 
 
@@ -304,7 +303,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
          * variable, and then add an equality qualifier between the new
          * variable and the constant value.
          */
-        if (is_const_expr(cref->expr))
+        if (cref->expr->kind == AST_CONST_EXPR)
         {
             AstNode *const_expr = cref->expr;
             char *var_name;
@@ -393,12 +392,12 @@ analyze_expr(AstNode *node, AnalyzeState *state)
             analyze_var_expr((AstVarExpr *) node, state);
             break;
 
-        default:
-            if (is_const_expr(node))
-                analyze_const_expr(node, state);
-            else
-                ERROR("Unexpected expr node kind: %d", (int) node->kind);
+        case AST_CONST_EXPR:
+            analyze_const_expr((AstConstExpr *) node, state);
+            break;
 
+        default:
+            ERROR("Unexpected expr node kind: %d", (int) node->kind);
             break;
     }
 }
@@ -453,7 +452,7 @@ analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state)
 }
 
 static void
-analyze_const_expr(AstNode *node, AnalyzeState *state)
+analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state)
 {
     ;
 }
@@ -475,7 +474,7 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
         if (col->has_loc_spec)
             ERROR("Columns in a fact cannot have location specifiers");
 
-        if (!is_const_expr(col->expr))
+        if (col->expr->kind != AST_CONST_EXPR)
             ERROR("Columns in a fact must be constants");
     }
 }
@@ -614,10 +613,10 @@ expr_get_type(AstNode *node, AnalyzeState *state)
         case AST_VAR_EXPR:
             return var_expr_get_type((AstVarExpr *) node, state);
 
-        default:
-            if (is_const_expr(node))
-                return const_expr_get_type(node, state);
+        case AST_CONST_EXPR:
+            return const_expr_get_type((AstConstExpr *) node, state);
 
+        default:
             ERROR("unexpected node kind: %d", (int) node->kind);
             return 0;   /* keep compiler quiet */
     }
@@ -660,45 +659,28 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
     }
 }
 
-static bool
-is_const_expr(AstNode *node)
-{
-    switch (node->kind)
-    {
-        case AST_CONST_EXPR_BOOL:
-        case AST_CONST_EXPR_CHAR:
-        case AST_CONST_EXPR_DOUBLE:
-        case AST_CONST_EXPR_INT:
-        case AST_CONST_EXPR_STRING:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
 static DataType
-const_expr_get_type(AstNode *node, AnalyzeState *state)
+const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state)
 {
-    switch (node->kind)
+    switch (c_expr->const_kind)
     {
-        case AST_CONST_EXPR_BOOL:
+        case AST_CONST_BOOL:
             return TYPE_BOOL;
 
-        case AST_CONST_EXPR_CHAR:
+        case AST_CONST_CHAR:
             return TYPE_CHAR;
 
-        case AST_CONST_EXPR_DOUBLE:
+        case AST_CONST_DOUBLE:
             return TYPE_DOUBLE;
 
-        case AST_CONST_EXPR_INT:
+        case AST_CONST_INT:
             return TYPE_INT8;
 
-        case AST_CONST_EXPR_STRING:
+        case AST_CONST_STRING:
             return TYPE_STRING;
 
         default:
-            ERROR("unexpected node kind: %d", (int) node->kind);
+            ERROR("unexpected const kind: %d", (int) c_expr->const_kind);
             return 0;   /* keep compiler quiet */
     }
 }

@@ -208,40 +208,30 @@ qual_expr:
 ;
 
 const_expr:
-  ICONST
-{
-    AstConstExprInt *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_CONST_EXPR_INT;
-    n->val = $1;
-    $$ = n;
+bool_const {
+    AstConstValue val;
+    val.b = $1;
+    $$ = make_const_expr(AST_CONST_BOOL, val, context->pool);
 }
-| bool_const
-{
-    AstConstExprBool *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_CONST_EXPR_INT;
-    n->val = $1;
-    $$ = n;
+| ICONST {
+    AstConstValue val;
+    val.i = $1;
+    $$ = make_const_expr(AST_CONST_INT, val, context->pool);
 }
-| FCONST
-{
-    AstConstExprDouble *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_CONST_EXPR_DOUBLE;
-    n->val = $1;
-    $$ = n;
+| FCONST {
+    AstConstValue val;
+    val.s = $1;
+    $$ = make_const_expr(AST_CONST_DOUBLE, val, context->pool);
 }
-| SCONST
-{
-    AstConstExprString *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_CONST_EXPR_STRING;
-    n->val = $1;
-    $$ = n;
+| SCONST {
+    AstConstValue val;
+    val.s = $1;
+    $$ = make_const_expr(AST_CONST_STRING, val, context->pool);
 }
-| CCONST
-{
-    AstConstExprChar *n = parser_alloc(sizeof(*n));
-    n->node.kind = AST_CONST_EXPR_CHAR;
-    n->val = $1;
-    $$ = n;
+| CCONST {
+    AstConstValue val;
+    val.c = $1;
+    $$ = make_const_expr(AST_CONST_CHAR, val, context->pool);
 }
 ;
 

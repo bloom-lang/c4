@@ -18,12 +18,8 @@ typedef enum AstNodeKind
     AST_QUALIFIER,
     AST_ASSIGN,
     AST_OP_EXPR,
-    AST_CONST_EXPR_BOOL,
-    AST_CONST_EXPR_CHAR,
-    AST_CONST_EXPR_DOUBLE,
-    AST_CONST_EXPR_INT,
-    AST_CONST_EXPR_STRING,
-    AST_VAR_EXPR
+    AST_VAR_EXPR,
+    AST_CONST_EXPR
 } AstNodeKind;
 
 typedef struct AstNode
@@ -132,36 +128,6 @@ typedef struct AstOpExpr
     AstOperKind op_kind;
 } AstOpExpr;
 
-typedef struct AstConstExprBool
-{
-    AstNode node;
-    bool val;
-} AstConstExprBool;
-
-typedef struct AstConstExprChar
-{
-    AstNode node;
-    unsigned char val;
-} AstConstExprChar;
-
-typedef struct AstConstExprDouble
-{
-    AstNode node;
-    char *val;
-} AstConstExprDouble;
-
-typedef struct AstConstExprInt
-{
-    AstNode node;
-    apr_int64_t val;
-} AstConstExprInt;
-
-typedef struct AstConstExprString
-{
-    AstNode node;
-    char *val;
-} AstConstExprString;
-
 typedef struct AstVarExpr
 {
     AstNode node;
@@ -169,5 +135,30 @@ typedef struct AstVarExpr
     /* Filled-in by the analysis phase */
     DataType type;
 } AstVarExpr;
+
+typedef enum AstConstKind
+{
+    AST_CONST_BOOL,
+    AST_CONST_CHAR,
+    AST_CONST_DOUBLE,
+    AST_CONST_INT,
+    AST_CONST_STRING
+} AstConstKind;
+
+typedef union AstConstValue
+{
+    bool b;
+    unsigned char c;
+    apr_int64_t i;
+    /* Used to hold both floating point and string constants */
+    char *s;
+} AstConstValue;
+
+typedef struct AstConstExpr
+{
+    AstNode node;
+    AstConstKind const_kind;
+    AstConstValue value;
+} AstConstExpr;
 
 #endif  /* AST_H */

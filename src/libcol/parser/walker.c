@@ -19,6 +19,7 @@ expr_tree_walker(AstNode *node, expr_callback fn, void *data)
         }
 
         case AST_VAR_EXPR:
+        case AST_CONST_EXPR:
             break;
 
         default:
