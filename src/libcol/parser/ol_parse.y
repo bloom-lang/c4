@@ -11,8 +11,6 @@ int yyerror(ColParser *context, void *scanner, const char *message);
 static void split_program_clauses(List *clauses, List **defines,
                                   List **facts, List **rules);
 static void split_rule_body(List *body, List **joins, List **quals);
-
-#define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
 
 %union
@@ -112,10 +110,6 @@ rule: rule_prefix opt_rule_body {
     if ($2 == NULL)
     {
         /* A rule without a body is actually a fact */
-        AstFact *n = parser_alloc(sizeof(*n));
-        n->node.kind = AST_FACT;
-        n->head = rule->head;
-
         if (rule->name != NULL)
             ERROR("Cannot assign a name to facts");
         if (rule->is_delete)
@@ -144,8 +138,8 @@ rule_prefix:
 ;
 
 opt_delete:
-DELETE { $$ = true; }
-| { $$ = false; }
+  DELETE        { $$ = true; }
+| /* EMPTY */   { $$ = false; }
 ;
 
 opt_rule_body:
