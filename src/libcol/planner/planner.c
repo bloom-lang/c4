@@ -82,32 +82,6 @@ planner_state_make(AstProgram *ast, ColInstance *col)
     return state;
 }
 
-static void
-split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
-{
-    ListCell *lc;
-
-    foreach (lc, body)
-    {
-        AstNode *node = (AstNode *) lc_ptr(lc);
-
-        node = copy_node(node, pool);
-        switch (node->kind)
-        {
-            case AST_JOIN_CLAUSE:
-                list_append(*joins, node);
-                break;
-
-            case AST_QUALIFIER:
-                list_append(*quals, node);
-                break;
-
-            default:
-                ERROR("Unexpected node kind: %d", (int) node->kind);
-        }
-    }
-}
-
 static List *
 make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
 {
@@ -228,8 +202,8 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     OpChainPlan *chain_plan;
     ListCell *lc;
 
-    state->join_set_todo = make_join_set(delta_tbl, rplan->ast_joins, state);
-    state->qual_set_todo = list_copy(rplan->ast_quals, state->tmp_pool);
+    state->join_set_todo = make_join_set(delta_tbl, rule->joins, state);
+    state->qual_set_todo = list_copy(rule->quals, state->tmp_pool);
 
     state->join_set = list_make1(delta_tbl, state->tmp_pool);
     state->join_set_refs = list_make1(delta_tbl->ref, state->tmp_pool);
@@ -263,11 +237,6 @@ plan_rule(AstRule *rule, PlannerState *state)
     ListCell *lc;
 
     rplan = apr_pcalloc(state->plan_pool, sizeof(*rplan));
-    rplan->ast_joins = list_make(state->plan_pool);
-    rplan->ast_quals = list_make(state->plan_pool);
-
-    split_rule_body(rule->body, &rplan->ast_joins,
-                    &rplan->ast_quals, state->plan_pool);
 
     /*
      * For each table referenced by the rule, generate an OpChainPlan that
@@ -276,7 +245,7 @@ plan_rule(AstRule *rule, PlannerState *state)
      * table.
      */
     rplan->chains = list_make(state->plan_pool);
-    foreach (lc, rplan->ast_joins)
+    foreach (lc, rule->joins)
     {
         AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
         OpChainPlan *chain_plan;

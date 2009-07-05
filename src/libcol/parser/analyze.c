@@ -132,20 +132,18 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
      * examine the qualifiers (all join variables are "in-scope" for
      * qualifiers, even if they appear before the join in the program text).
      */
-    foreach (lc, rule->body)
+    foreach (lc, rule->joins)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
 
-        if (node->kind == AST_JOIN_CLAUSE)
-            analyze_join_clause((AstJoinClause *) node, rule, state);
+        analyze_join_clause(join, rule, state);
     }
 
-    foreach (lc, rule->body)
+    foreach (lc, rule->quals)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
 
-        if (node->kind == AST_QUALIFIER)
-            analyze_qualifier((AstQualifier *) node, state);
+        analyze_qualifier(qual, state);
     }
 
     /* Check the rule head */
@@ -163,25 +161,20 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
      * distinct location specifier can be used in the rule body.
      */
     body_loc_spec = NULL;
-    foreach (lc, rule->body)
+    foreach (lc, rule->joins)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
+        AstColumnRef *loc_spec;
 
-        if (node->kind == AST_JOIN_CLAUSE)
+        loc_spec = table_ref_get_loc_spec(join->ref);
+        if (loc_spec != NULL)
         {
-            AstJoinClause *join = (AstJoinClause *) node;
-            AstColumnRef *loc_spec;
+            if (body_loc_spec != NULL &&
+                !loc_spec_equal(loc_spec, body_loc_spec))
+                ERROR("Distinct location specifiers in the body "
+                      "of a single rule are not allowed");
 
-            loc_spec = table_ref_get_loc_spec(join->ref);
-            if (loc_spec != NULL)
-            {
-                if (body_loc_spec != NULL &&
-                    !loc_spec_equal(loc_spec, body_loc_spec))
-                    ERROR("Distinct location specifiers in the body "
-                          "of a single rule are not allowed");
-
-                body_loc_spec = loc_spec;
-            }
+            body_loc_spec = loc_spec;
         }
     }
 
@@ -370,7 +363,7 @@ add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
                            op_kind, state->pool);
     qual = make_qualifier((AstNode *) op_expr, state->pool);
 
-    list_append(rule->body, qual);
+    list_append(rule->quals, qual);
 }
 
 static void

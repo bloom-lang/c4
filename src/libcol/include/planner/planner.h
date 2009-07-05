@@ -17,9 +17,6 @@ typedef struct ProgramPlan
 typedef struct RulePlan
 {
     List *chains;
-    /* Separated AST nodes */
-    List *ast_joins;
-    List *ast_quals;
 } RulePlan;
 
 typedef struct OpChainPlan

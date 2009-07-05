@@ -8,7 +8,8 @@ AstProgram *make_program(char *name, List *defines, List *facts,
 AstDefine *make_define(char *name, List *keys, List *schema,
                        apr_pool_t *pool);
 AstRule *make_rule(char *name, bool is_delete, bool is_network,
-                   AstTableRef *head, List *body, apr_pool_t *pool);
+                   AstTableRef *head, List *joins, List *quals,
+                   apr_pool_t *pool);
 AstFact *make_fact(AstTableRef *head, apr_pool_t *pool);
 AstTableRef *make_table_ref(char *name, List *cols, apr_pool_t *pool);
 AstJoinClause *make_join_clause(AstTableRef *ref, bool not,

@@ -30,7 +30,8 @@ copy_rule(AstRule *in, apr_pool_t *p)
                      in->is_delete,
                      in->is_network,
                      copy_node(in->head, p),
-                     list_copy_deep(in->body, p),
+                     list_copy_deep(in->joins, p),
+                     list_copy_deep(in->quals, p),
                      p);
 }
 

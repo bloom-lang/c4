@@ -7,6 +7,7 @@ Parser and lexer:
 * Allow location specifiers to be attached to constants
 * Unicode identifiers and string literals
 * Locking / concurrency control
+* Make bison parser "pure"
 * In string literals, support the "\000" syntax (Octal ASCII
   character) from C89; or perhaps some syntax for specifying Unicode
   code points?
@@ -38,4 +39,7 @@ Broader issues:
   pointer and doing a table-style lookup (switch statement) for
   functions like datum_equal(), datum_hash()
 * Change the node system to work with strict aliasing per C99
-
+* Measure the performance cost of early projection ("column pruning"):
+  are there situations in which it might actually be faster to have
+  joins emit a "super-tuple" that consists of the join input tuples,
+  rather than projecting the join result columns?

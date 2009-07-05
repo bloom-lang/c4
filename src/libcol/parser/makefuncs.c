@@ -28,7 +28,7 @@ make_define(char *name, List *keys, List *schema, apr_pool_t *pool)
 
 AstRule *
 make_rule(char *name, bool is_delete, bool is_network,
-          AstTableRef *head, List *body, apr_pool_t *pool)
+          AstTableRef *head, List *joins, List *quals, apr_pool_t *pool)
 {
     AstRule *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_RULE;
@@ -36,7 +36,8 @@ make_rule(char *name, bool is_delete, bool is_network,
     result->is_network = is_network;
     result->name = name;
     result->head = head;
-    result->body = body;
+    result->joins = joins;
+    result->quals = quals;
     return result;
 }
 

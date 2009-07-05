@@ -55,7 +55,9 @@ typedef struct AstRule
     AstNode node;
     char *name;
     AstTableRef *head;
-    List *body;
+    /* The rule body, divided by node kind */
+    List *joins;
+    List *quals;
     bool is_delete;
     /* Filled-in during parse-analysis */
     bool is_network;

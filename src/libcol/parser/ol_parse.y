@@ -10,6 +10,7 @@
 int yyerror(ColParser *context, void *scanner, const char *message);
 static void split_program_clauses(List *clauses, List **defines,
                                   List **facts, List **rules);
+static void split_rule_body(List *body, List **joins, List **quals);
 
 #define parser_alloc(sz)        apr_pcalloc(context->pool, (sz))
 %}
@@ -124,15 +125,22 @@ rule: rule_prefix opt_rule_body {
     }
     else
     {
-        rule->body = $2;
+        List *joins;
+        List *quals;
+
+        joins = list_make(context->pool);
+        quals = list_make(context->pool);
+        split_rule_body($2, &joins, &quals);
+        rule->joins = joins;
+        rule->quals = quals;
         $$ = rule;
     }
 };
 
 rule_prefix:
-  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, false, $3, NULL, context->pool); }
-| DELETE table_ref               { $$ = make_rule(NULL, true, false, $2, NULL, context->pool); }
-| table_ref                      { $$ = make_rule(NULL, false, false, $1, NULL, context->pool); }
+  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, false, $3, NULL, NULL, context->pool); }
+| DELETE table_ref               { $$ = make_rule(NULL, true, false, $2, NULL, NULL, context->pool); }
+| table_ref                      { $$ = make_rule(NULL, false, false, $1, NULL, NULL, context->pool); }
 ;
 
 opt_delete:
@@ -296,3 +304,33 @@ split_program_clauses(List *clauses, List **defines,
     }
 }
 
+/*
+ * Split the rule body into join clauses and qualifiers, and store each in
+ * its own list for subsequent ease of processing. Note that this implies
+ * that the relative order of join clauses and qualifiers is not
+ * semantically significant.
+ */
+static void
+split_rule_body(List *body, List **joins, List **quals)
+{
+    ListCell *lc;
+
+    foreach (lc, body)
+    {
+        AstNode *node = (AstNode *) lc_ptr(lc);
+
+        switch (node->kind)
+        {
+            case AST_JOIN_CLAUSE:
+                list_append(*joins, node);
+                break;
+
+            case AST_QUALIFIER:
+                list_append(*quals, node);
+                break;
+
+            default:
+                ERROR("Unexpected node kind: %d", (int) node->kind);
+        }
+    }
+}
