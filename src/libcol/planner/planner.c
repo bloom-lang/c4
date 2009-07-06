@@ -105,7 +105,8 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
 }
 
 /*
- * XXX: should also check for variable equivalences
+ * A variable is satisfied by the current join set if it appears in a column
+ * of one of the joins. XXX: We should also check for variable equivalences.
  */
 static bool
 join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
@@ -179,15 +180,17 @@ join_set_satisfies_qual(AstQualifier *qual, PlannerState *state)
 }
 
 /*
- * Extract all the quals in "qual_set_todo" that can be applied to the
- * output of the join represented by "join_set".
+ * Remove and return all the quals in "qual_set_todo" that can be applied to
+ * the output of the join represented by "join_set".
  */
-static void
-extract_matching_quals(PlannerState *state, List **quals)
+static List *
+extract_matching_quals(PlannerState *state)
 {
+    List *result;
     ListCell *prev;
     ListCell *lc;
 
+    result = list_make(state->tmp_pool);
     lc = list_head(state->qual_set_todo);
     prev = NULL;
     while (true)
@@ -200,13 +203,15 @@ extract_matching_quals(PlannerState *state, List **quals)
         if (join_set_satisfies_qual(qual, state))
         {
             list_remove_cell(state->qual_set_todo, lc, prev);
-            list_append(*quals, qual);
+            list_append(result, qual);
             lc = prev;
         }
 
         prev = lc;
         lc = lc->next;
     }
+
+    return result;
 }
 
 static void
@@ -238,7 +243,7 @@ add_delta_filter(OpChainPlan *chain_plan, PlannerState *state)
     ASSERT(list_is_empty(state->join_set));
     ASSERT(list_is_empty(chain_plan->chain));
 
-    extract_matching_quals(state, &quals);
+    quals = extract_matching_quals(state);
     if (!list_is_empty(quals))
         add_filter_op(quals, chain_plan, state);
 }
@@ -257,7 +262,7 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
     list_append(state->join_set, candidate);
     list_append(state->join_set_refs, candidate->ref);
 
-    extract_matching_quals(state, &quals);
+    quals = extract_matching_quals(state);
     add_join_op(candidate, quals, chain_plan, state);
 }
 
