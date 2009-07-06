@@ -15,12 +15,16 @@ scan_destroy(Operator *op)
 }
 
 ScanOperator *
-scan_op_make(ScanOpPlan *plan, apr_pool_t *pool)
+scan_op_make(ScanOpPlan *plan, Operator *next_op, apr_pool_t *pool)
 {
     ScanOperator *scan_op;
 
-    scan_op = (ScanOperator *) operator_make(OPER_SCAN, sizeof(*scan_op),
-                                             scan_invoke, scan_destroy, pool);
+    scan_op = (ScanOperator *) operator_make(OPER_SCAN,
+                                             sizeof(*scan_op),
+                                             next_op,
+                                             scan_invoke,
+                                             scan_destroy,
+                                             pool);
     scan_op->plan = copy_node(plan, pool);
 
     return scan_op;

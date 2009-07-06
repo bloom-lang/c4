@@ -65,4 +65,6 @@ List *list_copy(List *list, apr_pool_t *pool);
 List *list_copy_deep(List *list, apr_pool_t *pool);
 List *list_copy_str(List *list, apr_pool_t *pool);
 
+List *list_reverse(List *list, apr_pool_t *pool);
+
 #endif  /* LIST_H */

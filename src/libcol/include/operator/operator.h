@@ -41,8 +41,9 @@ struct Operator
 };
 
 /* Generic support routines for operators */
-Operator *operator_make(OpKind op_kind, apr_size_t sz, op_invoke_func invoke_f,
-                        op_destroy_func destroy_f, apr_pool_t *pool);
+Operator *operator_make(OpKind op_kind, apr_size_t sz, Operator *next_op,
+                        op_invoke_func invoke_f, op_destroy_func destroy_f,
+                        apr_pool_t *pool);
 void operator_destroy(Operator *op);
 
 #endif  /* OPERATOR_H */

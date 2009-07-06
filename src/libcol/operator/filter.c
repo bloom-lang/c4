@@ -15,12 +15,13 @@ filter_destroy(Operator *op)
 }
 
 FilterOperator *
-filter_op_make(FilterOpPlan *plan, apr_pool_t *pool)
+filter_op_make(FilterOpPlan *plan, Operator *next_op, apr_pool_t *pool)
 {
     FilterOperator *filter_op;
 
     filter_op = (FilterOperator *) operator_make(OPER_FILTER,
                                                  sizeof(*filter_op),
+                                                 next_op,
                                                  filter_invoke,
                                                  filter_destroy,
                                                  pool);

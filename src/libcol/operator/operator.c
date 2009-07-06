@@ -4,14 +4,16 @@
 static apr_status_t operator_cleanup(void *data);
 
 Operator *
-operator_make(OpKind op_kind, apr_size_t sz, op_invoke_func invoke_f,
-              op_destroy_func destroy_f, apr_pool_t *pool)
+operator_make(OpKind op_kind, apr_size_t sz, Operator *next_op,
+              op_invoke_func invoke_f, op_destroy_func destroy_f,
+              apr_pool_t *pool)
 {
     Operator *op;
 
     op = apr_pcalloc(pool, sz);
     op->op_kind = op_kind;
     op->pool = pool;
+    op->next = next_op;
     op->invoke = invoke_f;
     op->destroy = destroy_f;
 

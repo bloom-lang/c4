@@ -300,7 +300,7 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
 
     /*
      * If there are any quals that can be applied directly to the delta
-     * table, implement them via an initial Filter op.
+     * table, implement them via an initial Filter operator.
      */
     add_delta_filter(chain_plan, state);
 

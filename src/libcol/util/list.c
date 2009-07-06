@@ -243,3 +243,25 @@ list_copy_str(List *list, apr_pool_t *pool)
 
     return result;
 }
+
+/*
+ * Return "list" in reverse order. Note that we construct a new list
+ * (allocating it from "pool"), but we don't deep-copy the contents of the
+ * input list.
+ */
+List *
+list_reverse(List *list, apr_pool_t *pool)
+{
+    List *result;
+    ListCell *lc;
+
+    result = list_make(pool);
+    foreach (lc, list)
+    {
+        ListCell *new_head = make_new_cell(result, NULL, list_head(result));
+        new_head->data = lc->data;
+        result->head = new_head;
+    }
+
+    return result;
+}

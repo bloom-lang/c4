@@ -10,6 +10,7 @@ typedef struct ScanOperator
     ScanOpPlan *plan;
 } ScanOperator;
 
-ScanOperator *scan_op_make(ScanOpPlan *plan, apr_pool_t *pool);
+ScanOperator *scan_op_make(ScanOpPlan *plan, Operator *next_op,
+                           apr_pool_t *pool);
 
 #endif  /* SCAN_H */
