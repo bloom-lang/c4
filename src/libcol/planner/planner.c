@@ -215,10 +215,17 @@ extract_matching_quals(PlannerState *state)
 }
 
 static void
-add_join_op(AstJoinClause *ast_join, List *quals,
+add_scan_op(AstJoinClause *ast_join, List *quals,
             OpChainPlan *chain_plan, PlannerState *state)
 {
-    ;
+    ScanOpPlan *splan;
+
+    splan = apr_pcalloc(state->plan_pool, sizeof(*splan));
+    splan->op_plan.op_kind = OPER_SCAN;
+    splan->quals = list_copy_deep(quals, state->plan_pool);
+    splan->tbl_name = apr_pstrdup(state->plan_pool, ast_join->ref->name);
+
+    list_append(chain_plan->chain, splan);
 }
 
 static void
@@ -263,14 +270,14 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
     list_append(state->join_set_refs, candidate->ref);
 
     quals = extract_matching_quals(state);
-    add_join_op(candidate, quals, chain_plan, state);
+    add_scan_op(candidate, quals, chain_plan, state);
 }
 
 /*
- * Return an operator chain plan that begins with the given delta table. We
- * need to select the set of necessary operators and choose their order. We
- * do naive qualifier pushdown (qualifiers are associated with the first
- * node whose output contains all the variables in the qualifier).
+ * Return a plan for an operator chain that begins with the given delta
+ * table. We need to select the set of necessary operators and choose their
+ * order. We do naive qualifier pushdown (qualifiers are associated with the
+ * first node whose output contains all the variables in the qualifier).
  */
 static OpChainPlan *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
