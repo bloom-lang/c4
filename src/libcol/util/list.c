@@ -169,6 +169,20 @@ list_remove_head_int(List *list)
     return lc_int(list_remove_first_cell(list));
 }
 
+void
+list_remove_cell(List *list, ListCell *cell, ListCell *prev)
+{
+    ASSERT(prev->next == cell);
+
+    prev->next = cell->next;
+    if (list->tail == cell)
+        list->tail = prev;
+    if (list->head == cell)
+        list->head = cell->next;
+
+    list->length--;
+}
+
 /*
  * Return a shallow copy of "list", allocated from "pool". The data in the
  * input list cells is not copied, just the list structure.

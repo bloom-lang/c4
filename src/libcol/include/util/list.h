@@ -59,6 +59,8 @@ int list_get_int(List *list, int idx);
 void *list_remove_head(List *list);
 int list_remove_head_int(List *list);
 
+void list_remove_cell(List *list, ListCell *cell, ListCell *prev);
+
 List *list_copy(List *list, apr_pool_t *pool);
 List *list_copy_deep(List *list, apr_pool_t *pool);
 List *list_copy_str(List *list, apr_pool_t *pool);

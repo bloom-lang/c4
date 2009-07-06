@@ -341,6 +341,9 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
     analyze_table_ref(join->ref, state);
 }
 
+/*
+ * XXX: propagate new type to the rest of the copies of "var" in the rule?
+ */
 static void
 set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 {

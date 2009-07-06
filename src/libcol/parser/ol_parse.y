@@ -8,9 +8,10 @@
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
-static void split_program_clauses(List *clauses, List **defines,
-                                  List **facts, List **rules);
-static void split_rule_body(List *body, List **joins, List **quals);
+static void split_program_clauses(List *clauses, List **defines, List **facts,
+                                  List **rules, apr_pool_t *pool);
+static void split_rule_body(List *body, List **joins,
+                            List **quals, apr_pool_t *pool);
 %}
 
 %union
@@ -58,7 +59,7 @@ program: program_header program_body {
     List *facts;
     List *rules;
 
-    split_program_clauses($2, &defines, &facts, &rules);
+    split_program_clauses($2, &defines, &facts, &rules, context->pool);
     context->result = make_program($1, defines, facts, rules, context->pool);
 };
 
@@ -122,9 +123,7 @@ rule: rule_prefix opt_rule_body {
         List *joins;
         List *quals;
 
-        joins = list_make(context->pool);
-        quals = list_make(context->pool);
-        split_rule_body($2, &joins, &quals);
+        split_rule_body($2, &joins, &quals, context->pool);
         rule->joins = joins;
         rule->quals = quals;
         $$ = rule;
@@ -270,9 +269,13 @@ yyerror(ColParser *context, void *scanner, const char *message)
 
 static void
 split_program_clauses(List *clauses, List **defines,
-                      List **facts, List **rules)
+                      List **facts, List **rules, apr_pool_t *pool)
 {
     ListCell *lc;
+
+    *defines = list_make(pool);
+    *facts = list_make(pool);
+    *rules = list_make(pool);
 
     foreach (lc, clauses)
     {
@@ -305,9 +308,12 @@ split_program_clauses(List *clauses, List **defines,
  * semantically significant.
  */
 static void
-split_rule_body(List *body, List **joins, List **quals)
+split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
 {
     ListCell *lc;
+
+    *joins = list_make(pool);
+    *quals = list_make(pool);
 
     foreach (lc, body)
     {

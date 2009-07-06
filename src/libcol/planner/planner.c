@@ -28,6 +28,7 @@
 #include "col-internal.h"
 #include "parser/copyfuncs.h"
 #include "parser/parser.h"
+#include "parser/walker.h"
 #include "planner/planner.h"
 
 typedef struct PlannerState
@@ -87,34 +88,94 @@ make_join_set(AstJoinClause *delta_tbl, List *all_joins, PlannerState *state)
 {
     List *result;
     ListCell *lc;
-    bool seen_delta;
 
     result = list_make(state->tmp_pool);
-    seen_delta = false;
     foreach (lc, all_joins)
     {
         AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
 
-        if (join == delta_tbl && !seen_delta)
-        {
-            seen_delta = true;
+        if (join == delta_tbl)
             continue;
-        }
 
-        list_append(result, copy_node(join, state->tmp_pool));
+        list_append(result, join);
     }
 
+    ASSERT(list_length(result) + 1 == list_length(all_joins));
     return result;
 }
 
 /*
- * Given the currently-joined tables in "state->join_set", are we in a
- * position to be able to evaluate "qual"?
+ * XXX: should also check for variable equivalences
+ */
+static bool
+join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
+{
+    ListCell *lc;
+
+    foreach (lc, state->join_set)
+    {
+        AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
+        ListCell *lc2;
+
+        foreach (lc2, join->ref->cols)
+        {
+            AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc2);
+            AstVarExpr *column_var;
+
+            /* XXX: we shouldn't actually see this post-analysis, right? */
+            if (cref->expr->kind != AST_VAR_EXPR)
+                continue;
+
+            column_var = (AstVarExpr *) cref->expr;
+            if (strcmp(var->name, column_var->name) == 0)
+                return true;
+        }
+    }
+
+    return false;
+}
+
+static bool
+get_var_callback(AstNode *n, void *data)
+{
+    List *var_list = (List *) data;
+
+    if (n->kind == AST_VAR_EXPR)
+        list_append(var_list, n);
+
+    return true;
+}
+
+static List *
+expr_get_vars(AstNode *expr, apr_pool_t *pool)
+{
+    List *var_list;
+
+    var_list = list_make(pool);
+    expr_tree_walker(expr, get_var_callback, var_list);
+    return var_list;
+}
+
+/*
+ * Given the currently-joined tables in "state->join_set", is it possible to
+ * evaluate "qual"?
  */
 static bool
 join_set_satisfies_qual(AstQualifier *qual, PlannerState *state)
 {
-    return false;
+    List *var_list;
+    ListCell *lc;
+
+    var_list = expr_get_vars(qual->expr, state->tmp_pool);
+    foreach (lc, var_list)
+    {
+        AstVarExpr *var = (AstVarExpr *) lc_ptr(lc);
+
+        if (!join_set_satisfies_var(var, state))
+            return false;
+    }
+
+    return true;
 }
 
 /*
@@ -124,16 +185,27 @@ join_set_satisfies_qual(AstQualifier *qual, PlannerState *state)
 static void
 extract_matching_quals(PlannerState *state, List **quals)
 {
+    ListCell *prev;
     ListCell *lc;
 
-    foreach (lc, state->qual_set_todo)
+    lc = list_head(state->qual_set_todo);
+    prev = NULL;
+    while (true)
     {
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
 
+        if (lc == NULL)
+            break;
+
         if (join_set_satisfies_qual(qual, state))
         {
-            ;
+            list_remove_cell(state->qual_set_todo, lc, prev);
+            list_append(*quals, qual);
+            lc = prev;
         }
+
+        prev = lc;
+        lc = lc->next;
     }
 }
 

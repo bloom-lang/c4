@@ -1,11 +1,11 @@
 #include "col-internal.h"
 #include "parser/walker.h"
 
-void
+bool
 expr_tree_walker(AstNode *node, expr_callback fn, void *data)
 {
     if (!node)
-        return;
+        return true;
 
     switch (node->kind)
     {
@@ -13,8 +13,12 @@ expr_tree_walker(AstNode *node, expr_callback fn, void *data)
         {
             AstOpExpr *op_expr = (AstOpExpr *) node;
 
-            expr_tree_walker(op_expr->lhs, fn, data);
-            expr_tree_walker(op_expr->rhs, fn, data);
+            if (expr_tree_walker(op_expr->lhs, fn, data) == false)
+                return false;
+
+            if (expr_tree_walker(op_expr->rhs, fn, data) == false)
+                return false;
+
             break;
         }
 
@@ -27,5 +31,5 @@ expr_tree_walker(AstNode *node, expr_callback fn, void *data)
                   (int) node->kind);
     }
 
-    fn(node, data);
+    return fn(node, data);
 }
