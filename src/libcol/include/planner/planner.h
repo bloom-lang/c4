@@ -22,6 +22,7 @@ typedef struct RulePlan
 typedef struct OpChainPlan
 {
     char *delta_tbl;
+    AstTableRef *head;
     List *chain;
 } OpChainPlan;
 

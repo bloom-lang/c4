@@ -234,3 +234,9 @@ router_enqueue(ColRouter *router, WorkItem *wi)
         FAIL();
     }
 }
+
+void
+router_add_op_chain(ColRouter *router, OpChain *op_chain)
+{
+    ;
+}

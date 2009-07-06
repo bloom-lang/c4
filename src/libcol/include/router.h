@@ -1,6 +1,7 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
+#include "operator/operator.h"
 #include "planner/planner.h"
 #include "types/tuple.h"
 
@@ -14,5 +15,7 @@ void router_start(ColRouter *router);
 void router_enqueue_plan(ColRouter *router, ProgramPlan *plan);
 void router_enqueue_tuple(ColRouter *router, Tuple *tuple,
                           const char *tbl_name);
+
+void router_add_op_chain(ColRouter *router, OpChain *op_chain);
 
 #endif  /* ROUTER_H */

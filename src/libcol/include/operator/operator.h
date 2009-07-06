@@ -1,6 +1,7 @@
 #ifndef OPERATOR_H
 #define OPERATOR_H
 
+#include "parser/ast.h"
 #include "types/tuple.h"
 
 typedef struct Operator Operator;
@@ -16,7 +17,7 @@ typedef struct OpChain
 {
     apr_pool_t *pool;
     char *delta_tbl;
-    char *head_tbl;
+    AstTableRef *head;
     Operator *chain_start;
     int length;
 } OpChain;

@@ -280,8 +280,7 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
  * first node whose output contains all the variables in the qualifier).
  */
 static OpChainPlan *
-plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
-              RulePlan *rplan, PlannerState *state)
+plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
 {
     OpChainPlan *chain_plan;
     ListCell *lc;
@@ -296,6 +295,7 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
     chain_plan = apr_pcalloc(state->plan_pool, sizeof(*chain_plan));
     chain_plan->delta_tbl = apr_pstrdup(state->plan_pool,
                                         delta_tbl->ref->name);
+    chain_plan->head = copy_node(rule->head, state->plan_pool);
     chain_plan->chain = list_make(state->plan_pool);
 
     /*
@@ -334,7 +334,7 @@ plan_rule(AstRule *rule, PlannerState *state)
         AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
         OpChainPlan *chain_plan;
 
-        chain_plan = plan_op_chain(delta_tbl, rule, rplan, state);
+        chain_plan = plan_op_chain(delta_tbl, rule, state);
         list_append(rplan->chains, chain_plan);
     }
 

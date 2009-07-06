@@ -1,6 +1,9 @@
+#include <apr_strings.h>
+
 #include "col-internal.h"
 #include "operator/filter.h"
 #include "operator/scan.h"
+#include "parser/copyfuncs.h"
 #include "planner/installer.h"
 #include "router.h"
 
@@ -22,10 +25,14 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     List *chain_rev;
     Operator *prev_op;
     ListCell *lc;
+    apr_pool_t *chain_pool;
+    OpChain *op_chain;
+
+    chain_pool = make_subpool(istate->col->pool);
 
     /*
      * We construct the operator chain in reverse, so that each operator
-     * knows which operator follows it in the op chain when it is initiated.
+     * knows which operator follows it in the op chain when it is created
      */
     chain_rev = list_reverse(chain_plan->chain, istate->tmp_pool);
     prev_op = NULL;
@@ -39,12 +46,12 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
         {
             case OPER_FILTER:
                 op = (Operator *) filter_op_make((FilterOpPlan *) plan,
-                                                 prev_op, NULL);
+                                                 prev_op, chain_pool);
                 break;
 
             case OPER_SCAN:
                 op = (Operator *) scan_op_make((ScanOpPlan *) plan,
-                                               prev_op, NULL);
+                                               prev_op, chain_pool);
                 break;
 
             default:
@@ -55,6 +62,20 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         prev_op = op;
     }
+
+    /*
+     * XXX: Add an "insert" op to project tuples into the head table (and/or
+     * send over the network).
+     */
+
+    op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
+    op_chain->pool = chain_pool;
+    op_chain->delta_tbl = apr_pstrdup(chain_pool, chain_plan->delta_tbl);
+    op_chain->head = copy_node(chain_plan->head, chain_pool);
+    op_chain->length = list_length(chain_rev);
+    op_chain->chain_start = prev_op;
+
+    router_add_op_chain(istate->col->router, op_chain);
 }
 
 static void
