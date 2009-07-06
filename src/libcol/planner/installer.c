@@ -2,6 +2,7 @@
 
 #include "col-internal.h"
 #include "operator/filter.h"
+#include "operator/insert.h"
 #include "operator/scan.h"
 #include "parser/copyfuncs.h"
 #include "planner/installer.h"
@@ -31,8 +32,8 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     chain_pool = make_subpool(istate->col->pool);
 
     /*
-     * We construct the operator chain in reverse, so that each operator
-     * knows which operator follows it in the op chain when it is created
+     * We build the operator chain in reverse, so that each operator knows
+     * which operator follows it in the op chain when it is created.
      */
     chain_rev = list_reverse(chain_plan->chain, istate->tmp_pool);
     prev_op = NULL;
@@ -44,6 +45,13 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         switch (plan->op_kind)
         {
+            case OPER_INSERT:
+                /* Should be the last op in the chain */
+                ASSERT(prev_op == NULL);
+                op = (Operator *) insert_op_make((InsertOpPlan *) plan,
+                                                 chain_pool);
+                break;
+
             case OPER_FILTER:
                 op = (Operator *) filter_op_make((FilterOpPlan *) plan,
                                                  prev_op, chain_pool);
@@ -62,11 +70,6 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         prev_op = op;
     }
-
-    /*
-     * XXX: Add an "insert" op to project tuples into the head table (and/or
-     * send over the network).
-     */
 
     op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
     op_chain->pool = chain_pool;

@@ -242,6 +242,18 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
 }
 
 static void
+add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
+{
+    InsertOpPlan *iplan;
+
+    iplan = apr_pcalloc(state->plan_pool, sizeof(*iplan));
+    iplan->op_plan.op_kind = OPER_INSERT;
+    iplan->head = copy_node(rule->head, state->plan_pool);
+
+    list_append(chain_plan->chain, iplan);
+}
+
+static void
 add_delta_filter(OpChainPlan *chain_plan, PlannerState *state)
 {
     List *quals;
@@ -278,6 +290,10 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
  * table. We need to select the set of necessary operators and choose their
  * order. We do naive qualifier pushdown (qualifiers are associated with the
  * first node whose output contains all the variables in the qualifier).
+ *
+ * The last op in the chain (and the first one created) is an OPER_INSERT,
+ * which inserts tuples into the head table (and/or enqueues them to be sent
+ * over the network).
  */
 static OpChainPlan *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
@@ -310,6 +326,8 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
     if (!list_is_empty(state->qual_set_todo))
         ERROR("Failed to match %d qualifiers to an operator",
               list_length(state->qual_set_todo));
+
+    add_insert_op(rule, chain_plan, state);
 
     return chain_plan;
 }

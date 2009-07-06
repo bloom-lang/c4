@@ -45,6 +45,12 @@ typedef struct ScanOpPlan
     char *tbl_name;
 } ScanOpPlan;
 
+typedef struct InsertOpPlan
+{
+    OpPlan op_plan;
+    AstTableRef *head;
+} InsertOpPlan;
+
 ProgramPlan *plan_program(AstProgram *ast, ColInstance *col);
 void plan_destroy(ProgramPlan *plan);
 

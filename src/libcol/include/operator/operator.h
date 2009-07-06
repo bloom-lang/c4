@@ -25,7 +25,8 @@ typedef struct OpChain
 typedef enum OpKind
 {
     OPER_SCAN,
-    OPER_FILTER
+    OPER_FILTER,
+    OPER_INSERT
 } OpKind;
 
 typedef void (*op_invoke_func)(Operator *op, Tuple *t);
