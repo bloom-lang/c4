@@ -1,3 +1,4 @@
+#include <apr_hash.h>
 #include <apr_queue.h>
 #include <apr_thread_proc.h>
 
@@ -12,6 +13,9 @@ struct ColRouter
 {
     ColInstance *col;
     apr_pool_t *pool;
+
+    /* Map from table name => OpChain list */
+    apr_hash_t *delta_tbl;
 
     /* Thread info for router thread */
     apr_threadattr_t *thread_attr;
@@ -56,6 +60,7 @@ router_make(ColInstance *col)
     router = apr_pcalloc(pool, sizeof(*router));
     router->col = col;
     router->pool = pool;
+    router->delta_tbl = apr_hash_make(pool);
     router->ntuple_routed = 0;
 
     s = apr_queue_create(&router->queue, 128, router->pool);
@@ -92,26 +97,18 @@ router_start(ColRouter *router)
         FAIL();
 }
 
-static List *
-tuple_get_op_chains(const char *tbl_name, ColRouter *router)
-{
-    return NULL;
-}
-
 static void
 route_tuple(Tuple *tuple, const char *tbl_name, ColRouter *router)
 {
-    List *op_chains;
-    ListCell *lc;
+    OpChain *op_chain;
 
-    op_chains = tuple_get_op_chains(tbl_name, router);
-    foreach (lc, op_chains)
+    op_chain = apr_hash_get(router->delta_tbl, tbl_name,
+                            APR_HASH_KEY_STRING);
+    while (op_chain != NULL)
     {
-        OpChain *op_chain = (OpChain *) lc_ptr(lc);
-        Operator *start;
-
-        start = op_chain->chain_start;
+        Operator *start = op_chain->chain_start;
         start->invoke(start, tuple);
+        op_chain = op_chain->next;
     }
 
     router->ntuple_routed++;
@@ -238,5 +235,12 @@ router_enqueue(ColRouter *router, WorkItem *wi)
 void
 router_add_op_chain(ColRouter *router, OpChain *op_chain)
 {
-    ;
+    OpChain *old_chain;
+
+    ASSERT(op_chain->next == NULL);
+    old_chain = apr_hash_get(router->delta_tbl, op_chain->delta_tbl,
+                             APR_HASH_KEY_STRING);
+    op_chain->next = old_chain;
+    apr_hash_set(router->delta_tbl, op_chain->delta_tbl,
+                 APR_HASH_KEY_STRING, op_chain);
 }

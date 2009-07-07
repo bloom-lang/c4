@@ -5,6 +5,7 @@
 #include "types/tuple.h"
 
 typedef struct Operator Operator;
+typedef struct OpChain OpChain;
 
 /*
  * An OpChain is a sequence of operators that begins with a "delta
@@ -13,14 +14,20 @@ typedef struct Operator Operator;
  * emerge from the tail of the operator chain are to be inserted into the
  * "head_tbl".
  */
-typedef struct OpChain
+struct OpChain
 {
     apr_pool_t *pool;
     char *delta_tbl;
     AstTableRef *head;
     Operator *chain_start;
     int length;
-} OpChain;
+
+    /*
+     * In the router, this holds a pointer to the next op chain for the same
+     * delta table
+     */
+    OpChain *next;
+};
 
 typedef enum OpKind
 {

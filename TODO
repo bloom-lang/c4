@@ -21,6 +21,13 @@ Executor/Router/Operators:
 * Consider writing a specialized allocator for Tuples
 * Don't copy WorkItem in the router: have the queue store kind + pointer directly
 
+Network:
+* Add an ad-hoc compression method, to avoid resending tuple schemas +
+  table names in every single packet
+  * Have the client and server negotiate that "table 10" means "table
+    foo, with schema bar" once, and use that information for the rest
+    of the connection
+
 Broader issues:
 
 * Testing framework
@@ -43,3 +50,4 @@ Broader issues:
   are there situations in which it might actually be faster to have
   joins emit a "super-tuple" that consists of the join input tuples,
   rather than projecting the join result columns?
+* Invent a concept of "table IDs", and use them instead of table names

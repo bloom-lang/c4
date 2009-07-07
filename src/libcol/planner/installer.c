@@ -77,6 +77,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     op_chain->head = copy_node(chain_plan->head, chain_pool);
     op_chain->length = list_length(chain_rev);
     op_chain->chain_start = prev_op;
+    op_chain->next = NULL;
 
     router_add_op_chain(istate->col->router, op_chain);
 }
