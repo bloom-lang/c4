@@ -1,5 +1,3 @@
-#include <apr_strings.h>
-
 #include "col-internal.h"
 #include "parser/copyfuncs.h"
 #include "util/list.h"

@@ -1,5 +1,3 @@
-#include <apr_strings.h>
-
 #include "col-internal.h"
 #include "types/catalog.h"
 #include "types/schema.h"

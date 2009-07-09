@@ -1,5 +1,4 @@
 #include <apr_hash.h>
-#include <apr_strings.h>
 
 #include "col-internal.h"
 #include "parser/analyze.h"

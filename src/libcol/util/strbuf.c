@@ -1,5 +1,3 @@
-#include <apr_strings.h>
-
 #include "col-internal.h"
 #include "util/strbuf.h"
 
@@ -113,4 +111,3 @@ sbuf_enlarge(StrBuf *sbuf, int more_bytes)
     sbuf->buf = ol_realloc(sbuf->buf, new_alloc_sz);
     sbuf->max_len = new_alloc_sz;
 }
-

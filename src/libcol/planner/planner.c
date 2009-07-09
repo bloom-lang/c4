@@ -23,8 +23,6 @@
  *    Push q down Chain until the first place in the Chain where all the
  *    tables referenced in q have been joined against
  */
-#include <apr_strings.h>
-
 #include "col-internal.h"
 #include "parser/copyfuncs.h"
 #include "parser/parser.h"

@@ -1,5 +1,3 @@
-#include <apr_strings.h>
-
 #include "col-internal.h"
 #include "types/table.h"
 #include "types/tuple.h"

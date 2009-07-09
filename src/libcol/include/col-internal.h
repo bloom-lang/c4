@@ -6,6 +6,7 @@
 /* Commonly-used external headers */
 #include <apr_general.h>
 #include <apr_pools.h>
+#include <apr_strings.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
