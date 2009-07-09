@@ -1,4 +1,5 @@
 #include <apr_hash.h>
+#include <apr_strings.h>
 
 #include "col-internal.h"
 #include "types/catalog.h"
@@ -8,7 +9,8 @@ struct ColCatalog
     ColInstance *col;
     apr_pool_t *pool;
 
-    apr_hash_t *schema_tbl;
+    /* A map from table names => TableDef */
+    apr_hash_t *tbl_name_tbl;
 };
 
 ColCatalog *
@@ -21,25 +23,50 @@ cat_make(ColInstance *col)
     cat = apr_pcalloc(pool, sizeof(*cat));
     cat->col = col;
     cat->pool = pool;
-    cat->schema_tbl = apr_hash_make(cat->pool);
+    cat->tbl_name_tbl = apr_hash_make(cat->pool);
 
     return cat;
 }
 
-Schema *
-cat_get_schema(ColCatalog *cat, const char *name)
+void
+cat_define_table(ColCatalog *cat, const char *name,
+                 List *type_list, List *key_list)
 {
-    return apr_hash_get(cat->schema_tbl, name, APR_HASH_KEY_STRING);
+    apr_pool_t *tbl_pool;
+    TableDef *tbl_def;
+
+    if (cat_get_table(cat, name) != NULL)
+        ERROR("Duplicate table definition: %s", name);
+
+    tbl_pool = make_subpool(cat->pool);
+    tbl_def = apr_pcalloc(tbl_pool, sizeof(*tbl_def));
+    tbl_def->pool = tbl_pool;
+    tbl_def->name = apr_pstrdup(tbl_pool, name);
+    tbl_def->schema = schema_make_from_list(type_list, tbl_pool);
+    tbl_def->key_list = list_copy(key_list, tbl_pool);
+
+    apr_hash_set(cat->tbl_name_tbl, tbl_def->name,
+                 APR_HASH_KEY_STRING, tbl_def);
 }
 
 void
-cat_set_schema(ColCatalog *cat, const char *name, Schema *schema)
+cat_delete_table(ColCatalog *cat, const char *name)
 {
-    if (cat_get_schema(cat, name) != NULL)
-        ERROR("duplicate schema definition: %s", name);
+    TableDef *tbl_def;
 
-    apr_hash_set(cat->schema_tbl, name,
-                 APR_HASH_KEY_STRING, schema);
+    tbl_def = cat_get_table(cat, name);
+    if (tbl_def == NULL)
+        ERROR("No such table: %s", name);
+
+    apr_hash_set(cat->tbl_name_tbl, name, APR_HASH_KEY_STRING, NULL);
+    apr_pool_destroy(tbl_def->pool);
+}
+
+TableDef *
+cat_get_table(ColCatalog *cat, const char *name)
+{
+    return (TableDef *) apr_hash_get(cat->tbl_name_tbl, name,
+                                     APR_HASH_KEY_STRING);
 }
 
 bool

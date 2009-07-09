@@ -68,7 +68,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     apr_hash_set(state->define_tbl, def->name,
                  APR_HASH_KEY_STRING, def);
 
-    /* Validate the schema list */
+    /* Validate the table's schema */
     foreach (lc, def->schema)
     {
         char *type_name = (char *) lc_ptr(lc);

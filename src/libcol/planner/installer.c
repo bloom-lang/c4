@@ -7,6 +7,7 @@
 #include "parser/copyfuncs.h"
 #include "planner/installer.h"
 #include "router.h"
+#include "types/catalog.h"
 
 typedef struct InstallState
 {
@@ -17,7 +18,15 @@ typedef struct InstallState
 static void
 plan_install_defines(ProgramPlan *plan, InstallState *istate)
 {
-    ;
+    ListCell *lc;
+
+    foreach (lc, plan->defines)
+    {
+        AstDefine *def = (AstDefine *) lc_ptr(lc);
+
+        cat_define_table(istate->col->cat, def->name,
+                         def->schema, def->keys);
+    }
 }
 
 static void
