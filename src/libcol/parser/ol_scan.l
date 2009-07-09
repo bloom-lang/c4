@@ -1,5 +1,4 @@
 %{
-#include <apr_strings.h>
 #include <string.h>
 
 #include "col-internal.h"
@@ -85,12 +84,13 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 }
 
 \'[^\\\']\' {
-    yylval.chr = (unsigned char) yytext[1];
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, &yytext[1], 1);
     return CCONST;
 }
 
 \'\\.\' {
-    yylval.chr = unescape_char((unsigned char) yytext[2]);
+    char c = unescape_char((unsigned char) yytext[2]);
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, &c, 1);
     return CCONST;
 }
 
@@ -117,13 +117,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "program"               { return PROGRAM; }
 
 {integer} {
-    char *endptr;
-
-    yylval.ival = strtol(yytext, &endptr, 10);
-    if (*endptr != '\0')
-        FAIL();
-
-    printf("ICONST = %" APR_INT64_T_FMT "\n", yylval.ival);
+    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return ICONST;
 }
 

@@ -147,20 +147,11 @@ typedef enum AstConstKind
     AST_CONST_STRING
 } AstConstKind;
 
-typedef union AstConstValue
-{
-    bool b;
-    unsigned char c;
-    apr_int64_t i;
-    /* Used to hold both floating point and string constants */
-    char *s;
-} AstConstValue;
-
 typedef struct AstConstExpr
 {
     AstNode node;
     AstConstKind const_kind;
-    AstConstValue value;
+    char *value;
 } AstConstExpr;
 
 #endif  /* AST_H */

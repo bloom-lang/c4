@@ -21,7 +21,6 @@ static void split_rule_body(List *body, List **joins,
     List           *list;
     void           *ptr;
     bool            boolean;
-    unsigned char   chr;
     AstHashVariant  hash_v;
 }
 
@@ -33,9 +32,7 @@ static void split_rule_body(List *body, List **joins,
 
 %token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
        OL_ASSIGN OL_FALSE OL_TRUE
-%token <str> VAR_IDENT TBL_IDENT FCONST SCONST
-%token <chr> CCONST
-%token <ival> ICONST
+%token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
 %nonassoc OL_ASSIGN
 %left OL_EQ OL_NEQ
@@ -50,7 +47,9 @@ static void split_rule_body(List *body, List **joins,
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem qualifier qual_expr expr const_expr op_expr
 %type <ptr>     var_expr column_ref_expr rule_prefix
-%type <boolean> opt_not bool_const opt_delete
+%type <str>     bool_const
+%type <ival>    iconst_ival
+%type <boolean> opt_not opt_delete
 %type <hash_v>  opt_hash_variant
 
 %%
@@ -96,9 +95,25 @@ opt_int_list:
 ;
 
 int_list:
-  ICONST                { $$ = list_make1_int($1, context->pool); }
-| int_list ',' ICONST   { $$ = list_append_int($1, $3); }
+  iconst_ival                { $$ = list_make1_int($1, context->pool); }
+| int_list ',' iconst_ival   { $$ = list_append_int($1, $3); }
 ;
+
+/*
+ * This is identical to ICONST, except that we convert the string returned
+ * by the lexer into an integer. Note that this conversion might fail,
+ * because the integer is malformed (e.g. too large).
+ */
+iconst_ival: ICONST {
+    apr_int64_t ival;
+    char *endptr;
+
+    ival = strtol($1, &endptr, 10);
+    if (endptr != '\0')
+        FAIL();
+
+    $$ = ival;
+};
 
 tident_list:
   TBL_IDENT                  { $$ = list_make1($1, context->pool); }
@@ -209,36 +224,16 @@ qual_expr:
 ;
 
 const_expr:
-bool_const {
-    AstConstValue val;
-    val.b = $1;
-    $$ = make_const_expr(AST_CONST_BOOL, val, context->pool);
-}
-| ICONST {
-    AstConstValue val;
-    val.i = $1;
-    $$ = make_const_expr(AST_CONST_INT, val, context->pool);
-}
-| FCONST {
-    AstConstValue val;
-    val.s = $1;
-    $$ = make_const_expr(AST_CONST_DOUBLE, val, context->pool);
-}
-| SCONST {
-    AstConstValue val;
-    val.s = $1;
-    $$ = make_const_expr(AST_CONST_STRING, val, context->pool);
-}
-| CCONST {
-    AstConstValue val;
-    val.c = $1;
-    $$ = make_const_expr(AST_CONST_CHAR, val, context->pool);
-}
+  bool_const { $$ = make_const_expr(AST_CONST_BOOL, $1, context->pool); }
+| ICONST { $$ = make_const_expr(AST_CONST_INT, $1, context->pool); }
+| FCONST { $$ = make_const_expr(AST_CONST_DOUBLE, $1, context->pool); }
+| SCONST { $$ = make_const_expr(AST_CONST_STRING, $1, context->pool); }
+| CCONST { $$ = make_const_expr(AST_CONST_CHAR, $1, context->pool); }
 ;
 
 bool_const:
-  OL_TRUE       { $$ = true; }
-| OL_FALSE      { $$ = false; }
+  OL_TRUE       { $$ = apr_pstrdup(context->pool, "true"); }
+| OL_FALSE      { $$ = apr_pstrdup(context->pool, "false"); }
 ;
 
 var_expr: VAR_IDENT { $$ = make_var_expr($1, TYPE_INVALID, context->pool); };

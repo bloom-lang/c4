@@ -19,7 +19,7 @@ AstColumnRef *make_column_ref(bool has_loc_spec, AstNode *expr,
 AstOpExpr *make_op_expr(AstNode *lhs, AstNode *rhs,
                         AstOperKind op_kind, apr_pool_t *pool);
 AstVarExpr *make_var_expr(char *name, DataType type, apr_pool_t *pool);
-AstConstExpr *make_const_expr(AstConstKind c_kind, AstConstValue val, apr_pool_t *pool);
+AstConstExpr *make_const_expr(AstConstKind c_kind, char *value, apr_pool_t *pool);
 AstQualifier *make_qualifier(AstNode *expr, apr_pool_t *pool);
 
 #endif  /* MAKEFUNCS_H */

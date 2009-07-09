@@ -89,35 +89,11 @@ copy_var_expr(AstVarExpr *in, apr_pool_t *p)
     return make_var_expr(apr_pstrdup(p, in->name), in->type, p);
 }
 
-static AstConstValue
-copy_const_value(AstConstKind kind, AstConstValue val, apr_pool_t *p)
-{
-    switch (kind)
-    {
-        case AST_CONST_BOOL:
-        case AST_CONST_CHAR:
-        case AST_CONST_INT:
-            return val;
-
-        case AST_CONST_DOUBLE:
-        case AST_CONST_STRING:
-        {
-            AstConstValue result;
-            result.s = apr_pstrdup(p, val.s);
-            return result;
-        }
-
-        default:
-            ERROR("Unrecognized const kind: %d", (int) kind);
-            return val; /* Keep compiler quiet */
-    }
-}
-
 static AstConstExpr *
 copy_const_expr(AstConstExpr *in, apr_pool_t *p)
 {
     return make_const_expr(in->const_kind,
-                           copy_const_value(in->const_kind, in->value, p),
+                           apr_pstrdup(p, in->value),
                            p);
 }
 

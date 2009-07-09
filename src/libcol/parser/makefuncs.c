@@ -104,12 +104,12 @@ make_var_expr(char *name, DataType type, apr_pool_t *pool)
 }
 
 AstConstExpr *
-make_const_expr(AstConstKind c_kind, AstConstValue val, apr_pool_t *pool)
+make_const_expr(AstConstKind c_kind, char *value, apr_pool_t *pool)
 {
     AstConstExpr *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_CONST_EXPR;
     result->const_kind = c_kind;
-    result->value = val;
+    result->value = value;
     return result;
 }
 
