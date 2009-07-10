@@ -12,8 +12,15 @@ tuple_make(Schema *s, Datum *values)
     t = ol_alloc(sizeof(*t) + (s->len * sizeof(Datum)));
     memset(t, 0, sizeof(*t));
     t->refcount = 1;
+    /* XXX: pass-by-ref types? */
     memcpy(t + 1, values, s->len * sizeof(Datum));
     return t;
+}
+
+Tuple *
+tuple_make_from_strings(Schema *s, char **values)
+{
+    ;
 }
 
 void

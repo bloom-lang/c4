@@ -68,6 +68,18 @@ cat_get_table(ColCatalog *cat, const char *name)
                                      APR_HASH_KEY_STRING);
 }
 
+Schema *
+cat_get_schema(ColCatalog *cat, const char *name)
+{
+    TableDef *tbl_def;
+
+    tbl_def = cat_get_table(cat, name);
+    if (!tbl_def)
+        return NULL;
+
+    return tbl_def->schema;
+}
+
 bool
 is_numeric_type(DataType type_id)
 {

@@ -29,6 +29,8 @@ typedef struct Tuple
 #define tuple_get_val(t, i)     (tuple_get_data(t)[(i)])
 
 Tuple *tuple_make(Schema *s, Datum *values);
+Tuple *tuple_make_from_strings(Schema *s, char **values);
+
 void tuple_pin(Tuple *tuple);
 void tuple_unpin(Tuple *tuple);
 

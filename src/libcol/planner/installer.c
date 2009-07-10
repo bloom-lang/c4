@@ -111,7 +111,25 @@ plan_install_rules(ProgramPlan *plan, InstallState *istate)
 static Tuple *
 fact_make_tuple(AstFact *fact, InstallState *istate)
 {
-    return NULL;
+    AstTableRef *target = fact->head;
+    Schema *schema;
+    char **values;
+    int i;
+    ListCell *lc;
+
+    schema = cat_get_schema(istate->col->cat, target->name);
+    values = apr_palloc(istate->tmp_pool, schema->len * sizeof(*values));
+    i = 0;
+    foreach (lc, target->cols)
+    {
+        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        AstConstExpr *c_expr = (AstConstExpr *) cref->expr;
+
+        values[i] = c_expr->value;
+        i++;
+    }
+
+    return tuple_make_from_strings(schema, values);
 }
 
 static void

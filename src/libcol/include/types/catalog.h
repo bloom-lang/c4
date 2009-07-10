@@ -21,7 +21,6 @@ void cat_delete_table(ColCatalog *cat, const char *name);
 TableDef *cat_get_table(ColCatalog *cat, const char *name);
 
 Schema *cat_get_schema(ColCatalog *cat, const char *name);
-void cat_set_schema(ColCatalog *cat, const char *name, Schema *schema);
 
 bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);
