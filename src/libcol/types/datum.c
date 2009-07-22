@@ -177,3 +177,137 @@ datum_hash(Datum d, DataType type)
             return 0;       /* Keep compiler quiet */
     }
 }
+
+static Datum
+bool_from_str(const char *str)
+{
+    Datum result;
+
+    if (strcmp(str, "true") == 0)
+        result.b = true;
+    else if (strcmp(str, "false") == 0)
+        result.b = false;
+    else
+        FAIL();
+
+    return result;
+}
+
+static Datum
+char_from_str(const char *str)
+{
+    Datum result;
+
+    if (str[0] == '\0')
+        FAIL();
+    if (str[1] != '\0')
+        FAIL();
+
+    result.c = (unsigned char) str[0];
+    return result;
+}
+
+static Datum
+double_from_str(const char *str)
+{
+    Datum result;
+    char *end_ptr;
+
+    errno = 0;
+    result.d8 = strtod(str, &end_ptr);
+    if (errno != 0 || str == end_ptr)
+        FAIL();
+    if (*end_ptr != '\0')
+        FAIL(); /* XXX: should we allow trailing whitespace? */
+
+    return result;
+}
+
+static apr_int64_t
+parse_int64(const char *str, apr_int64_t max, apr_int64_t min)
+{
+    apr_int64_t result;
+
+    errno = 0;
+    result = apr_atoi64(str);
+    if (errno != 0)
+        FAIL();
+    if (result > max || result < min)
+        FAIL();
+
+    return result;
+}
+
+static Datum
+int2_from_str(const char *str)
+{
+    Datum result;
+    apr_int64_t raw_result;
+
+    raw_result = parse_int64(str, APR_INT16_MAX, APR_INT16_MIN);
+    result.i2 = (apr_int16_t) raw_result;
+    return result;
+}
+
+static Datum
+int4_from_str(const char *str)
+{
+    Datum result;
+    apr_int64_t raw_result;
+
+    raw_result = parse_int64(str, APR_INT32_MAX, APR_INT32_MIN);
+    result.i4 = (apr_int32_t) raw_result;
+    return result;
+}
+
+static Datum
+int8_from_str(const char *str)
+{
+    Datum result;
+
+    result.i8 = parse_int64(str, APR_INT64_MAX, APR_INT64_MIN);
+    return result;
+}
+
+static Datum
+string_from_str(const char *str)
+{
+    Datum result;
+
+    result.b = true;
+    return result;
+}
+
+Datum
+datum_from_str(const char *str, DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_from_str(str);
+
+        case TYPE_CHAR:
+            return char_from_str(str);
+
+        case TYPE_DOUBLE:
+            return double_from_str(str);
+
+        case TYPE_INT2:
+            return int2_from_str(str);
+
+        case TYPE_INT4:
+            return int4_from_str(str);
+
+        case TYPE_INT8:
+            return int8_from_str(str);
+
+        case TYPE_STRING:
+            return string_from_str(str);
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}

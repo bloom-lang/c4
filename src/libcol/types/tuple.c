@@ -20,7 +20,20 @@ tuple_make(Schema *s, Datum *values)
 Tuple *
 tuple_make_from_strings(Schema *s, char **values)
 {
-    ;
+    Tuple *t;
+    int i;
+
+    t = ol_alloc(sizeof(*t) + (s->len + sizeof(Datum)));
+    memset(t, 0, sizeof(*t));
+    t->refcount = 1;
+
+    for (i = 0; i < s->len; i++)
+    {
+        Datum d = datum_from_str(values[i], schema_get_type(s, i));
+        /* XXX */
+    }
+
+    return t;
 }
 
 void

@@ -31,10 +31,16 @@ Network:
     foo, with schema bar" once, and use that information for the rest
     of the connection
 
+Data types:
+
+* Consider using a variable-size length word for ColString: more
+  storage-efficient for short strings, which is the common case (or
+  special-case just for network input/output?)
+
 Broader issues:
 
 * Testing framework
-* Error handling
+* Error handling: exceptions via longjmp?
 * Add a "$LOCALHOST" variable that expands to the network address of
   the evaluating COL instance
 * Invent something similar to makeNode() from Postgres: infer node
@@ -42,9 +48,6 @@ Broader issues:
 * Generalize node support from parser/ to nodes/
 * Make use of profile-guided optimization with GCC
 * Consider caching per-tuple hash code
-* Consider using a variable-size length word for ColString: more
-  storage-efficient for short strings, which is the common case (or
-  special-case just for network input/output?)
 * Measure the performance difference between looking up a function
   pointer and doing a table-style lookup (switch statement) for
   functions like datum_equal(), datum_hash()

@@ -111,10 +111,10 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "define"                { return DEFINE; }
 "delete"                { return DELETE; }
 "false"                 { return OL_FALSE; }
-"notin"                 { return NOTIN; }
 "keys"                  { return KEYS; }
-"true"                  { return OL_TRUE; }
+"notin"                 { return NOTIN; }
 "program"               { return PROGRAM; }
+"true"                  { return OL_TRUE; }
 
 {integer} {
     yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
