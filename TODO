@@ -14,14 +14,17 @@ Parser and lexer:
 * Error reporting; location of syntax error
 
 Planner:
+
 * Generate implied equalities from the qualifier list
 * Avoid Cartesian products, if possible
 
 Executor/Router/Operators:
+
 * Consider writing a specialized allocator for Tuples
 * Don't copy WorkItem in the router: have the queue store kind + pointer directly
 
 Network:
+
 * Add an ad-hoc compression method, to avoid resending tuple schemas +
   table names in every single packet
   * Have the client and server negotiate that "table 10" means "table
