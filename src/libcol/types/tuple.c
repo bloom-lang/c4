@@ -30,7 +30,7 @@ tuple_make_from_strings(Schema *s, char **values)
     for (i = 0; i < s->len; i++)
     {
         Datum d = datum_from_str(values[i], schema_get_type(s, i));
-        /* XXX */
+        tuple_get_val(t, i) = d;
     }
 
     return t;
