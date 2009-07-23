@@ -35,7 +35,7 @@ var_error(const char *file, int line_num, const char *fmt, ...)
     exit(1);
 }
 
-int
+void
 assert_fail(const char *cond, const char *file, int line_num)
 {
     fprintf(stderr, "ASSERT FAILED: \"%s\", at %s:%d\n",
@@ -43,7 +43,6 @@ assert_fail(const char *cond, const char *file, int line_num)
     print_backtrace();
     fflush(stderr);
     abort();
-    return 0;   /* Keep the compiler quiet */
 }
 
 static void
