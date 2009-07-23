@@ -108,6 +108,7 @@ ColStatus
 col_install_str(ColInstance *col, const char *str)
 {
     router_enqueue_program(col->router, str);
+
     return COL_OK;
 }
 

@@ -1,6 +1,7 @@
 #include "col-internal.h"
 
 #include "parser/analyze.h"
+#include "parser/copyfuncs.h"
 /*
  * XXX: we need to include the definition of ColParser before we can include
  * ol_scan.h, because Flex is broken.
@@ -9,14 +10,14 @@
 #include "ol_scan.h"
 
 static ColParser *
-parser_make(ColInstance *col)
+parser_make(apr_pool_t *pool)
 {
-    apr_pool_t *pool;
+    apr_pool_t *parse_pool;
     ColParser *parser;
 
-    pool = make_subpool(col->pool);
-    parser = apr_pcalloc(pool, sizeof(*parser));
-    parser->pool = pool;
+    parse_pool = make_subpool(pool);
+    parser = apr_pcalloc(parse_pool, sizeof(*parser));
+    parser->pool = parse_pool;
     parser->lit_buf = sbuf_make(parser->pool);
     return parser;
 }
@@ -45,11 +46,10 @@ do_parse(ColParser *parser, const char *str)
     return parser->result;
 }
 
-static ColStatus
+static void
 parser_destroy(ColParser *parser)
 {
     apr_pool_destroy(parser->pool);
-    return COL_OK;
 }
 
 AstProgram *
@@ -58,11 +58,12 @@ parse_str(ColInstance *col, const char *str, apr_pool_t *pool)
     ColParser *parser;
     AstProgram *ast;
 
-    parser = parser_make(col);
+    parser = parser_make(pool);
     ast = do_parse(parser, str);
     analyze_ast(ast, parser->pool);
-    /* Copy "ast" => "pool" */
+    /* Copy the finished AST to the caller's pool */
+    ast = copy_node(ast, pool);
     parser_destroy(parser);
 
-    return NULL;
+    return ast;
 }

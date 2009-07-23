@@ -224,10 +224,10 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple,
 }
 
 /*
- * Enqueue a new WorkItem to be routed. The WorkItem will be processed in
- * some subsequent fixpoint. WorkItems are routed in the order in which they
- * are enqueued. If the queue is full, this function blocks until the router
- * has had a chance to catchup.
+ * Enqueue a new WorkItem to be routed. The WorkItem will be routed in some
+ * subsequent fixpoint. WorkItems are routed in the order in which they are
+ * enqueued. If the queue is full, this function blocks until the router has
+ * had a chance to catchup.
  */
 static void
 router_enqueue(ColRouter *router, WorkItem *wi)

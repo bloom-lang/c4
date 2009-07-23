@@ -379,6 +379,7 @@ plan_program(AstProgram *ast, ColInstance *col)
         list_append(pplan->rules, rplan);
     }
 
+    /* Cleanup planner working state */
     apr_pool_destroy(state->tmp_pool);
     return pplan;
 }
