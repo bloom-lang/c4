@@ -1,7 +1,8 @@
 /*
  * Basic planner algorithm is described below. Doesn't handle negation,
- * aggregation, stratification, or intelligent selection of join order; no
- * significant optimization performed.
+ * aggregation, or stratification. No significant optimization is performed
+ * (e.g. no intelligent selection of join order). We always perform
+ * predicate pushdown.
  *
  * Foreach rule r:
  *  Foreach join clause j in r->body:
