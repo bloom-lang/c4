@@ -52,10 +52,10 @@ col_destroy(ColInstance *col)
 }
 
 /*
- * Read the file at the specified location into memory, parse it, and then
- * install the resulting program into the specified COL runtime. XXX: We
- * currently assume that the file is small enough that it can be slurped
- * into a single memory buffer without too much pain.
+ * Read the file at the specified filesystem path into memory, parse it, and
+ * then install the resulting program into the specified COL runtime. XXX:
+ * We assume that the file is small enough that it can be slurped into a
+ * single memory buffer without too much pain.
  */
 ColStatus
 col_install_file(ColInstance *col, const char *path)
@@ -69,7 +69,7 @@ col_install_file(ColInstance *col, const char *path)
     ColStatus result;
 
     file_pool = make_subpool(col->pool);
-    s = apr_file_open(&file, path, APR_READ|APR_BUFFERED,
+    s = apr_file_open(&file, path, APR_READ | APR_BUFFERED,
                       APR_OS_DEFAULT, file_pool);
     if (s != APR_SUCCESS)
     {
@@ -79,7 +79,7 @@ col_install_file(ColInstance *col, const char *path)
 
     /*
      * Get the file size, and allocate an appropriately-sized buffer to hold
-     * the file contents. There is a trivial race condition here.
+     * the file contents. XXX: There is a trivial race condition here.
      */
     s = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
     if (s != APR_SUCCESS)
