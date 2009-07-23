@@ -12,7 +12,7 @@ void router_destroy(ColRouter *router);
 
 void router_start(ColRouter *router);
 
-void router_enqueue_plan(ColRouter *router, ProgramPlan *plan);
+void router_enqueue_program(ColRouter *router, const char *src);
 void router_enqueue_tuple(ColRouter *router, Tuple *tuple,
                           const char *tbl_name);
 

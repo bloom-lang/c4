@@ -2,8 +2,6 @@
 
 #include "col-internal.h"
 #include "net/network.h"
-#include "parser/analyze.h"
-#include "parser/parser.h"
 #include "router.h"
 #include "types/catalog.h"
 
@@ -102,16 +100,14 @@ done:
     return result;
 }
 
+/*
+ * XXX: Note that this is asynchronous; should we provide a convenient means
+ * for the caller to wait until the program has been installed?
+ */
 ColStatus
 col_install_str(ColInstance *col, const char *str)
 {
-    AstProgram *program;
-    apr_pool_t *plan_pool;
-
-    plan_pool = make_subpool(col->pool);
-    program = parse_str(col, str, plan_pool);
-    apr_pool_destroy(plan_pool);
-
+    router_enqueue_program(col->router, str);
     return COL_OK;
 }
 

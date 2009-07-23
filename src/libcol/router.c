@@ -5,6 +5,7 @@
 #include "col-internal.h"
 #include "net/network.h"
 #include "operator/operator.h"
+#include "parser/parser.h"
 #include "planner/installer.h"
 #include "router.h"
 #include "util/list.h"
@@ -30,7 +31,7 @@ struct ColRouter
 typedef enum WorkItemKind
 {
     WI_TUPLE,
-    WI_PLAN,
+    WI_PROGRAM,
     WI_SHUTDOWN
 } WorkItemKind;
 
@@ -42,8 +43,8 @@ typedef struct WorkItem
     Tuple *tuple;
     char *tbl_name;
 
-    /* WI_PLAN: */
-    ProgramPlan *plan;
+    /* WI_PROGRAM: */
+    char *program_src;
 } WorkItem;
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
@@ -98,7 +99,7 @@ router_start(ColRouter *router)
 }
 
 static void
-route_tuple(Tuple *tuple, const char *tbl_name, ColRouter *router)
+route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
 {
     OpChain *op_chain;
 
@@ -115,6 +116,18 @@ route_tuple(Tuple *tuple, const char *tbl_name, ColRouter *router)
 }
 
 static void
+route_program(ColRouter *router, const char *src)
+{
+    ColInstance *col = router->col;
+    apr_pool_t *plan_pool;
+    AstProgram *ast;
+
+    plan_pool = make_subpool(col->pool);
+    ast = parse_str(col, src, plan_pool);
+    apr_pool_destroy(plan_pool);
+}
+
+static void
 workitem_destroy(WorkItem *wi)
 {
     switch (wi->kind)
@@ -124,8 +137,8 @@ workitem_destroy(WorkItem *wi)
             ol_free(wi->tbl_name);
             break;
 
-        case WI_PLAN:
-            plan_destroy(wi->plan);
+        case WI_PROGRAM:
+            ol_free(wi->program_src);
             break;
 
         case WI_SHUTDOWN:
@@ -160,11 +173,11 @@ router_thread_start(apr_thread_t *thread, void *data)
         switch (wi->kind)
         {
             case WI_TUPLE:
-                route_tuple(wi->tuple, wi->tbl_name, router);
+                route_tuple(router, wi->tuple, wi->tbl_name);
                 break;
 
-            case WI_PLAN:
-                install_plan(wi->plan, router->col);
+            case WI_PROGRAM:
+                route_program(router, wi->program_src);
                 break;
 
             case WI_SHUTDOWN:
@@ -182,13 +195,13 @@ router_thread_start(apr_thread_t *thread, void *data)
 }
 
 void
-router_enqueue_plan(ColRouter *router, ProgramPlan *plan)
+router_enqueue_program(ColRouter *router, const char *src)
 {
     WorkItem *wi;
 
     wi = ol_alloc(sizeof(*wi));
-    wi->kind = WI_PLAN;
-    wi->plan = plan;
+    wi->kind = WI_PROGRAM;
+    wi->program_src = ol_strdup(src);
 
     router_enqueue(router, wi);
 }
