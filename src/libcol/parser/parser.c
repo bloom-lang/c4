@@ -53,7 +53,7 @@ parser_destroy(ColParser *parser)
 }
 
 AstProgram *
-parse_str(ColInstance *col, const char *str, apr_pool_t *pool)
+parse_str(const char *str, apr_pool_t *pool, ColInstance *col)
 {
     ColParser *parser;
     AstProgram *ast;

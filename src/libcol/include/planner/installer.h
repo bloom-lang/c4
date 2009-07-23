@@ -3,6 +3,6 @@
 
 #include "planner/planner.h"
 
-void install_plan(ProgramPlan *plan, ColInstance *col);
+void install_plan(ProgramPlan *plan, apr_pool_t *pool, ColInstance *col);
 
 #endif  /* INSTALLER_H */

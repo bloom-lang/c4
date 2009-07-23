@@ -149,33 +149,24 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
 }
 
 static InstallState *
-make_istate(ColInstance *col)
+make_istate(apr_pool_t *pool, ColInstance *col)
 {
-    apr_pool_t *tmp_pool;
     InstallState *istate;
 
-    tmp_pool = make_subpool(col->pool);
-    istate = apr_pcalloc(tmp_pool, sizeof(*istate));
-    istate->tmp_pool = tmp_pool;
+    istate = apr_pcalloc(pool, sizeof(*istate));
+    istate->tmp_pool = pool;
     istate->col = col;
 
     return istate;
 }
 
-static void
-destroy_istate(InstallState *istate)
-{
-    apr_pool_destroy(istate->tmp_pool);
-}
-
 void
-install_plan(ProgramPlan *plan, ColInstance *col)
+install_plan(ProgramPlan *plan, apr_pool_t *pool, ColInstance *col)
 {
     InstallState *istate;
 
-    istate = make_istate(col);
+    istate = make_istate(pool, col);
     plan_install_defines(plan, istate);
     plan_install_rules(plan, istate);
     plan_install_facts(plan, istate);
-    destroy_istate(istate);
 }

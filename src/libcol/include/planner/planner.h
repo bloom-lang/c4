@@ -51,7 +51,6 @@ typedef struct InsertOpPlan
     AstTableRef *head;
 } InsertOpPlan;
 
-ProgramPlan *plan_program(AstProgram *ast, ColInstance *col);
-void plan_destroy(ProgramPlan *plan);
+ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
 
 #endif  /* PLANNER_H */

@@ -65,15 +65,12 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
 }
 
 static PlannerState *
-planner_state_make(AstProgram *ast, ColInstance *col)
+planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, ColInstance *col)
 {
     PlannerState *state;
-    apr_pool_t *plan_pool;
     apr_pool_t *tmp_pool;
 
-    plan_pool = make_subpool(col->pool);
     tmp_pool = make_subpool(plan_pool);
-
     state = apr_pcalloc(tmp_pool, sizeof(*state));
     state->plan_pool = plan_pool;
     state->tmp_pool = tmp_pool;
@@ -359,13 +356,13 @@ plan_rule(AstRule *rule, PlannerState *state)
 }
 
 ProgramPlan *
-plan_program(AstProgram *ast, ColInstance *col)
+plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col)
 {
     PlannerState *state;
     ProgramPlan *pplan;
     ListCell *lc;
 
-    state = planner_state_make(ast, col);
+    state = planner_state_make(ast, pool, col);
     pplan = state->plan;
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
     pplan->facts = list_copy_deep(ast->facts, pplan->pool);
@@ -382,10 +379,4 @@ plan_program(AstProgram *ast, ColInstance *col)
     /* Cleanup planner working state */
     apr_pool_destroy(state->tmp_pool);
     return pplan;
-}
-
-void
-plan_destroy(ProgramPlan *plan)
-{
-    apr_pool_destroy(plan->pool);
 }
