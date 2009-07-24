@@ -22,7 +22,8 @@ typedef struct Tuple
     /*
      * XXX: This could be smaller, but APR's atomic ops are only defined for
      * apr_uint32_t. (Atomic ops are used because we might be touching the
-     * refcount from multiple threads concurrently.)
+     * refcount from multiple threads concurrently; it might be possible to
+     * avoid this?)
      */
     apr_uint32_t refcount;
     Datum vals[1];      /* Variable-length array */

@@ -23,7 +23,7 @@ tuple_make_from_strings(Schema *s, char **values)
     Tuple *t;
     int i;
 
-    t = ol_alloc(sizeof(*t) + ((s->len - 1) + sizeof(Datum)));
+    t = ol_alloc(sizeof(*t) + ((s->len - 1) * sizeof(Datum)));
     t->schema = s;
     t->refcount = 1;
 
