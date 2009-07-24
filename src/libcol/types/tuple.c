@@ -9,11 +9,11 @@ tuple_make(Schema *s, Datum *values)
 {
     Tuple *t;
 
-    t = ol_alloc(sizeof(*t) + (s->len * sizeof(Datum)));
-    memset(t, 0, sizeof(*t));
+    t = ol_alloc(sizeof(*t) + ((s->len - 1) * sizeof(Datum)));
+    t->schema = s;
     t->refcount = 1;
     /* XXX: pass-by-ref types? */
-    memcpy(t + 1, values, s->len * sizeof(Datum));
+    memcpy(t->vals, values, s->len * sizeof(Datum));
     return t;
 }
 
@@ -23,8 +23,8 @@ tuple_make_from_strings(Schema *s, char **values)
     Tuple *t;
     int i;
 
-    t = ol_alloc(sizeof(*t) + (s->len + sizeof(Datum)));
-    memset(t, 0, sizeof(*t));
+    t = ol_alloc(sizeof(*t) + ((s->len - 1) + sizeof(Datum)));
+    t->schema = s;
     t->refcount = 1;
 
     for (i = 0; i < s->len; i++)

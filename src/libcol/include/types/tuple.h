@@ -14,19 +14,21 @@
 typedef struct Tuple
 {
     /*
+     * XXX: Our dataflow is strictly typed, so we don't actually need to
+     * store the schema in the tuple (other than for convenience).
+     */
+    Schema *schema;
+
+    /*
      * XXX: This could be smaller, but APR's atomic ops are only defined for
      * apr_uint32_t. (Atomic ops are used because we might be touching the
      * refcount from multiple threads concurrently.)
      */
     apr_uint32_t refcount;
-    Schema *schema;
-    /* XXX: Unnecessary padding on a 32-bit machine */
-    char c[1];
-    /* Tuple data follows, as a variable-length array of Datum */
+    Datum vals[1];      /* Variable-length array */
 } Tuple;
 
-#define tuple_get_data(t)       ((Datum *) (((Tuple *) t) + 1))
-#define tuple_get_val(t, i)     (tuple_get_data(t)[(i)])
+#define tuple_get_val(t, i)     ((t)->vals[(i)])
 
 Tuple *tuple_make(Schema *s, Datum *values);
 Tuple *tuple_make_from_strings(Schema *s, char **values);
