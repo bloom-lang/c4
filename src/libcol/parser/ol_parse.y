@@ -108,8 +108,9 @@ iconst_ival: ICONST {
     apr_int64_t ival;
     char *endptr;
 
+    errno = 0;
     ival = strtol($1, &endptr, 10);
-    if (endptr != '\0')
+    if (errno != 0 || endptr[0] != '\0')
         FAIL();
 
     $$ = ival;

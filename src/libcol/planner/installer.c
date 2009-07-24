@@ -149,7 +149,7 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
 }
 
 static InstallState *
-make_istate(apr_pool_t *pool, ColInstance *col)
+istate_make(apr_pool_t *pool, ColInstance *col)
 {
     InstallState *istate;
 
@@ -165,7 +165,7 @@ install_plan(ProgramPlan *plan, apr_pool_t *pool, ColInstance *col)
 {
     InstallState *istate;
 
-    istate = make_istate(pool, col);
+    istate = istate_make(pool, col);
     plan_install_defines(plan, istate);
     plan_install_rules(plan, istate);
     plan_install_facts(plan, istate);
