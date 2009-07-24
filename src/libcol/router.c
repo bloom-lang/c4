@@ -205,7 +205,7 @@ router_enqueue_program(ColRouter *router, const char *src)
 {
     WorkItem *wi;
 
-    wi = ol_alloc(sizeof(*wi));
+    wi = ol_alloc0(sizeof(*wi));
     wi->kind = WI_PROGRAM;
     wi->program_src = ol_strdup(src);
 
@@ -221,7 +221,7 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple,
     /* The tuple is unpinned when the router is finished with it */
     tuple_pin(tuple);
 
-    wi = ol_alloc(sizeof(*wi));
+    wi = ol_alloc0(sizeof(*wi));
     wi->kind = WI_TUPLE;
     wi->tuple = tuple;
     wi->tbl_name = ol_strdup(tbl_name);

@@ -43,7 +43,7 @@ static AstTableRef *
 copy_table_ref(AstTableRef *in, apr_pool_t *p)
 {
     return make_table_ref(apr_pstrdup(p, in->name),
-                          copy_node(in->cols, p),
+                          list_copy_deep(in->cols, p),
                           p);
 }
 
