@@ -38,8 +38,10 @@ tuple_make_from_strings(Schema *s, char **values)
 
     for (i = 0; i < s->len; i++)
     {
-        Datum d = datum_from_str(schema_get_type(s, i), values[i]);
-        tuple_get_val(t, i) = d;
+        DataType type;
+
+        type = schema_get_type(s, i);
+        tuple_get_val(t, i) = datum_from_str(type, values[i]);
     }
 
     return t;
@@ -107,7 +109,7 @@ tuple_hash(Tuple *tuple)
 void
 tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
 {
-    socket_send_str(sock, "hello world");
+    
 }
 
 Tuple *
@@ -125,8 +127,10 @@ tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
 
     for (i = 0; i < schema->len; i++)
     {
-        tuple_get_val(result, i) = datum_from_buf(schema_get_type(schema, i),
-                                                  buf, len, &buf_pos);
+        DataType type;
+
+        type = schema_get_type(schema, i);
+        tuple_get_val(result, i) = datum_from_buf(type, buf, len, &buf_pos);
     }
 
     return result;

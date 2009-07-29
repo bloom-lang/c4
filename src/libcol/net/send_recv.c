@@ -43,7 +43,7 @@ struct SendThread
 static apr_status_t recv_thread_cleanup(void *data);
 static void * APR_THREAD_FUNC recv_thread_main(apr_thread_t *thread, void *data);
 static void * APR_THREAD_FUNC send_thread_main(apr_thread_t *thread, void *data);
-static void establish_send_socket(SendThread *st);
+static void create_send_socket(SendThread *st);
 static void parse_loc_spec(const char *loc_spec, char *host, int *port_p);
 
 RecvThread *
@@ -180,7 +180,7 @@ send_thread_main(apr_thread_t *thread, void *data)
 {
     SendThread *st = (SendThread *) data;
 
-    establish_send_socket(st);
+    create_send_socket(st);
 
     while (true)
     {
@@ -218,7 +218,7 @@ send_thread_enqueue(SendThread *st, Tuple *tuple)
 }
 
 static void
-establish_send_socket(SendThread *st)
+create_send_socket(SendThread *st)
 {
     apr_status_t s;
     char host[APRMAXHOSTLEN];

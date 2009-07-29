@@ -65,6 +65,11 @@ socket_send_data(apr_socket_t *sock, const char *buf, apr_size_t len)
         FAIL();
 }
 
+/*
+ * Write the given string to the socket, preceded by a length word. Note
+ * that we assume that the input string is NUL-terminated, but we don't
+ * write the NUL-terminator to the socket.
+ */
 void
 socket_send_str(apr_socket_t *sock, const char *str)
 {
