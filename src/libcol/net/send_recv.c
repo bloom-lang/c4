@@ -112,7 +112,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
         /* Read the message itself */
         socket_recv_data(rt->sock, rt->buf, msg_len);
 
-        /* Convert to tuple format, route tuple */
+        /* Convert to in-memory tuple format, route tuple */
         tuple = tuple_from_buf(rt->buf, msg_len);
         /* XXX: table name */
         router_enqueue_tuple(rt->col->router, tuple, NULL);
