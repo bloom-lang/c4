@@ -9,7 +9,8 @@
 #include "net/send_recv.h"
 #include "util/socket.h"
 
-#define MAX_MSG_SIZE    (1024 * 1024)
+#define MAX_TABLE_NAME 64
+#define MAX_TUPLE_SIZE (1024 * 1024)
 
 struct RecvThread
 {
@@ -21,6 +22,7 @@ struct RecvThread
     apr_thread_t *thread;
 
     apr_socket_t *sock;
+    char tbl_name[MAX_TABLE_NAME + 1];
     char *buf;
     size_t buf_size;
 };
@@ -94,28 +96,39 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
     while (true)
     {
-        apr_uint32_t msg_len;
+        apr_uint32_t tbl_len;
+        apr_uint32_t tuple_len;
         Tuple *tuple;
 
-        /* Length of the following message */
-        msg_len = socket_recv_uint32(rt->sock);
-
-        if (msg_len > MAX_MSG_SIZE)
+        /* Length of the table name */
+        tbl_len = socket_recv_uint32(rt->sock);
+        if (tbl_len > MAX_TABLE_NAME)
             FAIL();
 
-        if (msg_len > rt->buf_size)
+        socket_recv_data(rt->sock, rt->tbl_name, tbl_len);
+        rt->tbl_name[tbl_len] = '\0';
+
+        /* Length of the serialized tuple */
+        tuple_len = socket_recv_uint32(rt->sock);
+
+        if (tuple_len > MAX_TUPLE_SIZE)
+            FAIL();
+
+        if (tuple_len > rt->buf_size)
         {
-            rt->buf = ol_realloc(rt->buf, msg_len);
-            rt->buf_size = msg_len;
+            /* Ensure that we grow buffer size by at least 2x */
+            while (tuple_len > rt->buf_size)
+                rt->buf_size *= 2;
+
+            rt->buf = ol_realloc(rt->buf, rt->buf_size);
         }
 
-        /* Read the message itself */
-        socket_recv_data(rt->sock, rt->buf, msg_len);
+        /* Read the serialized tuple value */
+        socket_recv_data(rt->sock, rt->buf, tuple_len);
 
         /* Convert to in-memory tuple format, route tuple */
-        tuple = tuple_from_buf(rt->buf, msg_len);
-        /* XXX: table name */
-        router_enqueue_tuple(rt->col->router, tuple, NULL);
+        tuple = tuple_from_buf(rt->col, rt->buf, tuple_len, rt->tbl_name);
+        router_enqueue_tuple(rt->col->router, tuple, rt->tbl_name);
         tuple_unpin(tuple);
     }
 

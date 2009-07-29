@@ -1,17 +1,28 @@
 #include <apr_atomic.h>
 
 #include "col-internal.h"
+#include "types/catalog.h"
 #include "types/tuple.h"
 #include "util/socket.h"
 
-Tuple *
-tuple_make(Schema *s, Datum *values)
+static Tuple *
+tuple_make_empty(Schema *s)
 {
     Tuple *t;
 
     t = ol_alloc(sizeof(*t) + ((s->len - 1) * sizeof(Datum)));
     t->schema = s;
     t->refcount = 1;
+
+    return t;
+}
+
+Tuple *
+tuple_make(Schema *s, Datum *values)
+{
+    Tuple *t;
+
+    t = tuple_make_empty(s);
     /* XXX: pass-by-ref types? */
     memcpy(t->vals, values, s->len * sizeof(Datum));
     return t;
@@ -23,13 +34,11 @@ tuple_make_from_strings(Schema *s, char **values)
     Tuple *t;
     int i;
 
-    t = ol_alloc(sizeof(*t) + ((s->len - 1) * sizeof(Datum)));
-    t->schema = s;
-    t->refcount = 1;
+    t = tuple_make_empty(s);
 
     for (i = 0; i < s->len; i++)
     {
-        Datum d = datum_from_str(values[i], schema_get_type(s, i));
+        Datum d = datum_from_str(schema_get_type(s, i), values[i]);
         tuple_get_val(t, i) = d;
     }
 
@@ -102,8 +111,23 @@ tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
 }
 
 Tuple *
-tuple_from_buf(const char *buf, apr_size_t len)
+tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
+               const char *tbl_name)
 {
-    /* NB: Result should be pinned */
-    return NULL;
+    Schema *schema;
+    Tuple *result;
+    apr_size_t buf_pos;
+    int i;
+
+    schema = cat_get_schema(col->cat, tbl_name);
+    result = tuple_make_empty(schema);
+    buf_pos = 0;
+
+    for (i = 0; i < schema->len; i++)
+    {
+        tuple_get_val(result, i) = datum_from_buf(schema_get_type(schema, i),
+                                                  buf, len, &buf_pos);
+    }
+
+    return result;
 }

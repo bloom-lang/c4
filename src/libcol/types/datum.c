@@ -279,7 +279,7 @@ string_from_str(const char *str)
 }
 
 Datum
-datum_from_str(const char *str, DataType type)
+datum_from_str(DataType type, const char *str)
 {
     switch (type)
     {
@@ -310,4 +310,16 @@ datum_from_str(const char *str, DataType type)
         default:
             ERROR("Unexpected data type: %uc", type);
     }
+}
+
+/*
+ * Convert a datum from the binary (network) format to the in-memory
+ * format. The buffer has length "len", and we should begin reading from it
+ * at "*pos"; on return, this function updates "*pos" to reflect the number
+ * of bytes in the buffer that have been consumed.
+ */
+Datum
+datum_from_buf(DataType type, const char *buf, apr_size_t len, apr_size_t *pos)
+{
+    FAIL();
 }

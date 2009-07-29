@@ -40,7 +40,8 @@ void tuple_unpin(Tuple *tuple);
 bool tuple_equal(Tuple *t1, Tuple *t2);
 apr_uint32_t tuple_hash(Tuple *t);
 
-Tuple *tuple_from_buf(const char *buf, apr_size_t len);
+Tuple *tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
+                      const char *tbl_name);
 void tuple_socket_send(Tuple *tuple, apr_socket_t *sock);
 
 #endif  /* TUPLE_H */
