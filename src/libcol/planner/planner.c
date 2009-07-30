@@ -26,6 +26,7 @@
  */
 #include "col-internal.h"
 #include "nodes/copyfuncs.h"
+#include "nodes/makefuncs.h"
 #include "parser/parser.h"
 #include "parser/walker.h"
 #include "planner/planner.h"
@@ -216,7 +217,9 @@ add_scan_op(AstJoinClause *ast_join, List *quals,
 {
     ScanPlan *splan;
 
-    splan = make_scan_plan(quals, ast_join->ref->name, state->plan_pool);
+    splan = make_scan_plan(list_copy_deep(quals, state->plan_pool),
+                           apr_pstrdup(state->plan_pool, ast_join->ref->name),
+                           state->plan_pool);
     list_append(chain_plan->chain, splan);
 }
 
@@ -225,7 +228,9 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
 {
     FilterPlan *fplan;
 
-    fplan = make_filter_plan(quals, chain_plan->delta_tbl, state->plan_pool);
+    fplan = make_filter_plan(list_copy_deep(quals, state->plan_pool),
+                             apr_pstrdup(state->plan_pool, chain_plan->delta_tbl),
+                             state->plan_pool);
     list_append(chain_plan->chain, fplan);
 }
 
@@ -234,7 +239,8 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
 
-    iplan = make_insert_plan(rule->head, rule->is_network, state->plan_pool);
+    iplan = make_insert_plan(copy_node(rule->head, state->plan_pool),
+                             rule->is_network, state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 

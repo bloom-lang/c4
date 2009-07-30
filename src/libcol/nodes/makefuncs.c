@@ -1,3 +1,8 @@
+/*
+ * XXX: These routines should probably copy their inputs, rather than
+ * typically requiring the callers to do so. That will mean an extra copy in
+ * the parser, but a more convenient API.
+ */
 #include "col-internal.h"
 #include "nodes/makefuncs.h"
 #include "types/schema.h"
@@ -151,5 +156,3 @@ make_scan_plan(List *quals, char *tbl_name, apr_pool_t *pool)
     result->tbl_name = tbl_name;
     return result;
 }
-
-
