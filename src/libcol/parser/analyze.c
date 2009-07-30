@@ -2,8 +2,8 @@
 
 #include "col-internal.h"
 #include "parser/analyze.h"
-#include "parser/makefuncs.h"
 #include "types/catalog.h"
+#include "util/makefuncs.h"
 
 typedef struct AnalyzeState
 {

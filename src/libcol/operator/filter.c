@@ -1,6 +1,6 @@
 #include "col-internal.h"
 #include "operator/filter.h"
-#include "parser/copyfuncs.h"
+#include "util/copyfuncs.h"
 
 static void
 filter_invoke(Operator *op, Tuple *t)

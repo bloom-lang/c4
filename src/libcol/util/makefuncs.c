@@ -1,6 +1,6 @@
 #include "col-internal.h"
-#include "parser/makefuncs.h"
 #include "types/schema.h"
+#include "util/makefuncs.h"
 
 AstProgram *
 make_program(char *name, List *defines, List *facts,

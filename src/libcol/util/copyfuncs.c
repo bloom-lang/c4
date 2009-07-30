@@ -1,6 +1,6 @@
 #include "col-internal.h"
-#include "parser/copyfuncs.h"
-#include "parser/makefuncs.h"
+#include "util/copyfuncs.h"
+#include "util/makefuncs.h"
 
 static AstProgram *
 copy_program(AstProgram *in, apr_pool_t *p)

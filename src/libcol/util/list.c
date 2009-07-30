@@ -1,5 +1,5 @@
 #include "col-internal.h"
-#include "parser/copyfuncs.h"
+#include "util/copyfuncs.h"
 #include "util/list.h"
 
 static ListCell *make_new_cell(List *list, ListCell *prev, ListCell *next);

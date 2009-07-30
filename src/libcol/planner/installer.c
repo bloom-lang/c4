@@ -2,10 +2,10 @@
 #include "operator/filter.h"
 #include "operator/insert.h"
 #include "operator/scan.h"
-#include "parser/copyfuncs.h"
 #include "planner/installer.h"
 #include "router.h"
 #include "types/catalog.h"
+#include "util/copyfuncs.h"
 
 typedef struct InstallState
 {

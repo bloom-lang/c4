@@ -1,6 +1,6 @@
 #include "col-internal.h"
 #include "operator/scan.h"
-#include "parser/copyfuncs.h"
+#include "util/copyfuncs.h"
 
 static void
 scan_invoke(Operator *op, Tuple *t)

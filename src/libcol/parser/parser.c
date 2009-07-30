@@ -1,13 +1,13 @@
 #include "col-internal.h"
 
 #include "parser/analyze.h"
-#include "parser/copyfuncs.h"
 /*
  * XXX: we need to include the definition of ColParser before we can include
  * ol_scan.h, because Flex is broken.
  */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
+#include "util/copyfuncs.h"
 
 static ColParser *
 parser_make(apr_pool_t *pool)

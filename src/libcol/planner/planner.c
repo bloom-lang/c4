@@ -25,10 +25,10 @@
  *    tables referenced in q have been joined against
  */
 #include "col-internal.h"
-#include "parser/copyfuncs.h"
 #include "parser/parser.h"
 #include "parser/walker.h"
 #include "planner/planner.h"
+#include "util/copyfuncs.h"
 
 typedef struct PlannerState
 {

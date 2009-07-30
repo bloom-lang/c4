@@ -1,10 +1,10 @@
 %{
 /* XXX: should be a pure-parser */
 #include "col-internal.h"
-#include "parser/makefuncs.h"
 /* XXX: see note about #include order in parser.c */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
+#include "util/makefuncs.h"
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
