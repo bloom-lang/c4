@@ -245,6 +245,7 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
     iplan = apr_pcalloc(state->plan_pool, sizeof(*iplan));
     iplan->op_plan.op_kind = OPER_INSERT;
     iplan->head = copy_node(rule->head, state->plan_pool);
+    iplan->is_network = rule->is_network;
 
     list_append(chain_plan->chain, iplan);
 }

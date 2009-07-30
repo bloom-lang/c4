@@ -49,6 +49,7 @@ typedef struct InsertOpPlan
 {
     OpPlan op_plan;
     AstTableRef *head;
+    bool is_network;
 } InsertOpPlan;
 
 ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
