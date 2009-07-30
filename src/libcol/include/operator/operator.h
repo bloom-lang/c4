@@ -28,19 +28,12 @@ struct OpChain
     OpChain *next;
 };
 
-typedef enum OpKind
-{
-    OPER_SCAN,
-    OPER_FILTER,
-    OPER_INSERT
-} OpKind;
-
 typedef void (*op_invoke_func)(Operator *op, Tuple *t);
 typedef void (*op_destroy_func)(Operator *op);
 
 struct Operator
 {
-    OpKind op_kind;
+    ColNode node;
     apr_pool_t *pool;
     Operator *next;
 
@@ -49,7 +42,7 @@ struct Operator
 };
 
 /* Generic support routines for operators */
-Operator *operator_make(OpKind op_kind, apr_size_t sz, Operator *next_op,
+Operator *operator_make(ColNodeKind kind, apr_size_t sz, Operator *next_op,
                         op_invoke_func invoke_f, op_destroy_func destroy_f,
                         apr_pool_t *pool);
 void operator_destroy(Operator *op);

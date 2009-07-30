@@ -7,9 +7,9 @@
 typedef struct InsertOperator
 {
     Operator op;
-    InsertOpPlan *plan;
+    InsertPlan *plan;
 } InsertOperator;
 
-InsertOperator *insert_op_make(InsertOpPlan *plan, apr_pool_t *pool);
+InsertOperator *insert_op_make(InsertPlan *plan, apr_pool_t *pool);
 
 #endif  /* INSERT_H */

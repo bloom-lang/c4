@@ -26,31 +26,26 @@ typedef struct OpChainPlan
     List *chain;
 } OpChainPlan;
 
-typedef struct OpPlan
+typedef struct FilterPlan
 {
-    OpKind op_kind;
-} OpPlan;
-
-typedef struct FilterOpPlan
-{
-    OpPlan op_plan;
+    ColNode node;
     List *quals;
     char *tbl_name;
-} FilterOpPlan;
+} FilterPlan;
 
-typedef struct ScanOpPlan
+typedef struct ScanPlan
 {
-    OpPlan op_plan;
+    ColNode node;
     List *quals;
     char *tbl_name;
-} ScanOpPlan;
+} ScanPlan;
 
-typedef struct InsertOpPlan
+typedef struct InsertPlan
 {
-    OpPlan op_plan;
+    ColNode node;
     AstTableRef *head;
     bool is_network;
-} InsertOpPlan;
+} InsertPlan;
 
 ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
 

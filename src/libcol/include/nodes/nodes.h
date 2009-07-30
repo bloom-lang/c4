@@ -3,6 +3,7 @@
 
 typedef enum ColNodeKind
 {
+    /* AST nodes */
     AST_PROGRAM,
     AST_DEFINE,
     AST_RULE,
@@ -14,7 +15,17 @@ typedef enum ColNodeKind
     AST_ASSIGN,
     AST_OP_EXPR,
     AST_VAR_EXPR,
-    AST_CONST_EXPR
+    AST_CONST_EXPR,
+
+    /* Plan nodes */
+    PLAN_FILTER,
+    PLAN_INSERT,
+    PLAN_SCAN,
+
+    /* Executor nodes */
+    OPER_FILTER,
+    OPER_INSERT,
+    OPER_SCAN
 } ColNodeKind;
 
 typedef struct ColNode

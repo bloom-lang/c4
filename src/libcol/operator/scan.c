@@ -15,7 +15,7 @@ scan_destroy(Operator *op)
 }
 
 ScanOperator *
-scan_op_make(ScanOpPlan *plan, Operator *next_op, apr_pool_t *pool)
+scan_op_make(ScanPlan *plan, Operator *next_op, apr_pool_t *pool)
 {
     ScanOperator *scan_op;
 

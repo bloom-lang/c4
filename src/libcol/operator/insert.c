@@ -15,7 +15,7 @@ insert_destroy(Operator *op)
 }
 
 InsertOperator *
-insert_op_make(InsertOpPlan *plan, apr_pool_t *pool)
+insert_op_make(InsertPlan *plan, apr_pool_t *pool)
 {
     InsertOperator *insert_op;
 

@@ -7,10 +7,10 @@
 typedef struct FilterOperator
 {
     Operator op;
-    FilterOpPlan *plan;
+    FilterPlan *plan;
 } FilterOperator;
 
-FilterOperator *filter_op_make(FilterOpPlan *plan, Operator *next_op,
+FilterOperator *filter_op_make(FilterPlan *plan, Operator *next_op,
                                apr_pool_t *pool);
 
 #endif  /* FILTER_H */

@@ -47,32 +47,31 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
     foreach (lc, chain_rev)
     {
-        OpPlan *plan = (OpPlan *) lc_ptr(lc);
+        ColNode *n = (ColNode *) lc_ptr(lc);
         Operator *op;
 
-        switch (plan->op_kind)
+        switch (n->kind)
         {
-            case OPER_INSERT:
-                /* Should be the last op in the chain */
-                ASSERT(prev_op == NULL);
-                op = (Operator *) insert_op_make((InsertOpPlan *) plan,
-                                                 chain_pool);
-                break;
-
-            case OPER_FILTER:
-                op = (Operator *) filter_op_make((FilterOpPlan *) plan,
+            case PLAN_FILTER:
+                op = (Operator *) filter_op_make((FilterPlan *) n,
                                                  prev_op, chain_pool);
                 break;
 
-            case OPER_SCAN:
-                op = (Operator *) scan_op_make((ScanOpPlan *) plan,
+            case PLAN_INSERT:
+                /* Should be the last op in the chain */
+                ASSERT(prev_op == NULL);
+                op = (Operator *) insert_op_make((InsertPlan *) n,
+                                                 chain_pool);
+                break;
+
+            case PLAN_SCAN:
+                op = (Operator *) scan_op_make((ScanPlan *) n,
                                                prev_op, chain_pool);
                 break;
 
             default:
                 ERROR("Unrecognized operator kind in plan: %d",
-                      (int) plan->op_kind);
-                op = NULL;      /* Keep compiler quiet */
+                      (int) n->kind);
         }
 
         prev_op = op;
