@@ -2,6 +2,7 @@
 #define MAKEFUNCS_H
 
 #include "parser/ast.h"
+#include "planner/planner.h"
 
 AstProgram *make_program(char *name, List *defines, List *facts,
                          List *rules, apr_pool_t *pool);
@@ -21,5 +22,9 @@ AstOpExpr *make_op_expr(ColNode *lhs, ColNode *rhs,
 AstVarExpr *make_var_expr(char *name, DataType type, apr_pool_t *pool);
 AstConstExpr *make_const_expr(AstConstKind c_kind, char *value, apr_pool_t *pool);
 AstQualifier *make_qualifier(ColNode *expr, apr_pool_t *pool);
+
+FilterPlan *make_filter_plan(List *quals, char *tbl_name, apr_pool_t *pool);
+InsertPlan *make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *pool);
+ScanPlan *make_scan_plan(List *quals, char *tbl_name, apr_pool_t *pool);
 
 #endif  /* MAKEFUNCS_H */

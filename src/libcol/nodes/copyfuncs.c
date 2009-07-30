@@ -97,6 +97,29 @@ copy_const_expr(AstConstExpr *in, apr_pool_t *p)
                            p);
 }
 
+static FilterPlan *
+copy_filter_plan(FilterPlan *in, apr_pool_t *p)
+{
+    return make_filter_plan(list_copy_deep(in->quals, p),
+                            apr_pstrdup(p, in->tbl_name),
+                            p);
+}
+
+static InsertPlan *
+copy_insert_plan(InsertPlan *in, apr_pool_t *p)
+{
+    return make_insert_plan(copy_node(in->head, p),
+                            in->is_network, p);
+}
+
+static ScanPlan *
+copy_scan_plan(ScanPlan *in, apr_pool_t *p)
+{
+    return make_scan_plan(list_copy_deep(in->quals, p),
+                          apr_pstrdup(p, in->tbl_name),
+                          p);
+}
+
 void *
 copy_node(void *ptr, apr_pool_t *pool)
 {
@@ -139,6 +162,15 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_CONST_EXPR:
             return copy_const_expr((AstConstExpr *) n, pool);
+
+        case PLAN_FILTER:
+            return copy_filter_plan((FilterPlan *) n, pool);
+
+        case PLAN_INSERT:
+            return copy_insert_plan((InsertPlan *) n, pool);
+
+        case PLAN_SCAN:
+            return copy_scan_plan((ScanPlan *) n, pool);
 
         default:
             ERROR("Unrecognized node kind: %d", (int) n->kind);

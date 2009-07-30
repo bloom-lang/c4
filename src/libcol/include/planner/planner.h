@@ -33,19 +33,19 @@ typedef struct FilterPlan
     char *tbl_name;
 } FilterPlan;
 
-typedef struct ScanPlan
-{
-    ColNode node;
-    List *quals;
-    char *tbl_name;
-} ScanPlan;
-
 typedef struct InsertPlan
 {
     ColNode node;
     AstTableRef *head;
     bool is_network;
 } InsertPlan;
+
+typedef struct ScanPlan
+{
+    ColNode node;
+    List *quals;
+    char *tbl_name;
+} ScanPlan;
 
 ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
 
