@@ -2,7 +2,7 @@
 #include "parser/walker.h"
 
 bool
-expr_tree_walker(AstNode *node, expr_callback fn, void *data)
+expr_tree_walker(ColNode *node, expr_callback fn, void *data)
 {
     if (!node)
         return true;

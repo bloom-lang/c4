@@ -1,5 +1,6 @@
 #include "col-internal.h"
 
+#include "nodes/copyfuncs.h"
 #include "parser/analyze.h"
 /*
  * XXX: we need to include the definition of ColParser before we can include
@@ -7,7 +8,6 @@
  */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
-#include "util/copyfuncs.h"
 
 static ColParser *
 parser_make(apr_pool_t *pool)

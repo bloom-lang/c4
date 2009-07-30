@@ -1,6 +1,6 @@
 #include "col-internal.h"
-#include "util/copyfuncs.h"
-#include "util/makefuncs.h"
+#include "nodes/copyfuncs.h"
+#include "nodes/makefuncs.h"
 
 static AstProgram *
 copy_program(AstProgram *in, apr_pool_t *p)
@@ -100,7 +100,7 @@ copy_const_expr(AstConstExpr *in, apr_pool_t *p)
 void *
 copy_node(void *ptr, apr_pool_t *pool)
 {
-    AstNode *n = (AstNode *) ptr;
+    ColNode *n = (ColNode *) ptr;
 
     switch (n->kind)
     {

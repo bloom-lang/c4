@@ -1,10 +1,10 @@
 %{
 /* XXX: should be a pure-parser */
 #include "col-internal.h"
+#include "nodes/makefuncs.h"
 /* XXX: see note about #include order in parser.c */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
-#include "util/makefuncs.h"
 #include "util/list.h"
 
 int yyerror(ColParser *context, void *scanner, const char *message);
@@ -275,7 +275,7 @@ split_program_clauses(List *clauses, List **defines,
 
     foreach (lc, clauses)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        ColNode *node = (ColNode *) lc_ptr(lc);
 
         switch (node->kind)
         {
@@ -313,7 +313,7 @@ split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
 
     foreach (lc, body)
     {
-        AstNode *node = (AstNode *) lc_ptr(lc);
+        ColNode *node = (ColNode *) lc_ptr(lc);
 
         switch (node->kind)
         {

@@ -1,35 +1,15 @@
 #ifndef AST_H
 #define AST_H
 
+#include "nodes/nodes.h"
 #include "types/schema.h"
 #include "util/list.h"
 
 typedef struct AstTableRef AstTableRef;
 
-typedef enum AstNodeKind
-{
-    AST_PROGRAM,
-    AST_DEFINE,
-    AST_RULE,
-    AST_FACT,
-    AST_TABLE_REF,
-    AST_COLUMN_REF,
-    AST_JOIN_CLAUSE,
-    AST_QUALIFIER,
-    AST_ASSIGN,
-    AST_OP_EXPR,
-    AST_VAR_EXPR,
-    AST_CONST_EXPR
-} AstNodeKind;
-
-typedef struct AstNode
-{
-    AstNodeKind kind;
-} AstNode;
-
 typedef struct AstProgram
 {
-    AstNode node;
+    ColNode node;
     char *name;
     List *defines;
     List *facts;
@@ -38,7 +18,7 @@ typedef struct AstProgram
 
 typedef struct AstDefine
 {
-    AstNode node;
+    ColNode node;
     char *name;
     List *keys;
     List *schema;
@@ -46,13 +26,13 @@ typedef struct AstDefine
 
 typedef struct AstFact
 {
-    AstNode node;
+    ColNode node;
     AstTableRef *head;
 } AstFact;
 
 typedef struct AstRule
 {
-    AstNode node;
+    ColNode node;
     char *name;
     AstTableRef *head;
     /* The rule body, divided by node kind */
@@ -72,21 +52,21 @@ typedef enum AstHashVariant
 
 struct AstTableRef
 {
-    AstNode node;
+    ColNode node;
     char *name;
     List *cols;
 };
 
 typedef struct AstColumnRef
 {
-    AstNode node;
+    ColNode node;
     bool has_loc_spec;
-    AstNode *expr;
+    ColNode *expr;
 } AstColumnRef;
 
 typedef struct AstJoinClause
 {
-    AstNode node;
+    ColNode node;
     AstTableRef *ref;
     bool not;
     AstHashVariant hash_variant;
@@ -94,15 +74,15 @@ typedef struct AstJoinClause
 
 typedef struct AstQualifier
 {
-    AstNode node;
-    AstNode *expr;
+    ColNode node;
+    ColNode *expr;
 } AstQualifier;
 
 typedef struct AstAssign
 {
-    AstNode node;
+    ColNode node;
     AstColumnRef *lhs;
-    AstNode *rhs;
+    ColNode *rhs;
 } AstAssign;
 
 typedef enum AstOperKind
@@ -124,15 +104,15 @@ typedef enum AstOperKind
 
 typedef struct AstOpExpr
 {
-    AstNode node;
-    AstNode *lhs;
-    AstNode *rhs;
+    ColNode node;
+    ColNode *lhs;
+    ColNode *rhs;
     AstOperKind op_kind;
 } AstOpExpr;
 
 typedef struct AstVarExpr
 {
-    AstNode node;
+    ColNode node;
     char *name;
     /* Filled-in by the analysis phase */
     DataType type;
@@ -149,7 +129,7 @@ typedef enum AstConstKind
 
 typedef struct AstConstExpr
 {
-    AstNode node;
+    ColNode node;
     AstConstKind const_kind;
     char *value;
 } AstConstExpr;

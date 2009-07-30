@@ -1,6 +1,6 @@
 #include "col-internal.h"
+#include "nodes/makefuncs.h"
 #include "types/schema.h"
-#include "util/makefuncs.h"
 
 AstProgram *
 make_program(char *name, List *defines, List *facts,
@@ -61,7 +61,7 @@ make_table_ref(char *name, List *cols, apr_pool_t *pool)
 }
 
 AstColumnRef *
-make_column_ref(bool has_loc_spec, AstNode *expr, apr_pool_t *pool)
+make_column_ref(bool has_loc_spec, ColNode *expr, apr_pool_t *pool)
 {
     AstColumnRef *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_COLUMN_REF;
@@ -83,7 +83,7 @@ make_join_clause(AstTableRef *ref, bool not, AstHashVariant hash_v,
 }
 
 AstOpExpr *
-make_op_expr(AstNode *lhs, AstNode *rhs, AstOperKind op_kind, apr_pool_t *pool)
+make_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *pool)
 {
     AstOpExpr *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_OP_EXPR;
@@ -114,7 +114,7 @@ make_const_expr(AstConstKind c_kind, char *value, apr_pool_t *pool)
 }
 
 AstQualifier *
-make_qualifier(AstNode *expr, apr_pool_t *pool)
+make_qualifier(ColNode *expr, apr_pool_t *pool)
 {
     AstQualifier *result = apr_pcalloc(pool, sizeof(*result));
     result->node.kind = AST_QUALIFIER;

@@ -25,10 +25,10 @@
  *    tables referenced in q have been joined against
  */
 #include "col-internal.h"
+#include "nodes/copyfuncs.h"
 #include "parser/parser.h"
 #include "parser/walker.h"
 #include "planner/planner.h"
-#include "util/copyfuncs.h"
 
 typedef struct PlannerState
 {
@@ -133,7 +133,7 @@ join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
 }
 
 static bool
-get_var_callback(AstNode *n, void *data)
+get_var_callback(ColNode *n, void *data)
 {
     List *var_list = (List *) data;
 
@@ -144,7 +144,7 @@ get_var_callback(AstNode *n, void *data)
 }
 
 static List *
-expr_get_vars(AstNode *expr, apr_pool_t *pool)
+expr_get_vars(ColNode *expr, apr_pool_t *pool)
 {
     List *var_list;
 

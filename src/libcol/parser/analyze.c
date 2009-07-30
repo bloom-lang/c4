@@ -1,9 +1,9 @@
 #include <apr_hash.h>
 
 #include "col-internal.h"
+#include "nodes/makefuncs.h"
 #include "parser/analyze.h"
 #include "types/catalog.h"
-#include "util/makefuncs.h"
 
 typedef struct AnalyzeState
 {
@@ -27,7 +27,7 @@ static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
 static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
-static void analyze_expr(AstNode *node, AnalyzeState *state);
+static void analyze_expr(ColNode *node, AnalyzeState *state);
 static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
@@ -41,10 +41,10 @@ static void define_var(AstVarExpr *var, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void set_var_type(AstVarExpr *var, AstDefine *table,
                          int colno, AnalyzeState *state);
-static void add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
+static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
-static bool is_dont_care_var(AstNode *node);
-static DataType expr_get_type(AstNode *node, AnalyzeState *state);
+static bool is_dont_care_var(ColNode *node);
+static DataType expr_get_type(ColNode *node, AnalyzeState *state);
 static DataType op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state);
 static DataType const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state);
 static DataType var_expr_get_type(AstVarExpr *var, AnalyzeState *state);
@@ -297,12 +297,12 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
          */
         if (cref->expr->kind == AST_CONST_EXPR)
         {
-            AstNode *const_expr = cref->expr;
+            ColNode *const_expr = cref->expr;
             char *var_name;
 
             var_name = make_anon_var_name("const", state);
             var = make_var_expr(var_name, TYPE_INVALID, state->pool);
-            cref->expr = (AstNode *) var;
+            cref->expr = (ColNode *) var;
 
             add_qual(var_name, const_expr, AST_OP_EQ, rule, state);
         }
@@ -322,7 +322,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
-                add_qual(old_name, (AstNode *) var,
+                add_qual(old_name, (ColNode *) var,
                          AST_OP_EQ, rule, state);
             }
         }
@@ -353,7 +353,7 @@ set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 }
 
 static void
-add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
+add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
          AstRule *rule, AnalyzeState *state)
 {
     AstVarExpr *lhs;
@@ -361,9 +361,9 @@ add_qual(char *lhs_name, AstNode *rhs, AstOperKind op_kind,
     AstQualifier *qual;
 
     lhs = make_var_expr(lhs_name, TYPE_INVALID, state->pool);
-    op_expr = make_op_expr((AstNode *) lhs, rhs,
+    op_expr = make_op_expr((ColNode *) lhs, rhs,
                            op_kind, state->pool);
-    qual = make_qualifier((AstNode *) op_expr, state->pool);
+    qual = make_qualifier((ColNode *) op_expr, state->pool);
 
     list_append(rule->quals, qual);
 }
@@ -375,7 +375,7 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 }
 
 static void
-analyze_expr(AstNode *node, AnalyzeState *state)
+analyze_expr(ColNode *node, AnalyzeState *state)
 {
     switch (node->kind)
     {
@@ -586,7 +586,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 }
 
 static bool
-is_dont_care_var(AstNode *node)
+is_dont_care_var(ColNode *node)
 {
     AstVarExpr *var;
 
@@ -598,7 +598,7 @@ is_dont_care_var(AstNode *node)
 }
 
 static DataType
-expr_get_type(AstNode *node, AnalyzeState *state)
+expr_get_type(ColNode *node, AnalyzeState *state)
 {
     switch (node->kind)
     {

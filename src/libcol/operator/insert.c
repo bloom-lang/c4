@@ -1,6 +1,6 @@
 #include "col-internal.h"
+#include "nodes/copyfuncs.h"
 #include "operator/insert.h"
-#include "util/copyfuncs.h"
 
 static void
 insert_invoke(Operator *op, Tuple *t)
