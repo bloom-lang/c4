@@ -126,6 +126,7 @@ FilterPlan *
 make_filter_plan(List *quals, char *tbl_name, apr_pool_t *pool)
 {
     FilterPlan *result = apr_pcalloc(pool, sizeof(*result));
+    result->node.kind = PLAN_FILTER;
     result->quals = quals;
     result->tbl_name = tbl_name;
     return result;
@@ -135,6 +136,7 @@ InsertPlan *
 make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *pool)
 {
     InsertPlan *result = apr_pcalloc(pool, sizeof(*result));
+    result->node.kind = PLAN_INSERT;
     result->head = head;
     result->is_network = is_network;
     return result;
@@ -144,6 +146,7 @@ ScanPlan *
 make_scan_plan(List *quals, char *tbl_name, apr_pool_t *pool)
 {
     ScanPlan *result = apr_pcalloc(pool, sizeof(*result));
+    result->node.kind = PLAN_SCAN;
     result->quals = quals;
     result->tbl_name = tbl_name;
     return result;

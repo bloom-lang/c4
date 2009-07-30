@@ -216,11 +216,7 @@ add_scan_op(AstJoinClause *ast_join, List *quals,
 {
     ScanPlan *splan;
 
-    splan = apr_pcalloc(state->plan_pool, sizeof(*splan));
-    splan->node.kind = OPER_SCAN;
-    splan->quals = list_copy_deep(quals, state->plan_pool);
-    splan->tbl_name = apr_pstrdup(state->plan_pool, ast_join->ref->name);
-
+    splan = make_scan_plan(quals, ast_join->ref->name, state->plan_pool);
     list_append(chain_plan->chain, splan);
 }
 
@@ -229,11 +225,7 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
 {
     FilterPlan *fplan;
 
-    fplan = apr_pcalloc(state->plan_pool, sizeof(*fplan));
-    fplan->node.kind = OPER_FILTER;
-    fplan->quals = list_copy_deep(quals, state->plan_pool);
-    fplan->tbl_name = chain_plan->delta_tbl;
-
+    fplan = make_filter_plan(quals, chain_plan->delta_tbl, state->plan_pool);
     list_append(chain_plan->chain, fplan);
 }
 
@@ -242,11 +234,7 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
 
-    iplan = apr_pcalloc(state->plan_pool, sizeof(*iplan));
-    iplan->node.kind = OPER_INSERT;
-    iplan->head = copy_node(rule->head, state->plan_pool);
-    iplan->is_network = rule->is_network;
-
+    iplan = make_insert_plan(rule->head, rule->is_network, state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 
