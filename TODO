@@ -45,7 +45,6 @@ Broader issues:
   the evaluating COL instance
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
-* Generalize node support from parser/ to nodes/
 * Make use of profile-guided optimization with GCC
 * Consider caching per-tuple hash code
 * Measure the performance difference between looking up a function
