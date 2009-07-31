@@ -1,15 +1,15 @@
 #include "col-internal.h"
+#include "util/socket.h"
 #include "util/strbuf.h"
 
 static apr_status_t sbuf_cleanup(void *data);
-static void sbuf_enlarge(StrBuf *sbuf, int more_bytes);
 
 StrBuf *
 sbuf_make(apr_pool_t *pool)
 {
     StrBuf *sbuf = ol_alloc(sizeof(*sbuf));
     sbuf->pool = pool;
-    sbuf->buf = ol_alloc(256);
+    sbuf->data = ol_alloc(256);
     sbuf->max_len = 256;
     sbuf_reset(sbuf);
 
@@ -24,7 +24,7 @@ sbuf_cleanup(void *data)
 {
     StrBuf *sbuf = (StrBuf *) data;
 
-    ol_free(sbuf->buf);
+    ol_free(sbuf->data);
     ol_free(sbuf);
 
     return APR_SUCCESS;
@@ -33,7 +33,7 @@ sbuf_cleanup(void *data)
 void
 sbuf_reset(StrBuf *sbuf)
 {
-    sbuf->buf[0] = '\0';
+    sbuf->data[0] = '\0';
     sbuf->len = 0;
 }
 
@@ -44,7 +44,7 @@ sbuf_reset(StrBuf *sbuf)
 char *
 sbuf_dup(StrBuf *sbuf, apr_pool_t *pool)
 {
-    return apr_pmemdup(pool, sbuf->buf, sbuf->len + 1);
+    return apr_pmemdup(pool, sbuf->data, sbuf->len + 1);
 }
 
 void
@@ -57,9 +57,9 @@ void
 sbuf_append_data(StrBuf *sbuf, const char *data, apr_size_t len)
 {
     sbuf_enlarge(sbuf, len);
-    memcpy(sbuf->buf + sbuf->len, data, len);
+    memcpy(sbuf->data + sbuf->len, data, len);
     sbuf->len += len;
-    sbuf->buf[sbuf->len] = '\0';
+    sbuf->data[sbuf->len] = '\0';
 }
 
 void
@@ -77,9 +77,9 @@ sbuf_append_char(StrBuf *sbuf, char c)
 {
     sbuf_enlarge(sbuf, 1);
 
-    sbuf->buf[sbuf->len] = c;
+    sbuf->data[sbuf->len] = c;
     sbuf->len++;
-    sbuf->buf[sbuf->len] = '\0';
+    sbuf->data[sbuf->len] = '\0';
 }
 
 /*
@@ -88,7 +88,7 @@ sbuf_append_char(StrBuf *sbuf, char c)
  *
  * XXX: we don't bother checking for integer overflow.
  */
-static void
+void
 sbuf_enlarge(StrBuf *sbuf, int more_bytes)
 {
     int new_max_len;
@@ -108,6 +108,15 @@ sbuf_enlarge(StrBuf *sbuf, int more_bytes)
     while (new_alloc_sz < new_max_len)
         new_alloc_sz *= 2;
 
-    sbuf->buf = ol_realloc(sbuf->buf, new_alloc_sz);
+    sbuf->data = ol_realloc(sbuf->data, new_alloc_sz);
     sbuf->max_len = new_alloc_sz;
+}
+
+void
+sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len)
+{
+    sbuf_enlarge(sbuf, len);
+    socket_recv_data(sock, sbuf->data + sbuf->len, len);
+    sbuf->len += len;
+    sbuf->data[len] = '\0';
 }

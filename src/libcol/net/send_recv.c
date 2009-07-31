@@ -8,6 +8,7 @@
 #include "net/network.h"
 #include "net/send_recv.h"
 #include "util/socket.h"
+#include "util/strbuf.h"
 
 #define MAX_TABLE_NAME 64
 #define MAX_TUPLE_SIZE (1024 * 1024)
@@ -23,8 +24,7 @@ struct RecvThread
 
     apr_socket_t *sock;
     char tbl_name[MAX_TABLE_NAME + 1];
-    char *buf;
-    size_t buf_size;
+    StrBuf *buf;
 };
 
 struct SendThread
@@ -40,7 +40,6 @@ struct SendThread
     apr_queue_t *queue;
 };
 
-static apr_status_t recv_thread_cleanup(void *data);
 static void * APR_THREAD_FUNC recv_thread_main(apr_thread_t *thread, void *data);
 static void * APR_THREAD_FUNC send_thread_main(apr_thread_t *thread, void *data);
 static void create_send_socket(SendThread *st);
@@ -56,22 +55,9 @@ recv_thread_make(ColInstance *col, apr_socket_t *sock, apr_pool_t *pool)
     rt->pool = pool;
     rt->sock = sock;
     rt->remote_loc = socket_get_remote_loc(sock, pool);
-    rt->buf = ol_alloc(1024);
-    rt->buf_size = 1024;
-
-    apr_pool_cleanup_register(pool, rt, recv_thread_cleanup,
-                              apr_pool_cleanup_null);
+    rt->buf = sbuf_make(pool);
 
     return rt;
-}
-
-static apr_status_t
-recv_thread_cleanup(void *data)
-{
-    RecvThread *rt = (RecvThread *) data;
-
-    ol_free(rt->buf);
-    return APR_SUCCESS;
 }
 
 void
@@ -114,20 +100,12 @@ recv_thread_main(apr_thread_t *thread, void *data)
         if (tuple_len > MAX_TUPLE_SIZE)
             FAIL();
 
-        if (tuple_len > rt->buf_size)
-        {
-            /* Ensure that we grow buffer size by at least 2x */
-            while (tuple_len > rt->buf_size)
-                rt->buf_size *= 2;
-
-            rt->buf = ol_realloc(rt->buf, rt->buf_size);
-        }
-
-        /* Read the serialized tuple value */
-        socket_recv_data(rt->sock, rt->buf, tuple_len);
+        /* Read the serialized tuple value into buffer */
+        sbuf_reset(rt->buf);
+        sbuf_socket_recv(rt->buf, rt->sock, tuple_len);
 
         /* Convert to in-memory tuple format, route tuple */
-        tuple = tuple_from_buf(rt->col, rt->buf, tuple_len, rt->tbl_name);
+        tuple = tuple_from_buf(rt->col, rt->buf->data, tuple_len, rt->tbl_name);
         router_enqueue_tuple(rt->col->router, tuple, rt->tbl_name);
         tuple_unpin(tuple);
     }

@@ -109,7 +109,13 @@ tuple_hash(Tuple *tuple)
 void
 tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
 {
-    
+    Schema *schema = tuple->schema;
+    int i;
+
+    for (i = 0; i < schema->len; i++)
+    {
+        ;
+    }
 }
 
 Tuple *
