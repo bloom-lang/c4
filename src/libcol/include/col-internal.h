@@ -22,10 +22,6 @@ struct ColInstance
     struct ColRouter *router;
     struct ColNetwork *net;
     int port;
-
-    /* XXX: temporary */
-    char target_loc_spec[128];
-    int target_port;
 };
 
 /* Utility macros */
