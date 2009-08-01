@@ -37,6 +37,10 @@ Data types:
   storage-efficient for short strings, which is the common case (or
   special-case just for network input/output?)
 
+Build system:
+
+* Make use of profile-guided optimization with GCC
+
 Broader issues:
 
 * Testing framework
@@ -45,7 +49,6 @@ Broader issues:
   the evaluating COL instance
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
-* Make use of profile-guided optimization with GCC
 * Consider caching per-tuple hash code
 * Measure the performance difference between looking up a function
   pointer and doing a table-style lookup (switch statement) for
@@ -57,3 +60,4 @@ Broader issues:
   rather than projecting the join result columns?
 * Invent a concept of "table IDs", and use them instead of table names
 * Add a concept of "programs" or "modules"
+* Support for persistent tables

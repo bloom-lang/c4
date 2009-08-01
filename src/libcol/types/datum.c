@@ -323,3 +323,81 @@ datum_from_buf(DataType type, const char *buf, apr_size_t len, apr_size_t *pos)
 {
     FAIL();
 }
+
+static void
+bool_to_buf(bool b, StrBuf *buf)
+{
+    ;
+}
+
+static void
+char_to_buf(char c, StrBuf *buf)
+{
+    ;
+}
+
+static void
+double_to_buf(double d, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int2_to_buf(apr_int16_t i, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int4_to_buf(apr_int32_t i, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int8_to_buf(apr_int64_t i, StrBuf *buf)
+{
+    ;
+}
+
+/*
+ * Convert a datum from the in-memory format into the binary (network)
+ * format. The resulting data is written to the current position in the
+ * specified buffer.
+ */
+void
+datum_to_buf(Datum d, DataType type, StrBuf *buf)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            bool_to_buf(d.b, buf);
+            break;
+
+        case TYPE_CHAR:
+            char_to_buf(d.c, buf);
+            break;
+
+        case TYPE_DOUBLE:
+            double_to_buf(d.d8, buf);
+            break;
+
+        case TYPE_INT2:
+            int2_to_buf(d.i2, buf);
+            break;
+
+        case TYPE_INT4:
+            int4_to_buf(d.i4, buf);
+            break;
+
+        case TYPE_INT8:
+            int8_to_buf(d.i8, buf);
+            break;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}

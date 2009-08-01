@@ -114,7 +114,8 @@ tuple_to_buf(Tuple *tuple, StrBuf *buf)
 
     for (i = 0; i < schema->len; i++)
     {
-        ;
+        DataType type = schema_get_type(schema, i);
+        datum_to_buf(tuple_get_val(tuple, i), type, buf);
     }
 }
 
