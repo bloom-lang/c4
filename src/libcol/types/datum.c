@@ -327,37 +327,37 @@ datum_from_buf(DataType type, const char *buf, apr_size_t len, apr_size_t *pos)
 static void
 bool_to_buf(bool b, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &b, sizeof(b));
 }
 
 static void
-char_to_buf(char c, StrBuf *buf)
+char_to_buf(unsigned char c, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &c, sizeof(c));
 }
 
 static void
 double_to_buf(double d, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &d, sizeof(d));
 }
 
 static void
 int2_to_buf(apr_int16_t i, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &i, sizeof(i));
 }
 
 static void
 int4_to_buf(apr_int32_t i, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &i, sizeof(i));
 }
 
 static void
 int8_to_buf(apr_int64_t i, StrBuf *buf)
 {
-    ;
+    sbuf_write_data(buf, (char *) &i, sizeof(i));
 }
 
 /*
