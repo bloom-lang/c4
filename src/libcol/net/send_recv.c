@@ -107,7 +107,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
         sbuf_socket_recv(rt->buf, rt->sock, tuple_len);
 
         /* Convert to in-memory tuple format, route tuple */
-        tuple = tuple_from_buf(rt->col, rt->buf->data, tuple_len, rt->tbl_name);
+        tuple = tuple_from_buf(rt->col, rt->buf, rt->tbl_name);
         router_enqueue_tuple(rt->col->router, tuple, rt->tbl_name);
         tuple_unpin(tuple);
     }

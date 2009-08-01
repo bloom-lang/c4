@@ -120,8 +120,7 @@ tuple_to_buf(Tuple *tuple, StrBuf *buf)
 }
 
 Tuple *
-tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
-               const char *tbl_name)
+tuple_from_buf(ColInstance *col, StrBuf *buf, const char *tbl_name)
 {
     Schema *schema;
     Tuple *result;
@@ -137,7 +136,7 @@ tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
         DataType type;
 
         type = schema_get_type(schema, i);
-        tuple_get_val(result, i) = datum_from_buf(type, buf, len, &buf_pos);
+        tuple_get_val(result, i) = datum_from_buf(type, buf);
     }
 
     return result;

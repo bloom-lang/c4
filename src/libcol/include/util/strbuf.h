@@ -25,15 +25,15 @@ typedef struct StrBuf
 {
     apr_pool_t *pool;
     char *data;
-    int len;
-    int max_len;
-    int pos;
+    apr_size_t len;
+    apr_size_t max_len;
+    apr_size_t pos;
 } StrBuf;
 
 StrBuf *sbuf_make(apr_pool_t *pool);
 void sbuf_reset(StrBuf *sbuf);
 void sbuf_reset_pos(StrBuf *sbuf);
-void sbuf_enlarge(StrBuf *sbuf, int more_bytes);
+void sbuf_enlarge(StrBuf *sbuf, apr_size_t more_bytes);
 char *sbuf_dup(StrBuf *sbuf, apr_pool_t *pool);
 
 void sbuf_append(StrBuf *sbuf, const char *str);
@@ -41,6 +41,11 @@ void sbuf_appendf(StrBuf *sbuf, const char *fmt, ...)
     __attribute((format(printf, 2, 3)));
 void sbuf_append_char(StrBuf *sbuf, char c);
 void sbuf_append_data(StrBuf *sbuf, const char *data, apr_size_t len);
+
+unsigned char sbuf_read_char(StrBuf *sbuf);
+apr_uint16_t sbuf_read_int16(StrBuf *sbuf);
+apr_uint32_t sbuf_read_int32(StrBuf *sbuf);
+void sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len);
 
 void sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len);
 

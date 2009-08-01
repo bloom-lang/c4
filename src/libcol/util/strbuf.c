@@ -102,12 +102,10 @@ sbuf_append_char(StrBuf *sbuf, char c)
  * XXX: we don't bother checking for integer overflow.
  */
 void
-sbuf_enlarge(StrBuf *sbuf, int more_bytes)
+sbuf_enlarge(StrBuf *sbuf, apr_size_t more_bytes)
 {
-    int new_max_len;
-    int new_alloc_sz;
-
-    ASSERT(more_bytes >= 0);
+    apr_size_t new_max_len;
+    apr_size_t new_alloc_sz;
 
     new_max_len = sbuf->len + more_bytes;
     if (new_max_len <= sbuf->max_len)
@@ -123,6 +121,43 @@ sbuf_enlarge(StrBuf *sbuf, int more_bytes)
 
     sbuf->data = ol_realloc(sbuf->data, new_alloc_sz);
     sbuf->max_len = new_alloc_sz;
+}
+
+unsigned char
+sbuf_read_char(StrBuf *sbuf)
+{
+    unsigned char result;
+
+    sbuf_read_data(sbuf, (char *) &result, sizeof(result));
+    return result;
+}
+
+apr_uint16_t
+sbuf_read_int16(StrBuf *sbuf)
+{
+    apr_uint16_t result;
+
+    sbuf_read_data(sbuf, (char *) &result, sizeof(result));
+    return result;
+}
+
+apr_uint32_t
+sbuf_read_int32(StrBuf *sbuf)
+{
+    apr_uint32_t result;
+
+    sbuf_read_data(sbuf, (char *) &result, sizeof(result));
+    return result;
+}
+
+void
+sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len)
+{
+    if (sbuf->pos + len > sbuf->len)
+        FAIL();         /* Not enough data in the buffer */
+
+    memcpy(data, sbuf->data + sbuf->pos, len);
+    sbuf->pos += len;
 }
 
 void

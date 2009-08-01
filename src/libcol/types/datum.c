@@ -3,6 +3,9 @@
 #include "col-internal.h"
 #include "types/datum.h"
 
+static Datum int8_from_buf(StrBuf *buf);
+static void int8_to_buf(apr_int64_t i, StrBuf *buf);
+
 static bool
 bool_equal(bool b1, bool b2)
 {
@@ -313,6 +316,69 @@ datum_from_str(DataType type, const char *str)
     }
 }
 
+static Datum
+bool_from_buf(StrBuf *buf)
+{
+    Datum result;
+
+    result.b = (bool) sbuf_read_char(buf);
+    ASSERT(result.b == true || result.b == false);
+    return result;
+}
+
+static Datum
+char_from_buf(StrBuf *buf)
+{
+    Datum result;
+
+    result.c = sbuf_read_char(buf);
+    return result;
+}
+
+static Datum
+double_from_buf(StrBuf *buf)
+{
+    Datum result;
+
+    /* See double_to_buf() for notes on this */
+    result = int8_from_buf(buf);
+    return result;
+}
+
+static Datum
+int2_from_buf(StrBuf *buf)
+{
+    Datum result;
+
+    result.i2 = ntohs(sbuf_read_int16(buf));
+    return result;
+}
+
+static Datum
+int4_from_buf(StrBuf *buf)
+{
+    Datum result;
+
+    result.i4 = ntohl(sbuf_read_int32(buf));
+    return result;
+}
+
+static Datum
+int8_from_buf(StrBuf *buf)
+{
+    Datum result;
+    apr_uint32_t h32;
+    apr_uint32_t l32;
+
+    h32 = ntohl(sbuf_read_int32(buf));
+    l32 = ntohl(sbuf_read_int32(buf));
+
+    result.i8 = h32;
+    result.i8 <<= 32;
+    result.i8 |= l32;
+    return result;
+}
+
 /*
  * Convert a datum from the binary (network) format to the in-memory
  * format. The buffer has length "len", and we should begin reading from it
@@ -320,9 +386,34 @@ datum_from_str(DataType type, const char *str)
  * of bytes in the buffer that have been consumed.
  */
 Datum
-datum_from_buf(DataType type, const char *buf, apr_size_t len, apr_size_t *pos)
+datum_from_buf(DataType type, StrBuf *buf)
 {
-    FAIL();
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_from_buf(buf);
+
+        case TYPE_CHAR:
+            return char_from_buf(buf);
+
+        case TYPE_DOUBLE:
+            return double_from_buf(buf);
+
+        case TYPE_INT2:
+            return int2_from_buf(buf);
+
+        case TYPE_INT4:
+            return int4_from_buf(buf);
+
+        case TYPE_INT8:
+            return int8_from_buf(buf);
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
 }
 
 static void
@@ -337,10 +428,21 @@ char_to_buf(unsigned char c, StrBuf *buf)
     sbuf_append_data(buf, (char *) &c, sizeof(c));
 }
 
+/*
+ * We assume that double should be byte-swapped in the same way as int8, per
+ * Postgres. Apparently not perfect, but fairly portable.
+ */
 static void
 double_to_buf(double d, StrBuf *buf)
 {
-    sbuf_append_data(buf, (char *) &d, sizeof(d));
+    union
+    {
+        double d;
+        apr_int64_t i;
+    } swap;
+
+    swap.d = d;
+    int8_to_buf(swap.i, buf);
 }
 
 static void

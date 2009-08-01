@@ -27,8 +27,7 @@ typedef union Datum
 bool datum_equal(Datum d1, Datum d2, DataType type);
 apr_uint32_t datum_hash(Datum d1, DataType type);
 Datum datum_from_str(DataType type, const char *str);
-Datum datum_from_buf(DataType type, const char *buf,
-                     apr_size_t len, apr_size_t *pos);
+Datum datum_from_buf(DataType type, StrBuf *buf);
 void datum_to_buf(Datum d, DataType type, StrBuf *buf);
 
 #endif  /* DATUM_H */
