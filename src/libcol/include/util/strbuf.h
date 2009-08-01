@@ -4,11 +4,13 @@
 #include <apr_network_io.h>
 
 /*
- * A StrBuf is an extensible string. "buf" holds the region of storage
- * currently allocated for the string. "len" holds the current logical
- * length of the buffer, not including the NUL terminator ("buf" is always
- * kept NUL-terminated). "maxlen" holds the amount of storage allocated
- * (maxlen - len - 1 is the amount of currently-free storage).
+ * A StrBuf is an extensible string buffer. "data" holds the region of
+ * storage currently allocated for the string. "len" holds the current
+ * logical length of the buffer, not including the NUL terminator ("data" is
+ * always kept NUL-terminated). "maxlen" holds the amount of storage
+ * allocated (maxlen - len - 1 is the amount of currently-free
+ * storage). Note that although the buffer is always kept NUL-terminated,
+ * there is no reason that binary data cannot be stored in a StrBuf.
  *
  * Because APR pools don't provide an equivalent to either free() or
  * realloc(), we currently allocate the buffer's storage via malloc(), and
