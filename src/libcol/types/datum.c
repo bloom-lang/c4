@@ -328,19 +328,19 @@ datum_from_buf(DataType type, const char *buf, apr_size_t len, apr_size_t *pos)
 static void
 bool_to_buf(bool b, StrBuf *buf)
 {
-    sbuf_write_data(buf, (char *) &b, sizeof(b));
+    sbuf_append_data(buf, (char *) &b, sizeof(b));
 }
 
 static void
 char_to_buf(unsigned char c, StrBuf *buf)
 {
-    sbuf_write_data(buf, (char *) &c, sizeof(c));
+    sbuf_append_data(buf, (char *) &c, sizeof(c));
 }
 
 static void
 double_to_buf(double d, StrBuf *buf)
 {
-    sbuf_write_data(buf, (char *) &d, sizeof(d));
+    sbuf_append_data(buf, (char *) &d, sizeof(d));
 }
 
 static void
@@ -349,7 +349,7 @@ int2_to_buf(apr_int16_t i, StrBuf *buf)
     apr_uint16_t n16;
 
     n16 = htons((apr_uint16_t) i);
-    sbuf_write_data(buf, (char *) &n16, sizeof(n16));
+    sbuf_append_data(buf, (char *) &n16, sizeof(n16));
 }
 
 static void
@@ -358,7 +358,7 @@ int4_to_buf(apr_int32_t i, StrBuf *buf)
     apr_uint32_t n32;
 
     n32 = htonl((apr_uint32_t) i);
-    sbuf_write_data(buf, (char *) &n32, sizeof(n32));
+    sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 }
 
 static void
@@ -369,11 +369,11 @@ int8_to_buf(apr_int64_t i, StrBuf *buf)
     /* Send high-order half first */
 	n32 = (apr_uint32_t) (i >> 32);
     n32 = htonl(n32);
-    sbuf_write_data(buf, (char *) &n32, sizeof(n32));
+    sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 
     n32 = (apr_uint32_t) i;
     n32 = htonl(n32);
-    sbuf_write_data(buf, (char *) &n32, sizeof(n32));
+    sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 }
 
 /*

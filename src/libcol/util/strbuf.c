@@ -126,22 +126,6 @@ sbuf_enlarge(StrBuf *sbuf, int more_bytes)
 }
 
 void
-sbuf_write_data(StrBuf *sbuf, const char *data, apr_size_t len)
-{
-    apr_size_t new_pos;
-    int extra_bytes;
-
-    new_pos = sbuf->pos + len;
-    extra_bytes = new_pos - sbuf->max_len;
-    if (extra_bytes >= 0)
-        sbuf_enlarge(sbuf, extra_bytes);
-
-    memcpy(sbuf->data + sbuf->pos, data, len);
-    sbuf->pos += len;
-    sbuf->len = Max(sbuf->len, sbuf->pos);
-}
-
-void
 sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len)
 {
     sbuf_enlarge(sbuf, len);

@@ -11,9 +11,9 @@
  * that StrBuf is not required to be NUL-terminated, and can be used to
  * store binary data.
  *
- * In addition to append operations, StrBuf also allows "relative" read and
- * write operations: that is, it records a current "position", and
- * interprets the read and write operations relative to that position.
+ * In addition to append operations, StrBuf also allows "relative" read
+ * operations: that is, it records a current "position", and interprets the
+ * read request relative to that position.
  *
  * Because APR pools don't provide an equivalent to either free() or
  * realloc(), we currently allocate the buffer's storage via malloc(), and
@@ -41,8 +41,6 @@ void sbuf_appendf(StrBuf *sbuf, const char *fmt, ...)
     __attribute((format(printf, 2, 3)));
 void sbuf_append_char(StrBuf *sbuf, char c);
 void sbuf_append_data(StrBuf *sbuf, const char *data, apr_size_t len);
-
-void sbuf_write_data(StrBuf *sbuf, const char *data, apr_size_t len);
 
 void sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len);
 
