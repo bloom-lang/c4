@@ -1,10 +1,9 @@
 #ifndef TUPLE_H
 #define TUPLE_H
 
-#include <apr_network_io.h>
-
 #include "types/datum.h"
 #include "types/schema.h"
+#include "util/strbuf.h"
 
 /*
  * XXX: Note that tuple refcounts are not currently tracked by the APR pool
@@ -40,8 +39,8 @@ void tuple_unpin(Tuple *tuple);
 bool tuple_equal(Tuple *t1, Tuple *t2);
 apr_uint32_t tuple_hash(Tuple *t);
 
+void tuple_to_buf(Tuple *tuple, StrBuf *buf);
 Tuple *tuple_from_buf(ColInstance *col, const char *buf, apr_size_t len,
                       const char *tbl_name);
-void tuple_socket_send(Tuple *tuple, apr_socket_t *sock);
 
 #endif  /* TUPLE_H */

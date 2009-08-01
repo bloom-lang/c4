@@ -37,6 +37,8 @@ struct SendThread
     apr_thread_t *thread;
 
     apr_socket_t *sock;
+    StrBuf *buf;
+
     apr_queue_t *queue;
 };
 
@@ -130,6 +132,7 @@ send_thread_make(ColInstance *col, const char *remote_loc, apr_pool_t *pool)
     st->col = col;
     st->pool = pool;
     st->remote_loc = apr_pstrdup(pool, remote_loc);
+    st->buf = sbuf_make(st->pool);
 
     s = apr_queue_create(&st->queue, 128, st->pool);
     if (s != APR_SUCCESS)
@@ -164,6 +167,8 @@ send_thread_main(apr_thread_t *thread, void *data)
     {
         apr_status_t s;
         Tuple *tuple;
+        char *tbl_name = "foo";
+        apr_size_t tbl_len;
 
         s = apr_queue_pop(st->queue, (void **) &tuple);
 
@@ -172,7 +177,17 @@ send_thread_main(apr_thread_t *thread, void *data)
         if (s != APR_SUCCESS)
             FAIL();
 
-        tuple_socket_send(tuple, st->sock);
+        /* Send table name, prefixed with length */
+        tbl_len = strlen(tbl_name);
+        socket_send_uint32(st->sock, tbl_len);
+        socket_send_data(st->sock, tbl_name, tbl_len);
+
+        /* Convert in-memory tuple format into network format */
+        sbuf_reset(st->buf);
+        tuple_to_buf(tuple, st->buf);
+
+        socket_send_uint32(st->sock, st->buf->len);
+        socket_send_data(st->sock, st->buf->data, st->buf->len);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);

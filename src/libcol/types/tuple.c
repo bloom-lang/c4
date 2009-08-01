@@ -107,7 +107,7 @@ tuple_hash(Tuple *tuple)
 }
 
 void
-tuple_socket_send(Tuple *tuple, apr_socket_t *sock)
+tuple_to_buf(Tuple *tuple, StrBuf *buf)
 {
     Schema *schema = tuple->schema;
     int i;
