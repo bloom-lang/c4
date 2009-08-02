@@ -58,9 +58,7 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
     pplan = apr_pcalloc(pool, sizeof(*pplan));
     pplan->pool = pool;
     pplan->name = apr_pstrdup(pool, ast->name);
-    pplan->defines = list_make(pool);
-    pplan->facts = list_make(pool);
-    pplan->rules = list_make(pool);
+    /* Remaining fields filled-in by caller */
 
     return pplan;
 }
@@ -325,7 +323,7 @@ plan_rule(AstRule *rule, PlannerState *state)
 
     /*
      * For each table referenced by the rule, generate an OpChainPlan that
-     * has that table at its delta table. That is, we produce a fixed list
+     * has that table as its delta table. That is, we produce a fixed list
      * of operators that are evaluated when we see a new tuple in that
      * table.
      */
@@ -351,8 +349,10 @@ plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col)
 
     state = planner_state_make(ast, pool, col);
     pplan = state->plan;
+
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
     pplan->facts = list_copy_deep(ast->facts, pplan->pool);
+    pplan->rules = list_make(pplan->pool);
 
     foreach (lc, ast->rules)
     {

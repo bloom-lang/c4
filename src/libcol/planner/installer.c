@@ -99,7 +99,7 @@ plan_install_rules(ProgramPlan *plan, InstallState *istate)
 
         foreach (lc2, rplan->chains)
         {
-            OpChainPlan *chain_plan = (OpChainPlan *) lc_ptr(lc);
+            OpChainPlan *chain_plan = (OpChainPlan *) lc_ptr(lc2);
 
             install_op_chain(chain_plan, istate);
         }
