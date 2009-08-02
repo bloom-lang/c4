@@ -42,6 +42,12 @@ struct SendThread
     apr_queue_t *queue;
 };
 
+typedef struct SendMessage
+{
+    char *tbl_name;
+    Tuple *tuple;
+} SendMessage;
+
 static void * APR_THREAD_FUNC recv_thread_main(apr_thread_t *thread, void *data);
 static void * APR_THREAD_FUNC send_thread_main(apr_thread_t *thread, void *data);
 static void create_send_socket(SendThread *st);
@@ -166,11 +172,10 @@ send_thread_main(apr_thread_t *thread, void *data)
     while (true)
     {
         apr_status_t s;
-        Tuple *tuple;
-        char *tbl_name = "foo";
+        SendMessage *msg;
         apr_size_t tbl_len;
 
-        s = apr_queue_pop(st->queue, (void **) &tuple);
+        s = apr_queue_pop(st->queue, (void **) &msg);
 
         if (s == APR_EINTR)
             continue;
@@ -178,28 +183,42 @@ send_thread_main(apr_thread_t *thread, void *data)
             FAIL();
 
         /* Send table name, prefixed with length */
-        tbl_len = strlen(tbl_name);
+        tbl_len = strlen(msg->tbl_name);
         socket_send_uint32(st->sock, tbl_len);
-        socket_send_data(st->sock, tbl_name, tbl_len);
+        socket_send_data(st->sock, msg->tbl_name, tbl_len);
 
         /* Convert in-memory tuple format into network format */
         sbuf_reset(st->buf);
-        tuple_to_buf(tuple, st->buf);
+        tuple_to_buf(msg->tuple, st->buf);
 
         socket_send_uint32(st->sock, st->buf->len);
         socket_send_data(st->sock, st->buf->data, st->buf->len);
+
+        tuple_unpin(msg->tuple);
+        ol_free(msg->tbl_name);
+        ol_free(msg);
     }
 
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
 }
 
+/*
+ * XXX: The two malloc()s here are really obnoxious.
+ */
 void
-send_thread_enqueue(SendThread *st, Tuple *tuple)
+send_thread_enqueue(SendThread *st, const char *tbl_name, Tuple *tuple)
 {
+    SendMessage *msg;
+
+    msg = ol_alloc(sizeof(*msg));
+    msg->tbl_name = ol_strdup(tbl_name);
+    msg->tuple = tuple;
+    tuple_pin(msg->tuple);
+
     while (true)
     {
-        apr_status_t s = apr_queue_push(st->queue, tuple);
+        apr_status_t s = apr_queue_push(st->queue, msg);
 
         if (s == APR_EINTR)
             continue;
