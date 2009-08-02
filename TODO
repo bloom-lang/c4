@@ -41,6 +41,13 @@ Build system:
 
 * Make use of profile-guided optimization with GCC
 
+APR:
+
+* Report queue performance issue
+* Add support for "apr-config --configure"
+* Modify queue type to allow variably-sized queue elements, to avoid
+  the need to malloc() small queue messages
+
 Broader issues:
 
 * Testing framework
