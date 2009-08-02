@@ -70,8 +70,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
                 break;
 
             default:
-                ERROR("Unrecognized operator kind in plan: %d",
-                      (int) n->kind);
+                ERROR("Unrecognized operator kind in plan: %d", (int) n->kind);
         }
 
         prev_op = op;

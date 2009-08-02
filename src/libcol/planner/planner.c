@@ -190,12 +190,9 @@ extract_matching_quals(PlannerState *state)
     result = list_make(state->tmp_pool);
     lc = list_head(state->qual_set_todo);
     prev = NULL;
-    while (true)
+    while (lc != NULL)
     {
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
-
-        if (lc == NULL)
-            break;
 
         if (join_set_satisfies_qual(qual, state))
         {
@@ -244,8 +241,9 @@ add_delta_filter(OpChainPlan *chain_plan, PlannerState *state)
 {
     List *quals;
 
+    /* Only the delta table should be in the join set */
+    ASSERT(list_length(state->join_set) == 1);
     /* Should be the first op in the chain */
-    ASSERT(list_is_empty(state->join_set));
     ASSERT(list_is_empty(chain_plan->chain));
 
     quals = extract_matching_quals(state);
@@ -285,7 +283,6 @@ static OpChainPlan *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
 {
     OpChainPlan *chain_plan;
-    ListCell *lc;
 
     state->join_set_todo = make_join_set(delta_tbl, rule->joins, state);
     state->qual_set_todo = list_copy(rule->quals, state->tmp_pool);

@@ -14,7 +14,6 @@ simple_error(const char *file, int line_num)
 {
     fprintf(stderr, "FATAL ERROR at %s:%d\n", file, line_num);
     print_backtrace();
-    fflush(stderr);
     abort();
 }
 
@@ -27,9 +26,7 @@ var_error(const char *file, int line_num, const char *fmt, ...)
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
-
     fprintf(stderr, "ERROR: %s, at %s:%d\n", buf, file, line_num);
-    fflush(stderr);
 
     print_backtrace();
     exit(1);
@@ -41,7 +38,6 @@ assert_fail(const char *cond, const char *file, int line_num)
     fprintf(stderr, "ASSERT FAILED: \"%s\", at %s:%d\n",
             cond, file, line_num);
     print_backtrace();
-    fflush(stderr);
     abort();
 }
 
@@ -63,4 +59,5 @@ print_backtrace(void)
 
     free(bt_strings);
 #endif
+    fflush(stderr);
 }

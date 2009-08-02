@@ -35,10 +35,15 @@ make_rule(const char *name, bool is_delete, bool is_network,
     result->node.kind = AST_RULE;
     result->is_delete = is_delete;
     result->is_network = is_network;
-    result->name = apr_pstrdup(p, name);
     result->head = copy_node(head, p);
-    result->joins = list_copy_deep(joins, p);
-    result->quals = list_copy_deep(quals, p);
+
+    if (name)
+        result->name = apr_pstrdup(p, name);
+    if (joins)
+        result->joins = list_copy_deep(joins, p);
+    if (quals)
+        result->quals = list_copy_deep(quals, p);
+
     return result;
 }
 

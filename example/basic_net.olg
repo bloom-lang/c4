@@ -1,0 +1,5 @@
+program net;
+
+define(foo, keys(0, 1), {string, string});
+
+foo(@A, B) :- foo(@B, A);
