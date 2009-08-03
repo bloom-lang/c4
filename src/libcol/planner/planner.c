@@ -335,6 +335,8 @@ plan_rule(AstRule *rule, PlannerState *state)
 
         chain_plan = plan_op_chain(delta_tbl, rule, state);
         list_append(rplan->chains, chain_plan);
+        printf("%p: delta_tbl = %s, chain len = %d\n", (void *) chain_plan,
+               chain_plan->delta_tbl, list_length(chain_plan->chain));
     }
 
     return rplan;

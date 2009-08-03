@@ -53,11 +53,13 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
         switch (n->kind)
         {
             case PLAN_FILTER:
+                printf("Installing PLAN_FILTER operator\n");
                 op = (Operator *) filter_op_make((FilterPlan *) n,
                                                  prev_op, chain_pool);
                 break;
 
             case PLAN_INSERT:
+                printf("Installing PLAN_INSERT operator\n");
                 /* Should be the last op in the chain */
                 ASSERT(prev_op == NULL);
                 op = (Operator *) insert_op_make((InsertPlan *) n,
@@ -65,6 +67,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
                 break;
 
             case PLAN_SCAN:
+                printf("Installing PLAN_SCAN operator\n");
                 op = (Operator *) scan_op_make((ScanPlan *) n,
                                                prev_op, chain_pool);
                 break;
