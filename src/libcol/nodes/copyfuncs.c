@@ -14,6 +14,12 @@ copy_define(AstDefine *in, apr_pool_t *p)
     return make_define(in->name, in->keys, in->schema, p);
 }
 
+static AstSchemaElt *
+copy_schema_elt(AstSchemaElt *in, apr_pool_t *p)
+{
+    return make_schema_elt(in->type_name, in->is_loc_spec, p);
+}
+
 static AstRule *
 copy_rule(AstRule *in, apr_pool_t *p)
 {
@@ -36,7 +42,7 @@ copy_table_ref(AstTableRef *in, apr_pool_t *p)
 static AstColumnRef *
 copy_column_ref(AstColumnRef *in, apr_pool_t *p)
 {
-    return make_column_ref(in->has_loc_spec, in->expr, p);
+    return make_column_ref(in->expr, p);
 }
 
 static AstJoinClause *
@@ -99,6 +105,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_DEFINE:
             return copy_define((AstDefine *) n, pool);
+
+        case AST_SCHEMA_ELT:
+            return copy_schema_elt((AstSchemaElt *) n, pool);
 
         case AST_RULE:
             return copy_rule((AstRule *) n, pool);

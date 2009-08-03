@@ -119,7 +119,6 @@ list_get_cell(List *list, int idx)
     }
 
     FAIL();
-    return NULL;        /* keep compiler quiet */
 }
 
 void *

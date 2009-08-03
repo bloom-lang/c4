@@ -8,12 +8,14 @@ AstProgram *make_program(const char *name, List *defines, List *facts,
                          List *rules, apr_pool_t *p);
 AstDefine *make_define(const char *name, List *keys, List *schema,
                        apr_pool_t *p);
+AstSchemaElt *make_schema_elt(const char *type_name, bool is_loc_spec,
+                              apr_pool_t *p);
 AstRule *make_rule(const char *name, bool is_delete, bool is_network,
                    AstTableRef *head, List *joins, List *quals,
                    apr_pool_t *p);
 AstFact *make_fact(AstTableRef *head, apr_pool_t *p);
 AstTableRef *make_table_ref(const char *name, List *cols, apr_pool_t *p);
-AstColumnRef *make_column_ref(bool has_loc_spec, ColNode *expr, apr_pool_t *p);
+AstColumnRef *make_column_ref(ColNode *expr, apr_pool_t *p);
 AstJoinClause *make_join_clause(AstTableRef *ref, bool not,
                                 AstHashVariant hash_v, apr_pool_t *p);
 AstQualifier *make_qualifier(ColNode *expr, apr_pool_t *p);

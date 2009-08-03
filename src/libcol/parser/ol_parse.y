@@ -43,10 +43,10 @@ static void split_rule_body(List *body, List **joins,
 
 %type <ptr>     clause define rule table_ref column_ref join_clause
 %type <str>     program_header
-%type <list>    program_body opt_int_list int_list tident_list define_schema
+%type <list>    program_body opt_int_list int_list schema_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem qualifier qual_expr expr const_expr op_expr
-%type <ptr>     var_expr column_ref_expr rule_prefix
+%type <ptr>     var_expr column_ref_expr rule_prefix schema_elt
 %type <str>     bool_const
 %type <ival>    iconst_ival
 %type <boolean> opt_not opt_delete
@@ -87,7 +87,7 @@ opt_keys:
 | /* EMPTY */ { $$ = NULL; }
 ;
 
-define_schema: '{' tident_list '}' { $$ = $2; };
+define_schema: '{' schema_list '}' { $$ = $2; };
 
 opt_int_list:
   int_list      { $$ = $1; }
@@ -116,9 +116,14 @@ iconst_ival: ICONST {
     $$ = ival;
 };
 
-tident_list:
-  TBL_IDENT                  { $$ = list_make1($1, context->pool); }
-| tident_list ',' TBL_IDENT  { $$ = list_append($1, $3); }
+schema_list:
+  schema_elt                  { $$ = list_make1($1, context->pool); }
+| schema_list ',' schema_elt  { $$ = list_append($1, $3); }
+;
+
+schema_elt:
+  '@' TBL_IDENT               { $$ = make_schema_elt($2, true, context->pool); }
+| TBL_IDENT                   { $$ = make_schema_elt($1, false, context->pool); }
 ;
 
 rule: rule_prefix opt_rule_body {
@@ -245,8 +250,7 @@ column_ref_list:
 ;
 
 column_ref:
-  '@' column_ref_expr   { $$ = make_column_ref(true, $2, context->pool); }
-| column_ref_expr       { $$ = make_column_ref(false, $1, context->pool); }
+  column_ref_expr   { $$ = make_column_ref($1, context->pool); }
 ;
 
 column_ref_expr:

@@ -32,7 +32,7 @@ static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 
-static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref);
+static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
@@ -54,6 +54,7 @@ static void
 analyze_define(AstDefine *def, AnalyzeState *state)
 {
     List *seen_keys;
+    bool seen_loc_spec;
     ListCell *lc;
 
     printf("DEFINE => %s\n", def->name);
@@ -68,13 +69,28 @@ analyze_define(AstDefine *def, AnalyzeState *state)
                  APR_HASH_KEY_STRING, def);
 
     /* Validate the table's schema */
+    seen_loc_spec = false;
     foreach (lc, def->schema)
     {
-        char *type_name = (char *) lc_ptr(lc);
+        AstSchemaElt *elt = (AstSchemaElt *) lc_ptr(lc);
 
-        if (!is_valid_type_name(type_name))
+        if (!is_valid_type_name(elt->type_name))
             ERROR("Undefined type %s in schema of table %s",
-                  type_name, def->name);
+                  elt->type_name, def->name);
+
+        if (elt->is_loc_spec)
+        {
+            DataType type;
+
+            if (seen_loc_spec)
+                ERROR("Schema of table %s cannot have more "
+                      "than one location specifier", def->name);
+
+            seen_loc_spec = true;
+            type = get_type_id(elt->type_name);
+            if (type != TYPE_STRING)
+                ERROR("Location specifiers must be of type string");
+        }
     }
 
     /* Validate the keys list */
@@ -165,7 +181,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
         AstColumnRef *loc_spec;
 
-        loc_spec = table_ref_get_loc_spec(join->ref);
+        loc_spec = table_ref_get_loc_spec(join->ref, state);
         if (loc_spec != NULL)
         {
             if (body_loc_spec != NULL &&
@@ -181,41 +197,59 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
      * If a location specifier is used in the body that is distinct from the
      * head's location specifier, this is a network rule.
      */
-    head_loc_spec = table_ref_get_loc_spec(rule->head);
+    head_loc_spec = table_ref_get_loc_spec(rule->head, state);
     if (body_loc_spec != NULL && head_loc_spec != NULL &&
         !loc_spec_equal(body_loc_spec, head_loc_spec))
         rule->is_network = true;
 }
 
-static AstColumnRef *
-table_ref_get_loc_spec(AstTableRef *ref)
+static int
+table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
 {
+    AstDefine *define;
+    int colno;
     ListCell *lc;
 
-    foreach (lc, ref->cols)
-    {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+    define = apr_hash_get(state->define_tbl, tbl_name,
+                          APR_HASH_KEY_STRING);
 
-        if (cref->has_loc_spec)
-            return cref;
+    colno = 0;
+    foreach (lc, define->schema)
+    {
+        AstSchemaElt *elt = (AstSchemaElt *) lc_ptr(lc);
+
+        if (elt->is_loc_spec)
+            return colno;
+
+        colno++;
     }
 
-    return NULL;
+    return -1;
+}
+
+static AstColumnRef *
+table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state)
+{
+    int colno;
+
+    colno = table_get_loc_spec_colno(ref->name, state);
+    if (colno == -1)
+        return NULL;
+
+    return (AstColumnRef *) list_get(ref->cols, colno);
 }
 
 static bool
 loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2)
 {
-    ASSERT(s1->has_loc_spec);
-    ASSERT(s2->has_loc_spec);
-
     /* Only variable location specifiers supported for now */
     ASSERT(s1->expr->kind == AST_VAR_EXPR);
     ASSERT(s2->expr->kind == AST_VAR_EXPR);
 
     /*
      * XXX: Implementing this is non-trivial, because it requires testing
-     * whether the two variables are equivalent.
+     * whether the two variables are equivalent. For now, should at least
+     * check that variable names are identical.
      */
     return true;
 }
@@ -346,10 +380,10 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
 static void
 set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 {
-    char *type_name;
+    AstSchemaElt *elt;
 
-    type_name = list_get(table->schema, colno);
-    var->type = get_type_id(type_name);
+    elt = (AstSchemaElt *) list_get(table->schema, colno);
+    var->type = get_type_id(elt->type_name);
 }
 
 static void
@@ -466,9 +500,6 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
-        if (col->has_loc_spec)
-            ERROR("Columns in a fact cannot have location specifiers");
-
         if (col->expr->kind != AST_CONST_EXPR)
             ERROR("Columns in a fact must be constants");
     }
@@ -480,7 +511,6 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
     AstDefine *define;
     ListCell *lc;
     int colno;
-    int loc_spec_count;
 
     /* Check that the specified table name exists */
     define = apr_hash_get(state->define_tbl, ref->name,
@@ -499,34 +529,22 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
               list_length(ref->cols));
 
     colno = 0;
-    loc_spec_count = 0;
     foreach (lc, ref->cols)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
         DataType expr_type;
         DataType schema_type;
-        char *schema_type_name;
+        AstSchemaElt *schema_elt;
 
         analyze_expr(col->expr, state);
         expr_type = expr_get_type(col->expr, state);
-        if (col->has_loc_spec)
-        {
-            if (expr_type != TYPE_STRING)
-                ERROR("Location specifiers must be of type \"string\"");
-
-            loc_spec_count++;
-            if (loc_spec_count > 1)
-                ERROR("Multiple location specifiers in a "
-                      "single clause are not allowed");
-        }
-
-        schema_type_name = (char *) list_get(define->schema, colno);
-        schema_type = get_type_id(schema_type_name);
+        schema_elt = (AstSchemaElt *) list_get(define->schema, colno);
+        schema_type = get_type_id(schema_elt->type_name);
 
         /* XXX: type compatibility check is far too strict */
         if (schema_type != expr_type)
             ERROR("Type mismatch in column list: %s in schema, %s in column list",
-                  schema_type_name, get_type_name(expr_type));
+                  schema_elt->type_name, get_type_name(expr_type));
 
         colno++;
     }

@@ -24,6 +24,13 @@ typedef struct AstDefine
     List *schema;
 } AstDefine;
 
+typedef struct AstSchemaElt
+{
+    ColNode node;
+    char *type_name;
+    bool is_loc_spec;
+} AstSchemaElt;
+
 typedef struct AstFact
 {
     ColNode node;
@@ -60,7 +67,6 @@ struct AstTableRef
 typedef struct AstColumnRef
 {
     ColNode node;
-    bool has_loc_spec;
     ColNode *expr;
 } AstColumnRef;
 

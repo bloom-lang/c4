@@ -6,6 +6,7 @@ typedef enum ColNodeKind
     /* AST nodes */
     AST_PROGRAM,
     AST_DEFINE,
+    AST_SCHEMA_ELT,
     AST_RULE,
     AST_FACT,
     AST_TABLE_REF,

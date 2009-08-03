@@ -23,7 +23,17 @@ make_define(const char *name, List *keys, List *schema, apr_pool_t *p)
     result->node.kind = AST_DEFINE;
     result->name = apr_pstrdup(p, name);
     result->keys = list_copy(keys, p);
-    result->schema = list_copy_str(schema, p);
+    result->schema = list_copy_deep(schema, p);
+    return result;
+}
+
+AstSchemaElt *
+make_schema_elt(const char *type_name, bool is_loc_spec, apr_pool_t *p)
+{
+    AstSchemaElt *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = AST_SCHEMA_ELT;
+    result->type_name = apr_pstrdup(p, type_name);
+    result->is_loc_spec = is_loc_spec;
     return result;
 }
 
@@ -67,11 +77,10 @@ make_table_ref(const char *name, List *cols, apr_pool_t *p)
 }
 
 AstColumnRef *
-make_column_ref(bool has_loc_spec, ColNode *expr, apr_pool_t *p)
+make_column_ref(ColNode *expr, apr_pool_t *p)
 {
     AstColumnRef *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_COLUMN_REF;
-    result->has_loc_spec = has_loc_spec;
     result->expr = copy_node(expr, p);
     return result;
 }
@@ -102,9 +111,11 @@ make_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
 {
     AstOpExpr *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_OP_EXPR;
-    result->lhs = copy_node(lhs, p);
-    result->rhs = copy_node(rhs, p);
     result->op_kind = op_kind;
+    result->lhs = copy_node(lhs, p);
+    if (rhs)
+        result->rhs = copy_node(rhs, p);
+
     return result;
 }
 
