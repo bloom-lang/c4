@@ -39,6 +39,7 @@ void tuple_unpin(Tuple *tuple);
 bool tuple_equal(Tuple *t1, Tuple *t2);
 apr_uint32_t tuple_hash(Tuple *t);
 
+char *tuple_to_str(Tuple *tuple, apr_pool_t *pool);
 void tuple_to_buf(Tuple *tuple, StrBuf *buf);
 Tuple *tuple_from_buf(ColInstance *col, StrBuf *buf, const char *tbl_name);
 

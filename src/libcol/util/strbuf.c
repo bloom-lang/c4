@@ -19,6 +19,13 @@ sbuf_make(apr_pool_t *pool)
     return sbuf;
 }
 
+void
+sbuf_free(StrBuf *sbuf)
+{
+    /* This unregisters the cleanup func after invoking it */
+    apr_pool_cleanup_run(sbuf->pool, sbuf, sbuf_cleanup);
+}
+
 static apr_status_t
 sbuf_cleanup(void *data)
 {

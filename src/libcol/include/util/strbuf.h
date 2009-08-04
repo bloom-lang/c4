@@ -35,6 +35,7 @@ void sbuf_reset(StrBuf *sbuf);
 void sbuf_reset_pos(StrBuf *sbuf);
 void sbuf_enlarge(StrBuf *sbuf, apr_size_t more_bytes);
 char *sbuf_dup(StrBuf *sbuf, apr_pool_t *pool);
+void sbuf_free(StrBuf *buf);
 
 void sbuf_append(StrBuf *sbuf, const char *str);
 void sbuf_appendf(StrBuf *sbuf, const char *fmt, ...)

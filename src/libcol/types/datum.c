@@ -316,6 +316,88 @@ datum_from_str(DataType type, const char *str)
     }
 }
 
+static void
+bool_to_str(bool b, StrBuf *buf)
+{
+}
+
+static void
+char_to_str(unsigned char c, StrBuf *buf)
+{
+    ;
+}
+
+static void
+double_to_str(double d, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int2_to_str(apr_int16_t i, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int4_to_str(apr_int32_t i, StrBuf *buf)
+{
+    ;
+}
+
+static void
+int8_to_str(apr_int64_t i, StrBuf *buf)
+{
+    ;
+}
+
+static void
+string_to_str(ColString *s, StrBuf *buf)
+{
+    ;
+}
+
+void
+datum_to_str(Datum d, DataType type, StrBuf *buf)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            bool_to_str(d.b, buf);
+            break;
+
+        case TYPE_CHAR:
+            char_to_str(d.c, buf);
+            break;
+
+        case TYPE_DOUBLE:
+            double_to_str(d.d8, buf);
+            break;
+
+        case TYPE_INT2:
+            int2_to_str(d.i2, buf);
+            break;
+
+        case TYPE_INT4:
+            int4_to_str(d.i4, buf);
+            break;
+
+        case TYPE_INT8:
+            int8_to_str(d.i8, buf);
+            break;
+
+        case TYPE_STRING:
+            string_to_str(d.s, buf);
+            break;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
 static Datum
 bool_from_buf(StrBuf *buf)
 {

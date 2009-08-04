@@ -106,6 +106,31 @@ tuple_hash(Tuple *tuple)
     return result;
 }
 
+char *
+tuple_to_str(Tuple *tuple, apr_pool_t *pool)
+{
+    Schema *schema = tuple->schema;
+    StrBuf *buf;
+    int i;
+    char *result;
+
+    buf = sbuf_make(pool);
+    for (i = 0; i < schema->len; i++)
+    {
+        DataType type;
+
+        if (i != 0)
+            sbuf_append_char(buf, ',');
+
+        type = schema_get_type(schema, i);
+        datum_to_str(tuple_get_val(tuple, i), type, buf);
+    }
+
+    result = sbuf_dup(buf, pool);
+    sbuf_free(buf);
+    return result;
+}
+
 void
 tuple_to_buf(Tuple *tuple, StrBuf *buf)
 {
