@@ -17,6 +17,7 @@ struct ColNetwork
 
     /* Server socket info */
     apr_socket_t *sock;
+    apr_sockaddr_t *local_addr;
 
     apr_hash_t *recv_tbl;
     apr_hash_t *send_tbl;
@@ -62,6 +63,10 @@ network_make(ColInstance *col, int port)
     if (s != APR_SUCCESS)
         FAIL();
 
+    s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->sock);
+    if (s != APR_SUCCESS)
+        FAIL();
+
     return net;
 }
 
@@ -84,6 +89,12 @@ network_start(ColNetwork *net)
                           network_thread_main, net, net->pool);
     if (s != APR_SUCCESS)
         FAIL();
+}
+
+int
+network_get_port(ColNetwork *net)
+{
+    return net->local_addr->port;
 }
 
 static void * APR_THREAD_FUNC

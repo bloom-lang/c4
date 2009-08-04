@@ -19,6 +19,23 @@ col_terminate(void)
     apr_terminate();
 }
 
+static Datum
+get_local_addr(int port, apr_pool_t *pool)
+{
+    char buf[APRMAXHOSTLEN + 1];
+    char addr[APRMAXHOSTLEN + 1 + 20];
+    apr_status_t s;
+
+    /* XXX: use temporary pool? No leak with current APR implementation. */
+    s = apr_gethostname(buf, sizeof(buf), pool);
+    if (s != APR_SUCCESS)
+        FAIL();
+
+    snprintf(addr, sizeof(addr), "tcp:%s:%d", buf, port);
+    printf("local address = %s\n", addr);
+    return datum_from_str(TYPE_STRING, addr);
+}
+
 ColInstance *
 col_make(int port)
 {
@@ -35,7 +52,8 @@ col_make(int port)
     col->cat = cat_make(col);
     col->router = router_make(col);
     col->net = network_make(col, port);
-    col->port = port;
+    col->port = network_get_port(col->net);
+    col->local_addr = get_local_addr(col->port, col->pool);
     return col;
 }
 

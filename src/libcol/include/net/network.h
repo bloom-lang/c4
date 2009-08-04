@@ -11,5 +11,6 @@ void network_destroy(ColNetwork *net);
 
 void network_send(ColNetwork *net, Datum addr,
                   const char *tbl_name, Tuple *tuple);
+int network_get_port(ColNetwork *net);
 
 #endif  /* NETWORK_H */
