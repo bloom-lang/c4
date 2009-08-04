@@ -131,12 +131,12 @@ new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool)
 }
 
 void
-network_send(ColNetwork *net, const char *loc_spec,
+network_send(ColNetwork *net, Datum addr,
              const char *tbl_name, Tuple *tuple)
 {
     SendThread *st;
 
-    st = get_send_thread(net, loc_spec);
+    st = get_send_thread(net, NULL);
     send_thread_enqueue(st, tbl_name, tuple);
 }
 

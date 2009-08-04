@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 /* Commonly-used internal headers */
+#include "types/datum.h"
 #include "util/error.h"
 #include "util/mem.h"
 
@@ -22,6 +23,7 @@ struct ColInstance
     struct ColRouter *router;
     struct ColNetwork *net;
     int port;
+    Datum local_addr;
 };
 
 /* Utility macros */

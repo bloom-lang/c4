@@ -9,6 +9,7 @@
 #include "planner/installer.h"
 #include "planner/planner.h"
 #include "router.h"
+#include "types/catalog.h"
 #include "util/list.h"
 
 struct ColRouter
@@ -99,10 +100,48 @@ router_start(ColRouter *router)
         FAIL();
 }
 
+/*
+ * Returns true if the tuple is remote and we've enqueued it for network
+ * send; false otherwise.
+ */
+static bool
+route_tuple_remote(ColRouter *router, Tuple *tuple, const char *tbl_name)
+{
+    TableDef *tbl_def;
+
+    tbl_def = cat_get_table(router->col->cat, tbl_name);
+    if (tbl_def == NULL)
+        FAIL();
+
+    if (tbl_def->ls_colno != -1)
+    {
+        Datum tuple_addr;
+
+        tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
+        if (datum_equal(router->col->local_addr, tuple_addr, TYPE_STRING))
+        {
+            network_send(router->col->net, tuple_addr, tbl_name, tuple);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+ * Route a new tuple. If the tuple is remote (i.e. the specified table has a
+ * location specifier that denotes an address other than the local node
+ * address), then we enqueue the tuple in the appropriate network buffer.
+ * Otherwise, we route the tuple locally (pass it to the appropriate
+ * operator chains).
+ */
 static void
 route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
 {
     OpChain *op_chain;
+
+    if (route_tuple_remote(router, tuple, tbl_name))
+        return;
 
     op_chain = apr_hash_get(router->delta_tbl, tbl_name,
                             APR_HASH_KEY_STRING);
