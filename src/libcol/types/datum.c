@@ -319,42 +319,43 @@ datum_from_str(DataType type, const char *str)
 static void
 bool_to_str(bool b, StrBuf *buf)
 {
+    sbuf_appendf(buf, "%s", (b == true) ? "true" : "false");
 }
 
 static void
 char_to_str(unsigned char c, StrBuf *buf)
 {
-    ;
+    sbuf_append_char(buf, c);
 }
 
 static void
 double_to_str(double d, StrBuf *buf)
 {
-    ;
+    sbuf_appendf(buf, "%f", d);
 }
 
 static void
 int2_to_str(apr_int16_t i, StrBuf *buf)
 {
-    ;
+    sbuf_appendf(buf, "%hd", i);
 }
 
 static void
 int4_to_str(apr_int32_t i, StrBuf *buf)
 {
-    ;
+    sbuf_appendf(buf, "%d", i);
 }
 
 static void
 int8_to_str(apr_int64_t i, StrBuf *buf)
 {
-    ;
+    sbuf_appendf(buf, "%" APR_INT64_T_FMT, i);
 }
 
 static void
 string_to_str(ColString *s, StrBuf *buf)
 {
-    ;
+    /* TODO */
 }
 
 void
