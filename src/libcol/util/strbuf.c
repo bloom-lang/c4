@@ -103,8 +103,7 @@ sbuf_append_char(StrBuf *sbuf, char c)
 }
 
 /*
- * Ensure that the buffer can hold "more_bytes + 1" more bytes; that is,
- * "more_bytes" does not include the terminating NUL.
+ * Ensure that the buffer can hold "more_bytes" more bytes.
  *
  * XXX: we don't bother checking for integer overflow.
  */
