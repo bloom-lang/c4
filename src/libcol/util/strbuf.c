@@ -3,6 +3,7 @@
 #include "util/strbuf.h"
 
 static apr_status_t sbuf_cleanup(void *data);
+static bool sbuf_append_va(StrBuf *sbuf, const char *fmt, va_list args);
 
 StrBuf *
 sbuf_make(apr_pool_t *pool)
@@ -87,7 +88,65 @@ sbuf_append_data(StrBuf *sbuf, const char *data, apr_size_t len)
 void
 sbuf_appendf(StrBuf *sbuf, const char *fmt, ...)
 {
-    FAIL();
+	for (;;)
+	{
+		va_list		args;
+		bool		success;
+
+		/* Try to format the data. */
+		va_start(args, fmt);
+		success = sbuf_append_va(sbuf, fmt, args);
+		va_end(args);
+
+		if (success)
+			break;
+
+		/* Double the buffer size and try again. */
+        sbuf_enlarge(sbuf, sbuf->max_len);
+	}    
+}
+
+/*
+ * Attempt to format text data under the control of fmt (an sprintf-style
+ * format string) and append it to the given StrBuf. If successful return
+ * true; if not (because there's not enough space), return false without
+ * modifying the StrBuf.  Typically the caller would call sbuf_enlarge() on
+ * false return -- see sbuf_appendf() for example.
+ *
+ * XXX This API is ugly, but there seems no alternative given the C spec's
+ * restrictions on what can portably be done with va_list arguments: you have
+ * to redo va_start before you can rescan the argument list, and we can't do
+ * that from here.
+ */
+static bool
+sbuf_append_va(StrBuf *sbuf, const char *fmt, va_list args)
+{
+    int avail;
+    int nprinted;
+
+	/*
+	 * If there's hardly any space, don't bother trying, just fail to make the
+	 * caller enlarge the buffer first.
+	 */
+	avail = sbuf->max_len - sbuf->len;
+	if (avail < 16)
+		return false;
+
+    nprinted = vsnprintf(sbuf->data + sbuf->len, avail, fmt, args);
+
+	/*
+	 * Note: some versions of vsnprintf return the number of chars actually
+	 * stored, but at least one returns -1 on failure. Be conservative about
+	 * believing whether the print worked.
+	 */
+	if (nprinted >= 0 && nprinted < avail)
+	{
+		/* Success.  Note nprinted does not include trailing null. */
+		sbuf->len += nprinted;
+		return true;
+	}
+
+    return false;
 }
 
 /*
