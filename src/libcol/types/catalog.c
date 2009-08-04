@@ -1,6 +1,7 @@
 #include <apr_hash.h>
 
 #include "col-internal.h"
+#include "parser/ast.h"
 #include "types/catalog.h"
 
 struct ColCatalog
@@ -9,7 +10,7 @@ struct ColCatalog
     apr_pool_t *pool;
 
     /* A map from table names => TableDef */
-    apr_hash_t *tbl_name_tbl;
+    apr_hash_t *tbl_def_tbl;
 };
 
 ColCatalog *
@@ -22,14 +23,38 @@ cat_make(ColInstance *col)
     cat = apr_pcalloc(pool, sizeof(*cat));
     cat->col = col;
     cat->pool = pool;
-    cat->tbl_name_tbl = apr_hash_make(cat->pool);
+    cat->tbl_def_tbl = apr_hash_make(cat->pool);
 
     return cat;
 }
 
+/*
+ * Return the column number of the loc spec, or -1 if the schema has no
+ * location specifier.
+ */
+static int
+find_loc_spec_colno(List *schema)
+{
+    int i;
+    ListCell *lc;
+
+    i = 0;
+    foreach (lc, schema)
+    {
+        AstSchemaElt *elt = (AstSchemaElt *) lc_ptr(lc);
+
+        if (elt->is_loc_spec)
+            return i;
+
+        i++;
+    }
+
+    return -1;
+}
+
 void
 cat_define_table(ColCatalog *cat, const char *name,
-                 List *type_list, List *key_list)
+                 List *schema, List *key_list)
 {
     apr_pool_t *tbl_pool;
     TableDef *tbl_def;
@@ -41,10 +66,11 @@ cat_define_table(ColCatalog *cat, const char *name,
     tbl_def = apr_pcalloc(tbl_pool, sizeof(*tbl_def));
     tbl_def->pool = tbl_pool;
     tbl_def->name = apr_pstrdup(tbl_pool, name);
-    tbl_def->schema = schema_make_from_list(type_list, tbl_pool);
+    tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
+    tbl_def->ls_colno = find_loc_spec_colno(schema);
 
-    apr_hash_set(cat->tbl_name_tbl, tbl_def->name,
+    apr_hash_set(cat->tbl_def_tbl, tbl_def->name,
                  APR_HASH_KEY_STRING, tbl_def);
 }
 
@@ -57,14 +83,14 @@ cat_delete_table(ColCatalog *cat, const char *name)
     if (tbl_def == NULL)
         ERROR("No such table: %s", name);
 
-    apr_hash_set(cat->tbl_name_tbl, name, APR_HASH_KEY_STRING, NULL);
+    apr_hash_set(cat->tbl_def_tbl, name, APR_HASH_KEY_STRING, NULL);
     apr_pool_destroy(tbl_def->pool);
 }
 
 TableDef *
 cat_get_table(ColCatalog *cat, const char *name)
 {
-    return (TableDef *) apr_hash_get(cat->tbl_name_tbl, name,
+    return (TableDef *) apr_hash_get(cat->tbl_def_tbl, name,
                                      APR_HASH_KEY_STRING);
 }
 

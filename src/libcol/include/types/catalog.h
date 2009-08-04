@@ -11,12 +11,14 @@ typedef struct TableDef
     char *name;
     Schema *schema;
     List *key_list;
+    /* Column number of location spec, or -1 if none */
+    int ls_colno;
 } TableDef;
 
 ColCatalog *cat_make(ColInstance *col);
 
 void cat_define_table(ColCatalog *cat, const char *name,
-                      List *type_list, List *key_list);
+                      List *schema, List *key_list);
 void cat_delete_table(ColCatalog *cat, const char *name);
 TableDef *cat_get_table(ColCatalog *cat, const char *name);
 

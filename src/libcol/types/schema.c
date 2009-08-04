@@ -1,4 +1,5 @@
 #include "col-internal.h"
+#include "parser/ast.h"
 #include "types/catalog.h"
 #include "types/schema.h"
 
@@ -15,22 +16,22 @@ schema_make(int len, DataType *types, apr_pool_t *pool)
 }
 
 Schema *
-schema_make_from_list(List *type_list, apr_pool_t *pool)
+schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
 {
     Schema *schema;
     int i;
     ListCell *lc;
 
     schema = apr_palloc(pool, sizeof(*schema));
-    schema->len = list_length(type_list);
+    schema->len = list_length(schema_ast);
     schema->types = apr_palloc(pool, schema->len * sizeof(DataType));
 
     i = 0;
-    foreach (lc, type_list)
+    foreach (lc, schema_ast)
     {
-        char *type_name = (char *) lc_ptr(lc);
+        AstSchemaElt *elt = (AstSchemaElt *) lc_ptr(lc);
 
-        schema->types[i] = get_type_id(type_name);
+        schema->types[i] = get_type_id(elt->type_name);
         i++;
     }
 

@@ -25,7 +25,7 @@ typedef struct Schema
 } Schema;
 
 Schema *schema_make(int len, DataType *types, apr_pool_t *pool);
-Schema *schema_make_from_list(List *type_list, apr_pool_t *pool);
+Schema *schema_make_from_ast(List *ast_schema, apr_pool_t *pool);
 DataType schema_get_type(Schema *s, int idx);
 bool schema_equal(Schema *s1, Schema *s2);
 
