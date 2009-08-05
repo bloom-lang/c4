@@ -166,16 +166,26 @@ list_remove_head_int(List *list)
     return lc_int(list_remove_first_cell(list));
 }
 
+/*
+ * Remove the specified cell from the list. "prev" should be the previous
+ * cell in the list, or NULL to remove the head of the list.
+ */
 void
 list_remove_cell(List *list, ListCell *cell, ListCell *prev)
 {
-    ASSERT(prev->next == cell);
+    if (prev)
+    {
+        ASSERT(prev->next == cell);
+        prev->next = cell->next;
+    }
 
-    prev->next = cell->next;
     if (list->tail == cell)
         list->tail = prev;
     if (list->head == cell)
+    {
+        ASSERT(prev == NULL);
         list->head = cell->next;
+    }
 
     list->length--;
 }

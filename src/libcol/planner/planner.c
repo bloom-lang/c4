@@ -196,10 +196,12 @@ extract_matching_quals(PlannerState *state)
         {
             list_remove_cell(state->qual_set_todo, lc, prev);
             list_append(result, qual);
-            lc = prev;
+        }
+        else
+        {
+            prev = lc;
         }
 
-        prev = lc;
         lc = lc->next;
     }
 
