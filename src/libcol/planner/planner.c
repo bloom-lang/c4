@@ -33,6 +33,7 @@
 
 typedef struct PlannerState
 {
+    ColInstance *col;
     ProgramPlan *plan;
     List *join_set_todo;
     List *qual_set_todo;
@@ -71,6 +72,7 @@ planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, ColInstance *col)
 
     tmp_pool = make_subpool(plan_pool);
     state = apr_pcalloc(tmp_pool, sizeof(*state));
+    state->col = col;
     state->plan_pool = plan_pool;
     state->tmp_pool = tmp_pool;
     state->plan = program_plan_make(ast, plan_pool);

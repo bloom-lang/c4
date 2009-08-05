@@ -75,3 +75,4 @@ Broader issues:
 * Invent a concept of "table IDs", and use them instead of table names
 * Add a concept of "programs" or "modules"
 * Support for persistent tables
+* Implement a simple interactive shell

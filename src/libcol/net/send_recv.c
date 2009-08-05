@@ -192,6 +192,9 @@ send_thread_main(apr_thread_t *thread, void *data)
         if (s != APR_SUCCESS)
             FAIL();
 
+        printf("Sending tuple => %s, table = %s\n",
+               st->remote_loc, msg->tbl_name);
+
         /* Send table name, prefixed with length */
         tbl_len = strlen(msg->tbl_name);
         socket_send_uint32(st->sock, tbl_len);
