@@ -128,6 +128,10 @@ recv_thread_get_loc(RecvThread *rt)
     return rt->remote_loc;
 }
 
+/*
+ * Note that we don't try to connect to the remote node here, because this
+ * function is invoked by the router thread and hence shouldn't block.
+ */
 SendThread *
 send_thread_make(ColInstance *col, const char *remote_loc, apr_pool_t *pool)
 {
@@ -145,6 +149,12 @@ send_thread_make(ColInstance *col, const char *remote_loc, apr_pool_t *pool)
         FAIL();
 
     return st;
+}
+
+const char *
+send_thread_get_loc(SendThread *st)
+{
+    return st->remote_loc;
 }
 
 void

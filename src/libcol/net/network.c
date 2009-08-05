@@ -21,11 +21,17 @@ struct ColNetwork
 
     apr_hash_t *recv_tbl;
     apr_hash_t *send_tbl;
+
+    /*
+     * XXX: Used to convert loc spec datums into C-style strings. This is a
+     * hack.
+     */
+    StrBuf *tmp_buf;
 };
 
 static void * APR_THREAD_FUNC network_thread_main(apr_thread_t *thread, void *data);
 static void new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool);
-static SendThread *get_send_thread(ColNetwork *net, const char *loc_spec);
+static SendThread *get_send_thread(ColNetwork *net, Datum loc_spec);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -45,6 +51,7 @@ network_make(ColInstance *col, int port)
     net->pool = pool;
     net->recv_tbl = apr_hash_make(net->pool);
     net->send_tbl = apr_hash_make(net->pool);
+    net->tmp_buf = sbuf_make(net->pool);
 
     s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
     if (s != APR_SUCCESS)
@@ -136,33 +143,43 @@ new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool)
     RecvThread *rt;
 
     rt = recv_thread_make(net->col, sock, recv_pool);
-    recv_thread_start(rt);
     apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
                  APR_HASH_KEY_STRING, rt);
+    recv_thread_start(rt);
 }
 
 void
-network_send(ColNetwork *net, Datum addr,
+network_send(ColNetwork *net, Datum loc_spec,
              const char *tbl_name, Tuple *tuple)
 {
     SendThread *st;
 
-    st = get_send_thread(net, NULL);
+    st = get_send_thread(net, loc_spec);
     send_thread_enqueue(st, tbl_name, tuple);
 }
 
 static SendThread *
-get_send_thread(ColNetwork *net, const char *loc_spec)
+get_send_thread(ColNetwork *net, Datum loc_spec)
 {
-    SendThread *st = apr_hash_get(net->send_tbl, loc_spec,
-                                  APR_HASH_KEY_STRING);
+    SendThread *st;
+    char *tmp_loc_str;
 
+    /*
+     * XXX: Convert tuple address in Datum format into a C-style
+     * string. This is hacky.
+     */
+    datum_to_str(loc_spec, TYPE_STRING, net->tmp_buf);
+    sbuf_append_char(net->tmp_buf, '\0');
+    tmp_loc_str = net->tmp_buf->data;
+
+    st = apr_hash_get(net->send_tbl, tmp_loc_str, APR_HASH_KEY_STRING);
     if (st == NULL)
     {
-        st = send_thread_make(net->col, loc_spec,
+        st = send_thread_make(net->col, tmp_loc_str,
                               make_subpool(net->pool));
+        apr_hash_set(net->send_tbl, send_thread_get_loc(st),
+                     APR_HASH_KEY_STRING, st);
         send_thread_start(st);
-        apr_hash_set(net->send_tbl, loc_spec, APR_HASH_KEY_STRING, st);
     }
 
     return st;

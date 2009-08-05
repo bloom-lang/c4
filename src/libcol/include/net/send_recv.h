@@ -15,5 +15,6 @@ SendThread *send_thread_make(ColInstance *col, const char *remote_loc,
                              apr_pool_t *pool);
 void send_thread_start(SendThread *st);
 void send_thread_enqueue(SendThread *st, const char *tbl_name, Tuple *tuple);
+const char *send_thread_get_loc(SendThread *st);
 
 #endif  /* SEND_RECV_H */
