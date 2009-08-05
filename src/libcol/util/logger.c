@@ -39,3 +39,14 @@ log_tuple(ColInstance *col, Tuple *tuple)
 {
     return tuple_to_str(tuple, col->log->tmp_pool);
 }
+
+char *
+log_datum(ColInstance *col, Datum datum, DataType type)
+{
+    StrBuf *sbuf;
+
+    sbuf = sbuf_make(col->log->tmp_pool);
+    datum_to_str(datum, type, sbuf);
+    sbuf_append_char(sbuf, '\0');
+    return sbuf->data;
+}

@@ -107,8 +107,9 @@ tuple_hash(Tuple *tuple)
 }
 
 /*
- * XXX: The extra copy here is unfortunate. One easy fix would be to avoid
- * the sbuf_dup() and simply return the malloc'd string.
+ * XXX: Note that we return a malloc'd string, with a cleanup function
+ * registered in the given context. This might get expensive if used
+ * frequently...
  */
 char *
 tuple_to_str(Tuple *tuple, apr_pool_t *pool)
@@ -116,7 +117,6 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
     Schema *schema = tuple->schema;
     StrBuf *buf;
     int i;
-    char *result;
 
     buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
@@ -130,9 +130,8 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
         datum_to_str(tuple_get_val(tuple, i), type, buf);
     }
 
-    result = sbuf_dup(buf, pool);
-    sbuf_free(buf);
-    return result;
+    sbuf_append_char(buf, '\0');
+    return buf->data;
 }
 
 void

@@ -120,6 +120,9 @@ route_tuple_remote(ColRouter *router, Tuple *tuple, const char *tbl_name)
         tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
         if (datum_equal(router->col->local_addr, tuple_addr, TYPE_STRING))
         {
+            col_log(router->col, "Remote tuple: %s => %s",
+                    log_tuple(router->col, tuple),
+                    log_datum(router->col, tuple_addr, TYPE_STRING));
             network_send(router->col->net, tuple_addr, tbl_name, tuple);
             return true;
         }
