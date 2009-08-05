@@ -8,7 +8,7 @@ static bool sbuf_append_va(StrBuf *sbuf, const char *fmt, va_list args);
 StrBuf *
 sbuf_make(apr_pool_t *pool)
 {
-    StrBuf *sbuf = ol_alloc(sizeof(*sbuf));
+    StrBuf *sbuf = apr_palloc(pool, sizeof(*sbuf));
     sbuf->pool = pool;
     sbuf->data = ol_alloc(256);
     sbuf->max_len = 256;
@@ -20,21 +20,12 @@ sbuf_make(apr_pool_t *pool)
     return sbuf;
 }
 
-void
-sbuf_free(StrBuf *sbuf)
-{
-    /* This unregisters the cleanup func after invoking it */
-    apr_pool_cleanup_run(sbuf->pool, sbuf, sbuf_cleanup);
-}
-
 static apr_status_t
 sbuf_cleanup(void *data)
 {
     StrBuf *sbuf = (StrBuf *) data;
 
     ol_free(sbuf->data);
-    ol_free(sbuf);
-
     return APR_SUCCESS;
 }
 
