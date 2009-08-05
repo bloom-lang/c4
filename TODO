@@ -39,7 +39,7 @@ Data types:
 
 * Consider using a variable-size length word for ColString: more
   storage-efficient for short strings, which is the common case (or
-  special-case just for network input/output?)
+  special-case this just for network format?)
 
 Build system:
 
