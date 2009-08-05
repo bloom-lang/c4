@@ -272,13 +272,24 @@ int8_from_str(const char *str)
     return result;
 }
 
-/* XXX: TODO */
+static ColString *
+make_string(apr_size_t slen, const char *str)
+{
+    ColString *s;
+
+    s = ol_alloc(sizeof(ColString) + ((slen - 1) * sizeof(char)));
+    s->len = slen;
+    memcpy(s->data, str, slen);
+    return s;
+}
+
+/* FIXME */
 static Datum
 string_from_str(const char *str)
 {
     Datum result;
 
-    result.b = true;
+    result.s = make_string(strlen(str), str);
     return result;
 }
 
@@ -355,7 +366,7 @@ int8_to_str(apr_int64_t i, StrBuf *buf)
 static void
 string_to_str(ColString *s, StrBuf *buf)
 {
-    /* TODO */
+    sbuf_append_data(buf, s->data, s->len);
 }
 
 void
@@ -462,6 +473,20 @@ int8_from_buf(StrBuf *buf)
     return result;
 }
 
+/* FIXME */
+static Datum
+string_from_buf(StrBuf *buf)
+{
+    Datum result;
+    apr_uint32_t slen;
+
+    slen = ntohl(sbuf_read_int32(buf));
+    result.s = ol_alloc(sizeof(ColString) + ((slen - 1) * sizeof(char)));
+    result.s->len = slen;
+    sbuf_read_data(buf, result.s->data, slen);
+    return result;
+}
+
 /*
  * Convert a datum from the binary (network) format to the in-memory
  * format. The buffer has length "len", and we should begin reading from it
@@ -490,6 +515,9 @@ datum_from_buf(DataType type, StrBuf *buf)
 
         case TYPE_INT8:
             return int8_from_buf(buf);
+
+        case TYPE_STRING:
+            return string_from_buf(buf);
 
         case TYPE_INVALID:
             ERROR("Invalid data type: TYPE_INVALID");
@@ -561,6 +589,16 @@ int8_to_buf(apr_int64_t i, StrBuf *buf)
     sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 }
 
+static void
+string_to_buf(ColString *s, StrBuf *buf)
+{
+    apr_uint32_t net_len;
+
+    net_len = htonl(s->len);
+    sbuf_append_data(buf, (char *) &net_len, sizeof(net_len));
+    sbuf_append_data(buf, s->data, s->len);
+}
+
 /*
  * Convert a datum from the in-memory format into the binary (network)
  * format. The resulting data is written to the current position in the
@@ -593,6 +631,10 @@ datum_to_buf(Datum d, DataType type, StrBuf *buf)
 
         case TYPE_INT8:
             int8_to_buf(d.i8, buf);
+            break;
+
+        case TYPE_STRING:
+            string_to_buf(d.s, buf);
             break;
 
         case TYPE_INVALID:

@@ -40,6 +40,7 @@ Data types:
 * Consider using a variable-size length word for ColString: more
   storage-efficient for short strings, which is the common case (or
   special-case this just for network format?)
+* Support implicit coercions among related types (int2->int4->int8, etc.)
 
 Build system:
 
