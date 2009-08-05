@@ -1,4 +1,4 @@
-program net;
+program basic_net;
 
 define(foo, keys(0, 1), {@string, string});
 
