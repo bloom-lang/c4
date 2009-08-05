@@ -51,6 +51,8 @@ table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
 
+    ASSERT(klen == sizeof(Tuple *));
+
     if (tuple_equal(t1, t2))
         return 0;
     else
@@ -62,7 +64,7 @@ table_hash_tuple(const char *key, apr_ssize_t *klen)
 {
     Tuple *t = (Tuple *) key;
 
-    ASSERT(*klen == sizeof(Tuple));
+    ASSERT(*klen == sizeof(Tuple *));
     return tuple_hash(t);
 }
 

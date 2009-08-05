@@ -1,7 +1,7 @@
 /*
  * ColHash is a hash table implementation based on the apr_hash code from
- * APR. This version taken from APR trunk, as of July 3 11:00 AM PST
- * (r791000). ~nrc
+ * APR, with a few custom features added. This version is taken from APR
+ * trunk, as of July 3 11:00 AM PST (r791000). ~nrc
  */
 
 /* Licensed to the Apache Software Foundation (ASF) under one or more
