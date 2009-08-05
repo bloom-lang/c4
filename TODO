@@ -44,6 +44,7 @@ Data types:
 Build system:
 
 * Make use of profile-guided optimization with GCC
+* Add a compile-time flag to disable assertions
 
 APR:
 
