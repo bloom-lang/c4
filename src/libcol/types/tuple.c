@@ -106,6 +106,10 @@ tuple_hash(Tuple *tuple)
     return result;
 }
 
+/*
+ * XXX: The extra copy here is unfortunate. One easy fix would be to avoid
+ * the sbuf_dup() and simply return the malloc'd string.
+ */
 char *
 tuple_to_str(Tuple *tuple, apr_pool_t *pool)
 {
