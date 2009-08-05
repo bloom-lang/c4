@@ -1,0 +1,5 @@
+program facts_net;
+
+define(foo, keys(0, 1), {@string, int4});
+
+foo("tcp:W88256X9YJX.local:5555", 5);

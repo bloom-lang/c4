@@ -49,6 +49,7 @@ col_make(int port)
 
     col = apr_pcalloc(pool, sizeof(*col));
     col->pool = pool;
+    col->log = logger_make(col);
     col->cat = cat_make(col);
     col->router = router_make(col);
     col->net = network_make(col, port);

@@ -14,6 +14,7 @@
 /* Commonly-used internal headers */
 #include "types/datum.h"
 #include "util/error.h"
+#include "util/logger.h"
 #include "util/mem.h"
 
 struct ColInstance
@@ -22,6 +23,7 @@ struct ColInstance
     struct ColCatalog *cat;
     struct ColRouter *router;
     struct ColNetwork *net;
+    ColLogger *log;
     int port;
     Datum local_addr;
 };

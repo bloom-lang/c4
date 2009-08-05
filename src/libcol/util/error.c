@@ -20,8 +20,8 @@ simple_error(const char *file, int line_num)
 void
 var_error(const char *file, int line_num, const char *fmt, ...)
 {
-    char buf[1024];
     va_list args;
+    char buf[1024];
 
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
