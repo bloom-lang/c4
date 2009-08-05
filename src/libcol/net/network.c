@@ -60,7 +60,7 @@ network_make(ColInstance *col, int port)
     s = apr_socket_create(&net->sock, addr->family,
                           SOCK_STREAM, APR_PROTO_TCP, net->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        ERROR("Failed to create local TCP socket, port %d", port);
 
     s = apr_socket_opt_set(net->sock, APR_SO_REUSEADDR, 1);
     if (s != APR_SUCCESS)
@@ -68,7 +68,7 @@ network_make(ColInstance *col, int port)
 
     s = apr_socket_bind(net->sock, addr);
     if (s != APR_SUCCESS)
-        FAIL();
+        ERROR("Failed to bind to local TCP socket, port %d", port);
 
     s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->sock);
     if (s != APR_SUCCESS)
