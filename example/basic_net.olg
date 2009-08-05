@@ -1,5 +1,5 @@
 program net;
 
-define(foo, keys(0, 1), {string, string});
+define(foo, keys(0, 1), {@string, string});
 
-foo(@A, B) :- foo(@B, A);
+foo(A, B) :- foo(B, A);
