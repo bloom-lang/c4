@@ -168,7 +168,8 @@ list_remove_head_int(List *list)
 
 /*
  * Remove the specified cell from the list. "prev" should be the previous
- * cell in the list, or NULL to remove the head of the list.
+ * cell in the list, or NULL to remove the head of the list. Note that the
+ * removed cell is not free'd.
  */
 void
 list_remove_cell(List *list, ListCell *cell, ListCell *prev)
