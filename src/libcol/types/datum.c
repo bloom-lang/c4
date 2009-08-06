@@ -277,7 +277,7 @@ make_string(apr_size_t slen, const char *str)
 {
     ColString *s;
 
-    s = ol_alloc(sizeof(ColString) + ((slen - 1) * sizeof(char)));
+    s = ol_alloc(offsetof(ColString, data) + (slen * sizeof(char)));
     s->len = slen;
     memcpy(s->data, str, slen);
     return s;
