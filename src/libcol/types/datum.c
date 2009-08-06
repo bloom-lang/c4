@@ -481,7 +481,7 @@ string_from_buf(StrBuf *buf)
     apr_uint32_t slen;
 
     slen = ntohl(sbuf_read_int32(buf));
-    result.s = ol_alloc(sizeof(ColString) + ((slen - 1) * sizeof(char)));
+    result.s = ol_alloc(offsetof(ColString, data) + (slen * sizeof(char)));
     result.s->len = slen;
     sbuf_read_data(buf, result.s->data, slen);
     return result;

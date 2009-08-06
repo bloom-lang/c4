@@ -10,7 +10,7 @@ tuple_make_empty(Schema *s)
 {
     Tuple *t;
 
-    t = ol_alloc(sizeof(*t) + ((s->len - 1) * sizeof(Datum)));
+    t = ol_alloc(offsetof(Tuple, vals) + (s->len * sizeof(Datum)));
     t->schema = s;
     t->refcount = 1;
 
