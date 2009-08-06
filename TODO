@@ -41,6 +41,8 @@ Data types:
   storage-efficient for short strings, which is the common case (or
   special-case this just for network format?)
 * Support implicit coercions among related types (int2->int4->int8, etc.)
+* Replace string location specifier type with an IPv4 endpoint (scalar
+  value containing IPv4 address + port)
 
 Build system:
 
