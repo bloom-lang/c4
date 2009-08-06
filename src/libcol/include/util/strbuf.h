@@ -47,6 +47,7 @@ apr_uint16_t sbuf_read_int16(StrBuf *sbuf);
 apr_uint32_t sbuf_read_int32(StrBuf *sbuf);
 void sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len);
 
-void sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len);
+void sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock,
+                      apr_size_t len, bool *is_eof);
 
 #endif  /* STRBUF_H */

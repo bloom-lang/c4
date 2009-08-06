@@ -217,9 +217,10 @@ sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len)
 }
 
 void
-sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len)
+sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock,
+                 apr_size_t len, bool *is_eof)
 {
     sbuf_enlarge(sbuf, len);
-    socket_recv_data(sock, sbuf->data + sbuf->len, len);
+    socket_recv_data(sock, sbuf->data + sbuf->len, len, is_eof);
     sbuf->len += len;
 }

@@ -2,7 +2,7 @@
 #include "util/socket.h"
 
 apr_uint32_t
-socket_recv_uint32(apr_socket_t *sock)
+socket_recv_uint32(apr_socket_t *sock, bool *is_eof)
 {
     apr_status_t s;
     apr_size_t len;
@@ -11,27 +11,44 @@ socket_recv_uint32(apr_socket_t *sock)
 
     len = sizeof(buf);
     s = apr_socket_recv(sock, buf, &len);
+    if (s == APR_EOF)
+    {
+        *is_eof = true;
+        /*
+         * XXX: We silently drop any incomplete data we might have read (APR
+         * allows len > 0 even in the case of failure).
+         */
+        return 0;
+    }
     if (s != APR_SUCCESS)
         FAIL_APR(s);
     if (len != sizeof(buf))
         FAIL();
 
+    *is_eof = false;
     memcpy(&raw_result, buf, sizeof(buf));
     return ntohl(raw_result);
 }
 
 void
-socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len)
+socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len, bool *is_eof)
 {
     apr_status_t s;
     apr_size_t len;
 
     len = buf_len;
     s = apr_socket_recv(sock, buf, &len);
+    if (s == APR_EOF)
+    {
+        *is_eof = true;
+        return;
+    }
     if (s != APR_SUCCESS)
         FAIL_APR(s);
     if (len != buf_len)
         FAIL();
+
+    *is_eof = false;
 }
 
 void

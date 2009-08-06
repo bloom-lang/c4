@@ -3,8 +3,9 @@
 
 #include <apr_network_io.h>
 
-apr_uint32_t socket_recv_uint32(apr_socket_t *sock);
-void socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len);
+apr_uint32_t socket_recv_uint32(apr_socket_t *sock, bool *is_eof);
+void socket_recv_data(apr_socket_t *sock, char *buf,
+                      apr_size_t buf_len, bool *is_eof);
 
 void socket_send_uint32(apr_socket_t *sock, apr_uint32_t u32);
 void socket_send_data(apr_socket_t *sock, const char *buf, apr_size_t buf_len);

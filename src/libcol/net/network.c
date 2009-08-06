@@ -104,6 +104,20 @@ network_get_port(ColNetwork *net)
     return net->local_addr->port;
 }
 
+void
+network_cleanup_rt(ColNetwork *net, RecvThread *rt)
+{
+    apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
+                 APR_HASH_KEY_STRING, NULL);
+}
+
+void
+network_cleanup_st(ColNetwork *net, SendThread *st)
+{
+    apr_hash_set(net->send_tbl, send_thread_get_loc(st),
+                 APR_HASH_KEY_STRING, NULL);
+}
+
 static void * APR_THREAD_FUNC
 network_thread_main(apr_thread_t *thread, void *data)
 {

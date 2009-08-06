@@ -90,27 +90,35 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
     while (true)
     {
+        bool is_eof;
         apr_uint32_t tbl_len;
         apr_uint32_t tuple_len;
         Tuple *tuple;
 
         /* Length of the table name */
-        tbl_len = socket_recv_uint32(rt->sock);
+        tbl_len = socket_recv_uint32(rt->sock, &is_eof);
+        if (is_eof)
+            break;
         if (tbl_len > MAX_TABLE_NAME)
             FAIL();
 
-        socket_recv_data(rt->sock, rt->tbl_name, tbl_len);
+        socket_recv_data(rt->sock, rt->tbl_name, tbl_len, &is_eof);
+        if (is_eof)
+            break;
         rt->tbl_name[tbl_len] = '\0';
 
         /* Length of the serialized tuple */
-        tuple_len = socket_recv_uint32(rt->sock);
-
+        tuple_len = socket_recv_uint32(rt->sock, &is_eof);
+        if (is_eof)
+            break;
         if (tuple_len > MAX_TUPLE_SIZE)
             FAIL();
 
         /* Read the serialized tuple value into buffer */
         sbuf_reset(rt->buf);
-        sbuf_socket_recv(rt->buf, rt->sock, tuple_len);
+        sbuf_socket_recv(rt->buf, rt->sock, tuple_len, &is_eof);
+        if (is_eof)
+            break;
 
         /* Convert to in-memory tuple format, route tuple */
         tuple = tuple_from_buf(rt->col, rt->buf, rt->tbl_name);
@@ -118,6 +126,9 @@ recv_thread_main(apr_thread_t *thread, void *data)
         tuple_unpin(tuple);
     }
 
+    /* We got EOF from the client socket, so cleanup and exit thread */
+    network_cleanup_rt(rt->col->net, rt);
+    apr_pool_destroy(rt->pool);
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
 }
@@ -212,6 +223,9 @@ send_thread_main(apr_thread_t *thread, void *data)
         ol_free(msg);
     }
 
+    /* XXX: TODO */
+    network_cleanup_st(st->col->net, st);
+    apr_pool_destroy(st->pool);
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
 }
