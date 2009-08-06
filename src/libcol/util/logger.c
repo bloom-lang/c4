@@ -37,7 +37,8 @@ col_log(ColInstance *col, const char *fmt, ...)
 char *
 log_tuple(ColInstance *col, Tuple *tuple)
 {
-    return tuple_to_str(tuple, col->log->tmp_pool);
+    char *tuple_str = tuple_to_str(tuple, col->log->tmp_pool);
+    return apr_pstrcat(col->log->tmp_pool, "{", tuple_str, "}", NULL);
 }
 
 char *
