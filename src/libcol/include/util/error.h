@@ -8,6 +8,7 @@
  */
 #define ERROR(...)      var_error(__FILE__, __LINE__, __VA_ARGS__)
 #define FAIL()          simple_error(__FILE__, __LINE__)
+#define FAIL_APR(s)     apr_error((s), __FILE__, __LINE__)
 
 #define ASSERT(cond)    \
     do {                \
@@ -15,6 +16,7 @@
             assert_fail(APR_STRINGIFY(cond), __FILE__, __LINE__);   \
     } while (0)
 
+void apr_error(apr_status_t s, const char *file, int line_num) __attribute__((noreturn));
 void simple_error(const char *file, int line_num) __attribute__((noreturn));
 void var_error(const char *file, int line_num,
                const char *fmt, ...) __attribute__((format(printf, 3, 4), noreturn));

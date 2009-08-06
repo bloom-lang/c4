@@ -668,7 +668,6 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
         case AST_OP_ASSIGN:
         default:
             FAIL();
-            return 0;   /* keep compiler quiet */
     }
 }
 

@@ -12,7 +12,7 @@ socket_recv_uint32(apr_socket_t *sock)
     len = sizeof(buf);
     s = apr_socket_recv(sock, buf, &len);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
     if (len != sizeof(buf))
         FAIL();
 
@@ -29,7 +29,7 @@ socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len)
     len = buf_len;
     s = apr_socket_recv(sock, buf, &len);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
     if (len != buf_len)
         FAIL();
 }
@@ -46,7 +46,7 @@ socket_send_uint32(apr_socket_t *sock, apr_uint32_t u32)
 
     s = apr_socket_send(sock, (char *) &u32_net, &len);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
     if (len != sizeof(u32_net))
         FAIL();
 }
@@ -60,7 +60,7 @@ socket_send_data(apr_socket_t *sock, const char *buf, apr_size_t len)
     orig_len = len;
     s = apr_socket_send(sock, buf, &len);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
     if (len != orig_len)
         FAIL();
 }
@@ -89,11 +89,11 @@ socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
 
     s = apr_socket_addr_get(&addr, APR_REMOTE, sock);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_sockaddr_ip_get(&ip, addr);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     return apr_psprintf(pool, "tcp:%s:%us", ip, addr->port);
 }

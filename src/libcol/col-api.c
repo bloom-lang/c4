@@ -10,7 +10,7 @@ col_initialize(void)
 {
     apr_status_t s = apr_initialize();
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 }
 
 void
@@ -29,7 +29,7 @@ get_local_addr(int port, apr_pool_t *pool)
     /* XXX: use temporary pool? No leak with current APR implementation. */
     s = apr_gethostname(buf, sizeof(buf), pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     snprintf(addr, sizeof(addr), "tcp:%s:%d", buf, port);
     printf("local address = %s\n", addr);
@@ -45,7 +45,7 @@ col_make(int port)
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     col = apr_pcalloc(pool, sizeof(*col));
     col->pool = pool;
@@ -100,14 +100,14 @@ col_install_file(ColInstance *col, const char *path)
      */
     s = apr_file_info_get(&finfo, APR_FINFO_SIZE, file);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     file_size = (apr_size_t) finfo.size;
     buf = apr_palloc(file_pool, file_size + 1);
 
     s = apr_file_read(file, buf, &file_size);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
     if (file_size != (apr_size_t) finfo.size)
         FAIL();
 

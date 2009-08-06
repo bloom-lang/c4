@@ -10,11 +10,22 @@
 static void print_backtrace(void);
 
 void
+apr_error(apr_status_t s, const char *file, int line_num)
+{
+    char buf[1024];
+
+    apr_strerror(s, buf, sizeof(buf));
+    fprintf(stderr, "APR ERROR: \"%s\", at %s:%d\n", buf, file, line_num);
+    print_backtrace();
+    exit(1);
+}
+
+void
 simple_error(const char *file, int line_num)
 {
     fprintf(stderr, "FATAL ERROR at %s:%d\n", file, line_num);
     print_backtrace();
-    abort();
+    exit(1);
 }
 
 void

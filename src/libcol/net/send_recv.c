@@ -1,6 +1,6 @@
-#include <arpa/inet.h>
 #include <apr_queue.h>
 #include <apr_thread_proc.h>
+#include <arpa/inet.h>
 #include <limits.h>
 
 #include "col-internal.h"
@@ -75,12 +75,12 @@ recv_thread_start(RecvThread *rt)
 
     s = apr_threadattr_create(&rt->thread_attr, rt->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_thread_create(&rt->thread, rt->thread_attr,
                           recv_thread_main, rt, rt->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 }
 
 static void * APR_THREAD_FUNC
@@ -164,12 +164,12 @@ send_thread_start(SendThread *st)
 
     s = apr_threadattr_create(&st->thread_attr, st->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_thread_create(&st->thread, st->thread_attr,
                           send_thread_main, st, st->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 }
 
 static void * APR_THREAD_FUNC
@@ -190,7 +190,7 @@ send_thread_main(apr_thread_t *thread, void *data)
         if (s == APR_EINTR)
             continue;
         if (s != APR_SUCCESS)
-            FAIL();
+            FAIL_APR(s);
 
         printf("Sending tuple => %s, table = %s\n",
                st->remote_loc, msg->tbl_name);
@@ -256,12 +256,12 @@ create_send_socket(SendThread *st)
 
     s = apr_sockaddr_info_get(&addr, host, APR_INET, port_num, 0, st->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_socket_create(&st->sock, addr->family, SOCK_STREAM,
                           APR_PROTO_TCP, st->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_socket_connect(st->sock, addr);
     if (s != APR_SUCCESS)

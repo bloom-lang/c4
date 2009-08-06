@@ -55,7 +55,7 @@ network_make(ColInstance *col, int port)
 
     s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_socket_create(&net->sock, addr->family,
                           SOCK_STREAM, APR_PROTO_TCP, net->pool);
@@ -64,7 +64,7 @@ network_make(ColInstance *col, int port)
 
     s = apr_socket_opt_set(net->sock, APR_SO_REUSEADDR, 1);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_socket_bind(net->sock, addr);
     if (s != APR_SUCCESS)
@@ -72,7 +72,7 @@ network_make(ColInstance *col, int port)
 
     s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->sock);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     return net;
 }
@@ -90,12 +90,12 @@ network_start(ColNetwork *net)
 
     s = apr_threadattr_create(&net->thread_attr, net->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_thread_create(&net->thread, net->thread_attr,
                           network_thread_main, net, net->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 }
 
 int
@@ -112,7 +112,7 @@ network_thread_main(apr_thread_t *thread, void *data)
 
     s = apr_socket_listen(net->sock, SOMAXCONN);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     while (true)
     {
@@ -127,7 +127,7 @@ network_thread_main(apr_thread_t *thread, void *data)
 
         s = apr_socket_accept(&client_sock, net->sock, recv_pool);
         if (s != APR_SUCCESS)
-            FAIL();
+            FAIL_APR(s);
 
         new_recv_thread(net, client_sock, recv_pool);
     }

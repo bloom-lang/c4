@@ -68,7 +68,7 @@ router_make(ColInstance *col)
 
     s = apr_queue_create(&router->queue, 128, router->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     return router;
 }
@@ -80,7 +80,7 @@ router_destroy(ColRouter *router)
 
     s = apr_queue_term(router->queue);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     apr_pool_destroy(router->pool);
 }
@@ -92,12 +92,12 @@ router_start(ColRouter *router)
 
     s = apr_threadattr_create(&router->thread_attr, router->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     s = apr_thread_create(&router->thread, router->thread_attr,
                           router_thread_start, router, router->pool);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 }
 
 /*
@@ -219,7 +219,7 @@ router_thread_start(apr_thread_t *thread, void *data)
         if (s == APR_EOF)
             break;
         if (s != APR_SUCCESS)
-            FAIL();
+            FAIL_APR(s);
 
         switch (wi->kind)
         {
