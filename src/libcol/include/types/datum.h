@@ -8,6 +8,7 @@ typedef struct ColString
 {
     /* The number of bytes in "data"; XXX: including NUL terminator? */
     apr_uint32_t len;
+    apr_uint32_t refcount;
     char data[1];       /* Variable-sized */
 } ColString;
 

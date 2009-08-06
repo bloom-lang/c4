@@ -273,13 +273,13 @@ int8_from_str(const char *str)
 }
 
 static ColString *
-make_string(apr_size_t slen, const char *str)
+make_string(apr_size_t slen)
 {
     ColString *s;
 
     s = ol_alloc(offsetof(ColString, data) + (slen * sizeof(char)));
     s->len = slen;
-    memcpy(s->data, str, slen);
+    s->refcount = 1;
     return s;
 }
 
@@ -287,9 +287,12 @@ make_string(apr_size_t slen, const char *str)
 static Datum
 string_from_str(const char *str)
 {
+    apr_size_t slen;
     Datum result;
 
-    result.s = make_string(strlen(str), str);
+    slen = strlen(str);
+    result.s = make_string(slen);
+    memcpy(result.s->data, str, slen);
     return result;
 }
 
@@ -481,8 +484,7 @@ string_from_buf(StrBuf *buf)
     apr_uint32_t slen;
 
     slen = ntohl(sbuf_read_int32(buf));
-    result.s = ol_alloc(offsetof(ColString, data) + (slen * sizeof(char)));
-    result.s->len = slen;
+    result.s = make_string(slen);
     sbuf_read_data(buf, result.s->data, slen);
     return result;
 }
