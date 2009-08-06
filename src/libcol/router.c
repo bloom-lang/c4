@@ -118,7 +118,7 @@ route_tuple_remote(ColRouter *router, Tuple *tuple, const char *tbl_name)
         Datum tuple_addr;
 
         tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
-        if (datum_equal(router->col->local_addr, tuple_addr, TYPE_STRING))
+        if (!datum_equal(router->col->local_addr, tuple_addr, TYPE_STRING))
         {
             col_log(router->col, "Remote tuple: %s => %s",
                     log_tuple(router->col, tuple),
@@ -142,6 +142,9 @@ static void
 route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
 {
     OpChain *op_chain;
+
+    col_log(router->col, "%s: %s",
+            __func__, log_tuple(router->col, tuple));
 
     if (route_tuple_remote(router, tuple, tbl_name))
         return;
@@ -259,6 +262,9 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple,
                      const char *tbl_name)
 {
     WorkItem *wi;
+
+    col_log(router->col, "%s: %s",
+            __func__, log_tuple(router->col, tuple));
 
     /* The tuple is unpinned when the router is finished with it */
     tuple_pin(tuple);

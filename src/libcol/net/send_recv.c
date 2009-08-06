@@ -265,7 +265,7 @@ create_send_socket(SendThread *st)
 
     s = apr_socket_connect(st->sock, addr);
     if (s != APR_SUCCESS)
-        FAIL();
+        ERROR("Failed to connect to remote host @ %s", st->remote_loc);
 }
 
 static void
