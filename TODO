@@ -77,5 +77,5 @@ Broader issues:
   rather than projecting the join result columns?
 * Invent a concept of "table IDs", and use them instead of table names
 * Add a concept of "programs" or "modules"
-* Support for persistent tables
+* Support for persistent tables, likely using BDB
 * Implement a simple interactive shell
