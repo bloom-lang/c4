@@ -58,7 +58,14 @@ void
 tuple_unpin(Tuple *tuple)
 {
     if (apr_atomic_dec32(&tuple->refcount) == 0)
-        ol_free(tuple);
+    {
+        Schema *s = tuple->schema;
+        int i;
+
+        for (i = 0; i < s->len; i++)
+            datum_free(tuple_get_val(tuple, i),
+                       schema_get_type(s, i));
+    }
 }
 
 bool

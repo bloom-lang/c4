@@ -1,3 +1,4 @@
+#include <apr_atomic.h>
 #include <apr_hash.h>
 
 #include "col-internal.h"
@@ -179,6 +180,37 @@ datum_hash(Datum d, DataType type)
             ERROR("Unexpected data type: %uc", type);
             return 0;       /* Keep compiler quiet */
     }
+}
+
+static void
+string_pin(ColString *s)
+{
+    apr_atomic_inc32(&s->refcount);
+}
+
+static void
+string_unpin(ColString *s)
+{
+    if (apr_atomic_dec32(&s->refcount) == 0)
+        ol_free(s);
+}
+
+/* XXX: Consider inlining this function */
+Datum
+datum_copy(Datum in, DataType type)
+{
+    if (type == TYPE_STRING)
+        string_pin(in.s);
+
+    return in;
+}
+
+/* XXX: Consider inlining this function */
+void
+datum_free(Datum in, DataType type)
+{
+    if (type == TYPE_STRING)
+        string_unpin(in.s);
 }
 
 static Datum
