@@ -3,9 +3,9 @@
 
 # This module defines
 # APR_INCLUDES, where to find apr.h, etc.
-# APR_LIBS, the libraries to link against to use APR.
+# APR_LIBS, linker switches to use with ld to link against apr
+# APR_EXTRALIBS, additional libraries to link against
 # APR_FLAGS, the flags to use to compile
-# APR_DEFINITIONS, definitions to use when compiling code that uses APR.
 # APR_FOUND, set to 'yes' if found
 
 find_program(APR_CONFIG_EXECUTABLE apr-1-config)
@@ -28,13 +28,18 @@ macro(_apr_invoke _varname _regexp)
             string(REGEX REPLACE "${_regexp}" " " _apr_output "${_apr_output}")
         endif(NOT ${_regexp} STREQUAL "")
 
-        separate_arguments(_apr_output)
+        # XXX: We don't want to invoke separate_arguments() for APR_FLAGS;
+        # just leave as-is
+        if(NOT ${_varname} STREQUAL "APR_FLAGS")
+            separate_arguments(_apr_output)
+        endif(NOT ${_varname} STREQUAL "APR_FLAGS")
+
         set(${_varname} "${_apr_output}")
     endif(_apr_failed)
 endmacro(_apr_invoke)
 
 _apr_invoke(APR_INCLUDES  "(^| )-I" --includes)
-_apr_invoke(APR_FLAGS               --cppflags --cflags)
+_apr_invoke(APR_FLAGS     ""        --cppflags --cflags)
 _apr_invoke(APR_EXTRALIBS "(^| )-l" --libs)
 _apr_invoke(APR_LIBS      ""        --link-ld)
 

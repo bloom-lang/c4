@@ -1,7 +1,7 @@
-Build dependencies: flex (>= 2.3.35), bison, cmake, apr, and
-apr-util. At the moment, the binaries provided by each of these
-packages (flex, bison, apr-config, and apu-config) must be in the
-$PATH.
+Build dependencies: flex (>= 2.3.35), bison, cmake, apr, apr-util, and
+BerkeleyDB (>= 4.7). At the moment, the binaries provided by each of
+these packages (flex, bison, apr-config, and apu-config) must be in
+the $PATH.
 
 To build:
 

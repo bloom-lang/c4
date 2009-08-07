@@ -3,8 +3,8 @@
 
 # This module defines
 # APU_INCLUDES, where to find apu.h, etc.
-# APU_LIBS, the libraries to link against to use apr-util
-# APU_DEFINITIONS, definitions to use when compiling code that uses apr-util
+# APU_LIBS, linker switches to use with ld to link against apr-util
+# APU_EXTRALIBS, additional libraries to link against
 # APU_FOUND, set to 'yes' if found
 
 find_program(APU_CONFIG_EXECUTABLE apu-1-config)
