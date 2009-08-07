@@ -1,13 +1,12 @@
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR})
 
-FILE(GLOB_RECURSE libcol_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
+file(GLOB_RECURSE libcol_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 
-FLEX_TARGET(Lexer ${CMAKE_CURRENT_SOURCE_DIR}/parser/ol_scan.l ${PROJECT_BINARY_DIR}/ol_scan.c COMPILE_FLAGS "--header-file=${PROJECT_BINARY_DIR}/ol_scan.h")
-BISON_TARGET(Parser ${CMAKE_CURRENT_SOURCE_DIR}/parser/ol_parse.y ${PROJECT_BINARY_DIR}/ol_parse.c COMPILE_FLAGS "-d")
-ADD_FLEX_BISON_DEPENDENCY(Lexer Parser)
+flex_target(Lexer ${CMAKE_CURRENT_SOURCE_DIR}/parser/ol_scan.l ${PROJECT_BINARY_DIR}/ol_scan.c COMPILE_FLAGS "--header-file=${PROJECT_BINARY_DIR}/ol_scan.h")
+bison_target(Parser ${CMAKE_CURRENT_SOURCE_DIR}/parser/ol_parse.y ${PROJECT_BINARY_DIR}/ol_parse.c COMPILE_FLAGS "-d")
+add_flex_bison_dependency(Lexer Parser)
 
-SET(libcol_SRCS ${libcol_SRCS} ${FLEX_Lexer_OUTPUTS})
-SET(libcol_SRCS ${libcol_SRCS} ${BISON_Parser_OUTPUTS})
+set(libcol_SRCS ${libcol_SRCS} ${FLEX_Lexer_OUTPUTS} ${BISON_Parser_OUTPUTS})
 
-ADD_LIBRARY(col ${libcol_SRCS})
-SET_TARGET_PROPERTIES(col PROPERTIES LINK_FLAGS ${APU_LDFLAGS})
+add_library(col ${libcol_SRCS})
+set_target_properties(col PROPERTIES LINK_FLAGS ${APU_LDFLAGS})

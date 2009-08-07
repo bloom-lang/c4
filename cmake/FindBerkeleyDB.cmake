@@ -3,7 +3,7 @@
 #   BERKELEY_DB_INCLUDE_DIR
 #   BERKELEY_DB_FOUND
 
-FIND_PATH(BERKELEY_DB_INCLUDE_DIR db.h
+find_path(BERKELEY_DB_INCLUDE_DIR db.h
     /opt/local/include/db47
     /usr/local/include/db4
     /usr/local/include
@@ -11,7 +11,7 @@ FIND_PATH(BERKELEY_DB_INCLUDE_DIR db.h
     /usr/include
 )
 
-FIND_LIBRARY(BERKELEY_DB_LIBRARY NAMES db)
+find_library(BERKELEY_DB_LIBRARY NAMES db)
 
 if (BERKELEY_DB_LIBRARY AND BERKELEY_DB_INCLUDE_DIR)
   set(BERKELEY_DB_LIBRARIES ${BDB_LIBRARY})

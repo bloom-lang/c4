@@ -1,1 +1,1 @@
-SUBDIRS(cli libcol)
+subdirs(cli libcol)
