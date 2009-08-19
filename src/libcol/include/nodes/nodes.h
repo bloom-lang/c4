@@ -26,7 +26,12 @@ typedef enum ColNodeKind
     /* Executor nodes */
     OPER_FILTER,
     OPER_INSERT,
-    OPER_SCAN
+    OPER_SCAN,
+
+    /* Expr nodes */
+    EXPR_OP,
+    EXPR_VAR,
+    EXPR_CONST
 } ColNodeKind;
 
 typedef struct ColNode
