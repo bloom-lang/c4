@@ -8,10 +8,49 @@ eval_op_plus_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
+    ASSERT(state->lhs->type == TYPE_INT8);
+    ASSERT(state->rhs->type == TYPE_INT8);
+    ASSERT(state->type == TYPE_INT8);
+
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
 
+    /* XXX: check for overflow? */
     result.i8 = lhs.i8 + rhs.i8;
+    return result;
+}
+
+static Datum
+eval_op_eq(ExprState *state)
+{
+    Datum lhs;
+    Datum rhs;
+    Datum result;
+
+    ASSERT(state->lhs->type == state->rhs->type);
+    ASSERT(state->type == TYPE_BOOL);
+
+    lhs = eval_expr(state);
+    rhs = eval_expr(state);
+
+    result.b = datum_equal(lhs, rhs, state->lhs->type);
+    return result;
+}
+
+static Datum
+eval_op_neq(ExprState *state)
+{
+    Datum lhs;
+    Datum rhs;
+    Datum result;
+
+    ASSERT(state->lhs->type == state->rhs->type);
+    ASSERT(state->type == TYPE_BOOL);
+
+    lhs = eval_expr(state);
+    rhs = eval_expr(state);
+
+    result.b = datum_equal(lhs, rhs, state->lhs->type) ? true : false;
     return result;
 }
 
@@ -24,6 +63,12 @@ eval_op_expr(ExprState *state)
     {
         case AST_OP_PLUS:
             return eval_op_plus_i8(state);
+
+        case AST_OP_EQ:
+            return eval_op_eq(state);
+
+        case AST_OP_NEQ:
+            return eval_op_neq(state);
 
         default:
             ERROR("unexpected op kind: %d", (int) op->op_kind);

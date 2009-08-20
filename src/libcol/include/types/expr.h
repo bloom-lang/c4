@@ -14,6 +14,7 @@ typedef struct ExprState
 {
     ExprEvalContext *cxt;
     ColNode *expr;
+    DataType type;
     struct ExprState *lhs;
     struct ExprState *rhs;
 } ExprState;
