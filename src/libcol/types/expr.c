@@ -91,8 +91,10 @@ eval_var_expr(ExprState *state)
 static Datum
 eval_const_expr(ExprState *state)
 {
-    Datum d;
-    return d;
+    ExprConst *c_expr = (ExprConst *) state->expr;
+
+    /* XXX: bump refcount for pass-by-ref datums? */
+    return c_expr->value;
 }
 
 Datum

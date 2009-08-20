@@ -32,6 +32,12 @@ typedef struct ExprOp
     AstOperKind op_kind;
 } ExprOp;
 
+typedef struct ExprConst
+{
+    ColNode node;
+    Datum value;
+} ExprConst;
+
 Datum eval_expr(ExprState *state);
 
 #endif  /* EXPR_H */
