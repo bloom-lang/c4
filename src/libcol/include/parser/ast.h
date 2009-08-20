@@ -84,13 +84,6 @@ typedef struct AstQualifier
     ColNode *expr;
 } AstQualifier;
 
-typedef struct AstAssign
-{
-    ColNode node;
-    AstColumnRef *lhs;
-    ColNode *rhs;
-} AstAssign;
-
 typedef enum AstOperKind
 {
     AST_OP_PLUS,
@@ -104,8 +97,7 @@ typedef enum AstOperKind
     AST_OP_GT,
     AST_OP_GTE,
     AST_OP_EQ,
-    AST_OP_NEQ,
-    AST_OP_ASSIGN
+    AST_OP_NEQ
 } AstOperKind;
 
 typedef struct AstOpExpr

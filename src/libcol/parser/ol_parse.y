@@ -31,10 +31,9 @@ static void split_rule_body(List *body, List **joins,
 %lex-param { yyscan_t scanner }
 
 %token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
-       OL_ASSIGN OL_FALSE OL_TRUE
+       OL_FALSE OL_TRUE
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
-%nonassoc OL_ASSIGN
 %left OL_EQ OL_NEQ
 %nonassoc '>' '<' OL_GTE OL_LTE
 %left '+' '-'
@@ -213,12 +212,6 @@ op_expr:
 | qual_expr             { $$ = $1; }
 ;
 
-/*
- * Note that we treat assignment as a qualifier in the parser, because it
- * would be painful to teach Bison how to tell the difference. Instead, we
- * distinguish between assigments and qualifiers in the semantic analysis
- * phase, and construct an AstAssign node there.
- */
 qual_expr:
   expr '<' expr         { $$ = make_op_expr($1, $3, AST_OP_LT, context->pool); }
 | expr '>' expr         { $$ = make_op_expr($1, $3, AST_OP_GT, context->pool); }
@@ -226,7 +219,6 @@ qual_expr:
 | expr OL_GTE expr      { $$ = make_op_expr($1, $3, AST_OP_GTE, context->pool); }
 | expr OL_EQ expr       { $$ = make_op_expr($1, $3, AST_OP_EQ, context->pool); }
 | expr OL_NEQ expr      { $$ = make_op_expr($1, $3, AST_OP_NEQ, context->pool); }
-| column_ref OL_ASSIGN expr { $$ = make_op_expr($1, $3, AST_OP_ASSIGN, context->pool); }
 ;
 
 const_expr:

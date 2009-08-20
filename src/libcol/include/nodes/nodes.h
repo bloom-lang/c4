@@ -13,7 +13,6 @@ typedef enum ColNodeKind
     AST_COLUMN_REF,
     AST_JOIN_CLAUSE,
     AST_QUALIFIER,
-    AST_ASSIGN,
     AST_OP_EXPR,
     AST_VAR_EXPR,
     AST_CONST_EXPR,

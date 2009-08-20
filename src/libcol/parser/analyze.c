@@ -665,7 +665,6 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
             return lhs_type;
         }
 
-        case AST_OP_ASSIGN:
         default:
             FAIL();
     }

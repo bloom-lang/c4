@@ -106,7 +106,6 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "!="                    { return OL_NEQ; }
 "<>"                    { return OL_NEQ; }
 "=="                    { return OL_EQ; }
-":="                    { return OL_ASSIGN; }
 
 "define"                { return DEFINE; }
 "delete"                { return DELETE; }

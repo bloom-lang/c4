@@ -12,6 +12,7 @@ Parser and lexer:
   character) from C89; or perhaps some syntax for specifying Unicode
   code points?
 * Error reporting; location of syntax error
+* Support for assignments?
 
 Planner:
 
