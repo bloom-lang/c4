@@ -2,10 +2,32 @@
 #include "types/expr.h"
 
 static Datum
+eval_op_plus_i8(ExprState *state)
+{
+    Datum lhs;
+    Datum rhs;
+    Datum result;
+
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
+
+    result.i8 = lhs.i8 + rhs.i8;
+    return result;
+}
+
+static Datum
 eval_op_expr(ExprState *state)
 {
-    Datum d;
-    return d;
+    ExprOp *op = (ExprOp *) state->expr;
+
+    switch (op->op_kind)
+    {
+        case AST_OP_PLUS:
+            return eval_op_plus_i8(state);
+
+        default:
+            ERROR("unexpected op kind: %d", (int) op->op_kind);
+    }
 }
 
 static Datum
