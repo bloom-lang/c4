@@ -22,6 +22,7 @@ typedef struct ExprVar
 {
     ColNode node;
     int attno;
+    bool is_outer;
 } ExprVar;
 
 typedef struct ExprOp
