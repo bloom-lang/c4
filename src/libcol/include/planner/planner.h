@@ -26,24 +26,28 @@ typedef struct OpChainPlan
     List *chain;
 } OpChainPlan;
 
-typedef struct FilterPlan
+typedef struct PlanNode
 {
     ColNode node;
     List *quals;
+} PlanNode;
+
+typedef struct FilterPlan
+{
+    PlanNode plan;
     char *tbl_name;
 } FilterPlan;
 
 typedef struct InsertPlan
 {
-    ColNode node;
+    PlanNode plan;
     AstTableRef *head;
     bool is_network;
 } InsertPlan;
 
 typedef struct ScanPlan
 {
-    ColNode node;
-    List *quals;
+    PlanNode plan;
     char *tbl_name;
 } ScanPlan;
 

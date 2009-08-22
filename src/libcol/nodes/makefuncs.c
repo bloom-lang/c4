@@ -143,8 +143,8 @@ FilterPlan *
 make_filter_plan(List *quals, const char *tbl_name, apr_pool_t *p)
 {
     FilterPlan *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = PLAN_FILTER;
-    result->quals = list_copy_deep(quals, p);
+    result->plan.node.kind = PLAN_FILTER;
+    result->plan.quals = list_copy_deep(quals, p);
     result->tbl_name = apr_pstrdup(p, tbl_name);
     return result;
 }
@@ -153,7 +153,7 @@ InsertPlan *
 make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
 {
     InsertPlan *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = PLAN_INSERT;
+    result->plan.node.kind = PLAN_INSERT;
     result->head = copy_node(head, p);
     result->is_network = is_network;
     return result;
@@ -163,8 +163,8 @@ ScanPlan *
 make_scan_plan(List *quals, const char *tbl_name, apr_pool_t *p)
 {
     ScanPlan *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = PLAN_SCAN;
-    result->quals = list_copy_deep(quals, p);
+    result->plan.node.kind = PLAN_SCAN;
+    result->plan.quals = list_copy_deep(quals, p);
     result->tbl_name = apr_pstrdup(p, tbl_name);
     return result;
 }

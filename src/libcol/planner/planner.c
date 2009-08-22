@@ -272,9 +272,28 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
 }
 
 static void
-fix_chain_exprs(OpChainPlan *chain_plan, PlannerState *state)
+fix_op_exprs(PlanNode *node, ListCell *chain_rest, PlannerState *state)
 {
     ;
+}
+
+/*
+ * Walk the operator chain from beginning to end. For each operator, (a)
+ * compute the minimal projection list that contains all the variables
+ * required by subsequent operators in the chain (b) convert Expr from AST
+ * representation to Eval representation.
+ */
+static void
+fix_chain_exprs(OpChainPlan *chain_plan, PlannerState *state)
+{
+    ListCell *lc;
+
+    foreach (lc, chain_plan->chain)
+    {
+        PlanNode *node = (PlanNode *) lc_ptr(lc);
+
+        fix_op_exprs(node, lc->next, state);
+    }
 }
 
 /*
