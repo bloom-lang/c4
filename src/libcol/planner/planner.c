@@ -271,6 +271,12 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
     add_scan_op(candidate, quals, chain_plan, state);
 }
 
+static void
+fix_chain_exprs(OpChainPlan *chain_plan, PlannerState *state)
+{
+    ;
+}
+
 /*
  * Return a plan for an operator chain that begins with the given delta
  * table. We need to select the set of necessary operators and choose their
@@ -313,6 +319,13 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
               list_length(state->qual_set_todo));
 
     add_insert_op(rule, chain_plan, state);
+
+    /*
+     * Compute the projection list required for each operator, and fixup
+     * expressions so that they are relative to the post-projection
+     * representation of the operator's input.
+     */
+    fix_chain_exprs(chain_plan, state);
 
     return chain_plan;
 }
