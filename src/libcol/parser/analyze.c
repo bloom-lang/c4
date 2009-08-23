@@ -9,7 +9,6 @@ typedef struct AnalyzeState
 {
     apr_pool_t *pool;
     AstProgram *program;
-    List *range_tbl;
     apr_hash_t *define_tbl;
     apr_hash_t *rule_tbl;
 
@@ -552,11 +551,11 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
 }
 
 /*
- * Invoke the semantic analyzer on the specified program. We return a
- * ParseResult that wraps the parse tree. Note that the analysis phase is
- * side-effecting: the input AstProgram is destructively modified.
+ * Invoke the semantic analyzer on the specified program. Note that the
+ * analysis phase is side-effecting: the input AstProgram is destructively
+ * modified.
  */
-ParseResult *
+void
 analyze_ast(AstProgram *program, apr_pool_t *pool)
 {
     AnalyzeState *state;
@@ -565,7 +564,6 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state = apr_palloc(pool, sizeof(*state));
     state->pool = pool;
     state->program = program;
-    state->range_tbl = list_make(pool);
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
@@ -603,8 +601,6 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 
         analyze_rule(rule, state);
     }
-
-    return make_parse_result(state->program, state->range_tbl, pool);
 }
 
 static bool

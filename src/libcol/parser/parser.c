@@ -28,7 +28,7 @@ do_parse(ColParser *parser, const char *str)
     apr_size_t slen;
     char *scan_buf;
     YY_BUFFER_STATE buf_state;
-    int parse_error;
+    int parse_result;
 
     yylex_init_extra(parser, &parser->yyscanner);
 
@@ -36,11 +36,11 @@ do_parse(ColParser *parser, const char *str)
     scan_buf = setup_scan_buf(str, slen, parser->pool);
     buf_state = yy_scan_buffer(scan_buf, slen + 2, parser->yyscanner);
 
-    parse_error = yyparse(parser, parser->yyscanner);
+    parse_result = yyparse(parser, parser->yyscanner);
     yy_delete_buffer(buf_state, parser->yyscanner);
     yylex_destroy(parser->yyscanner);
 
-    if (parse_error)
+    if (parse_result)
         ERROR("parsing failed");
 
     return parser->result;
@@ -52,19 +52,18 @@ parser_destroy(ColParser *parser)
     apr_pool_destroy(parser->pool);
 }
 
-ParseResult *
+AstProgram *
 parse_str(const char *str, apr_pool_t *pool, ColInstance *col)
 {
     ColParser *parser;
     AstProgram *ast;
-    ParseResult *result;
 
     parser = parser_make(pool);
     ast = do_parse(parser, str);
-    result = analyze_ast(ast, parser->pool);
-    /* Copy the finished parse tree to the caller's pool */
-    result = copy_node(result, pool);
+    analyze_ast(ast, parser->pool);
+    /* Copy the finished AST to the caller's pool */
+    ast = copy_node(ast, pool);
     parser_destroy(parser);
 
-    return result;
+    return ast;
 }

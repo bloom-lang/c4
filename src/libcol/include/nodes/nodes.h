@@ -17,10 +17,6 @@ typedef enum ColNodeKind
     AST_VAR_EXPR,
     AST_CONST_EXPR,
 
-    /* Parser support structs */
-    PARSE_RESULT,
-    PARSE_RANGE_TBL_ENTRY,
-
     /* Plan nodes */
     PLAN_FILTER,
     PLAN_INSERT,
