@@ -139,6 +139,27 @@ make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
     return result;
 }
 
+RangeTblEntry *
+make_range_tbl_entry(int idx, const char *rel_name, List *vars, apr_pool_t *p)
+{
+    RangeTblEntry *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = PARSE_RANGE_TBL_ENTRY;
+    result->idx = idx;
+    result->rel_name = apr_pstrdup(p, rel_name);
+    result->vars = list_copy_str(vars, p);
+    return result;
+}
+
+ParseResult *
+make_parse_result(AstProgram *ast, List *range_tbl, apr_pool_t *p)
+{
+    ParseResult *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = PARSE_RESULT;
+    result->ast = copy_node(ast, p);
+    result->range_tbl = list_copy_deep(range_tbl, p);
+    return result;
+}
+
 FilterPlan *
 make_filter_plan(List *quals, const char *tbl_name, apr_pool_t *p)
 {

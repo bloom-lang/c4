@@ -75,6 +75,18 @@ copy_const_expr(AstConstExpr *in, apr_pool_t *p)
     return make_const_expr(in->const_kind, in->value, p);
 }
 
+static ParseResult *
+copy_parse_result(ParseResult *in, apr_pool_t *p)
+{
+    return make_parse_result(in->ast, in->range_tbl, p);
+}
+
+static RangeTblEntry *
+copy_range_tbl_entry(RangeTblEntry *in, apr_pool_t *p)
+{
+    return make_range_tbl_entry(in->idx, in->rel_name, in->vars, p);
+}
+
 static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
@@ -135,6 +147,12 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_CONST_EXPR:
             return copy_const_expr((AstConstExpr *) n, pool);
+
+        case PARSE_RESULT:
+            return copy_parse_result((ParseResult *) n, pool);
+
+        case PARSE_RANGE_TBL_ENTRY:
+            return copy_range_tbl_entry((RangeTblEntry *) n, pool);
 
         case PLAN_FILTER:
             return copy_filter_plan((FilterPlan *) n, pool);

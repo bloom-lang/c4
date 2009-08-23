@@ -379,8 +379,9 @@ plan_rule(AstRule *rule, PlannerState *state)
 }
 
 ProgramPlan *
-plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col)
+plan_program(ParseResult *pr, apr_pool_t *pool, ColInstance *col)
 {
+    AstProgram *ast = pr->ast;
     PlannerState *state;
     ProgramPlan *pplan;
     ListCell *lc;

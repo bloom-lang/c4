@@ -2,7 +2,8 @@
 #define ANALYZE_H
 
 #include "parser/ast.h"
+#include "parser/parser.h"
 
-void analyze_ast(AstProgram *program, apr_pool_t *pool);
+ParseResult *analyze_ast(AstProgram *program, apr_pool_t *pool);
 
 #endif  /* ANALYZE_H */

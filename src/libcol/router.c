@@ -166,13 +166,13 @@ route_program(ColRouter *router, const char *src)
 {
     ColInstance *col = router->col;
     apr_pool_t *program_pool;
-    AstProgram *ast;
+    ParseResult *pr;
     ProgramPlan *plan;
 
     program_pool = make_subpool(col->pool);
 
-    ast = parse_str(src, program_pool, col);
-    plan = plan_program(ast, program_pool, col);
+    pr = parse_str(src, program_pool, col);
+    plan = plan_program(pr, program_pool, col);
     install_plan(plan, program_pool, col);
 
     apr_pool_destroy(program_pool);

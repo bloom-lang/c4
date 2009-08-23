@@ -3,6 +3,7 @@
 
 #include "operator/operator.h"
 #include "parser/ast.h"
+#include "parser/parser.h"
 #include "util/list.h"
 
 typedef struct ProgramPlan
@@ -51,6 +52,6 @@ typedef struct ScanPlan
     char *tbl_name;
 } ScanPlan;
 
-ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
+ProgramPlan *plan_program(ParseResult *pr, apr_pool_t *pool, ColInstance *col);
 
 #endif  /* PLANNER_H */
