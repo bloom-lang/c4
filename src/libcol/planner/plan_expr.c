@@ -98,7 +98,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
 
                 /*
                  * If we haven't done projection yet, we need to look for
-                 * variables in the delta table's join clause. therwise use
+                 * variables in the delta table's join clause. Otherwise use
                  * the current projection list.
                  */
                 if (state->current_plist == NULL)
@@ -109,7 +109,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 /*
                  * If the variable isn't in the projection list of the input
                  * to this operator, this must be a join and the variable is
-                 * the probed relation.
+                 * the scanned ("outer") relation.
                  */
                 if (var_idx == -1 && outer_rel != NULL)
                 {
@@ -185,4 +185,3 @@ fix_chain_exprs(OpChainPlan *chain_plan, PlannerState *state)
         fix_op_exprs(node, lc->next, chain_plan, state);
     }
 }
-
