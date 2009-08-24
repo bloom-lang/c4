@@ -107,7 +107,7 @@ make_qualifier(ColNode *expr, apr_pool_t *p)
 }
 
 AstOpExpr *
-make_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
+make_ast_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
 {
     AstOpExpr *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_OP_EXPR;
@@ -120,7 +120,7 @@ make_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
 }
 
 AstVarExpr *
-make_var_expr(const char *name, DataType type, apr_pool_t *p)
+make_ast_var_expr(const char *name, DataType type, apr_pool_t *p)
 {
     AstVarExpr *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_VAR_EXPR;
@@ -130,7 +130,7 @@ make_var_expr(const char *name, DataType type, apr_pool_t *p)
 }
 
 AstConstExpr *
-make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
+make_ast_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
 {
     AstConstExpr *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_CONST_EXPR;
@@ -140,11 +140,14 @@ make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
 }
 
 FilterPlan *
-make_filter_plan(const char *tbl_name, List *quals, apr_pool_t *p)
+make_filter_plan(const char *tbl_name, List *quals,
+                 List *qual_exprs, apr_pool_t *p)
 {
     FilterPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_FILTER;
     result->plan.quals = list_copy_deep(quals, p);
+    if (qual_exprs)
+        result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
     result->tbl_name = apr_pstrdup(p, tbl_name);
     return result;
 }
@@ -160,11 +163,44 @@ make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
 }
 
 ScanPlan *
-make_scan_plan(AstJoinClause *scan_rel, List *quals, apr_pool_t *p)
+make_scan_plan(AstJoinClause *scan_rel, List *quals,
+               List *qual_exprs, apr_pool_t *p)
 {
     ScanPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_SCAN;
     result->plan.quals = list_copy_deep(quals, p);
+    if (qual_exprs)
+        result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
     result->scan_rel = copy_node(scan_rel, p);
+    return result;
+}
+
+ExprOp *
+make_expr_op(AstOperKind op_kind, ColNode *lhs, ColNode *rhs, apr_pool_t *p)
+{
+    ExprOp *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = EXPR_OP;
+    result->op_kind = op_kind;
+    result->lhs = copy_node(lhs, p);
+    result->rhs = copy_node(rhs, p);
+    return result;
+}
+
+ExprVar *
+make_expr_var(int attno, bool is_outer, apr_pool_t *p)
+{
+    ExprVar *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = EXPR_VAR;
+    result->attno = attno;
+    result->is_outer = is_outer;
+    return result;
+}
+
+ExprConst *
+make_expr_const(Datum val, apr_pool_t *p)
+{
+    ExprConst *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = EXPR_CONST;
+    result->value = datum_copy(val, TYPE_INVALID);
     return result;
 }

@@ -203,30 +203,30 @@ expr:
 ;
 
 op_expr:
-  expr '+' expr         { $$ = make_op_expr($1, $3, AST_OP_PLUS, context->pool); }
-| expr '-' expr         { $$ = make_op_expr($1, $3, AST_OP_MINUS, context->pool); }
-| expr '*' expr         { $$ = make_op_expr($1, $3, AST_OP_TIMES, context->pool); }
-| expr '/' expr         { $$ = make_op_expr($1, $3, AST_OP_DIVIDE, context->pool); }
-| expr '%' expr         { $$ = make_op_expr($1, $3, AST_OP_MODULUS, context->pool); }
-| '-' expr              { $$ = make_op_expr($2, NULL, AST_OP_UMINUS, context->pool); }
+  expr '+' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_PLUS, context->pool); }
+| expr '-' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_MINUS, context->pool); }
+| expr '*' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_TIMES, context->pool); }
+| expr '/' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_DIVIDE, context->pool); }
+| expr '%' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_MODULUS, context->pool); }
+| '-' expr              { $$ = make_ast_op_expr($2, NULL, AST_OP_UMINUS, context->pool); }
 | qual_expr             { $$ = $1; }
 ;
 
 qual_expr:
-  expr '<' expr         { $$ = make_op_expr($1, $3, AST_OP_LT, context->pool); }
-| expr '>' expr         { $$ = make_op_expr($1, $3, AST_OP_GT, context->pool); }
-| expr OL_LTE expr      { $$ = make_op_expr($1, $3, AST_OP_LTE, context->pool); }
-| expr OL_GTE expr      { $$ = make_op_expr($1, $3, AST_OP_GTE, context->pool); }
-| expr OL_EQ expr       { $$ = make_op_expr($1, $3, AST_OP_EQ, context->pool); }
-| expr OL_NEQ expr      { $$ = make_op_expr($1, $3, AST_OP_NEQ, context->pool); }
+  expr '<' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_LT, context->pool); }
+| expr '>' expr         { $$ = make_ast_op_expr($1, $3, AST_OP_GT, context->pool); }
+| expr OL_LTE expr      { $$ = make_ast_op_expr($1, $3, AST_OP_LTE, context->pool); }
+| expr OL_GTE expr      { $$ = make_ast_op_expr($1, $3, AST_OP_GTE, context->pool); }
+| expr OL_EQ expr       { $$ = make_ast_op_expr($1, $3, AST_OP_EQ, context->pool); }
+| expr OL_NEQ expr      { $$ = make_ast_op_expr($1, $3, AST_OP_NEQ, context->pool); }
 ;
 
 const_expr:
-  bool_const { $$ = make_const_expr(AST_CONST_BOOL, $1, context->pool); }
-| ICONST { $$ = make_const_expr(AST_CONST_INT, $1, context->pool); }
-| FCONST { $$ = make_const_expr(AST_CONST_DOUBLE, $1, context->pool); }
-| SCONST { $$ = make_const_expr(AST_CONST_STRING, $1, context->pool); }
-| CCONST { $$ = make_const_expr(AST_CONST_CHAR, $1, context->pool); }
+  bool_const { $$ = make_ast_const_expr(AST_CONST_BOOL, $1, context->pool); }
+| ICONST { $$ = make_ast_const_expr(AST_CONST_INT, $1, context->pool); }
+| FCONST { $$ = make_ast_const_expr(AST_CONST_DOUBLE, $1, context->pool); }
+| SCONST { $$ = make_ast_const_expr(AST_CONST_STRING, $1, context->pool); }
+| CCONST { $$ = make_ast_const_expr(AST_CONST_CHAR, $1, context->pool); }
 ;
 
 bool_const:
@@ -234,7 +234,7 @@ bool_const:
 | OL_FALSE      { $$ = apr_pstrdup(context->pool, "false"); }
 ;
 
-var_expr: VAR_IDENT { $$ = make_var_expr($1, TYPE_INVALID, context->pool); };
+var_expr: VAR_IDENT { $$ = make_ast_var_expr($1, TYPE_INVALID, context->pool); };
 
 column_ref_list:
   column_ref { $$ = list_make1($1, context->pool); }

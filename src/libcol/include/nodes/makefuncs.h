@@ -3,6 +3,7 @@
 
 #include "parser/ast.h"
 #include "planner/planner.h"
+#include "types/expr.h"
 
 AstProgram *make_program(const char *name, List *defines, List *facts,
                          List *rules, apr_pool_t *p);
@@ -19,13 +20,20 @@ AstColumnRef *make_column_ref(ColNode *expr, apr_pool_t *p);
 AstJoinClause *make_join_clause(AstTableRef *ref, bool not,
                                 AstHashVariant hash_v, apr_pool_t *p);
 AstQualifier *make_qualifier(ColNode *expr, apr_pool_t *p);
-AstOpExpr *make_op_expr(ColNode *lhs, ColNode *rhs,
-                        AstOperKind op_kind, apr_pool_t *p);
-AstVarExpr *make_var_expr(const char *name, DataType type, apr_pool_t *p);
-AstConstExpr *make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p);
+AstOpExpr *make_ast_op_expr(ColNode *lhs, ColNode *rhs,
+                            AstOperKind op_kind, apr_pool_t *p);
+AstVarExpr *make_ast_var_expr(const char *name, DataType type, apr_pool_t *p);
+AstConstExpr *make_ast_const_expr(AstConstKind c_kind, const char *value,
+                                  apr_pool_t *p);
 
-FilterPlan *make_filter_plan(const char *tbl_name, List *quals, apr_pool_t *p);
+FilterPlan *make_filter_plan(const char *tbl_name, List *quals,
+                             List *qual_exprs, apr_pool_t *p);
 InsertPlan *make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p);
-ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals, apr_pool_t *p);
+ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals,
+                         List *qual_exprs, apr_pool_t *p);
+
+ExprOp *make_expr_op(AstOperKind op_kind, ColNode *lhs, ColNode *rhs, apr_pool_t *p);
+ExprVar *make_expr_var(int attno, bool is_outer, apr_pool_t *p);
+ExprConst *make_expr_const(Datum val, apr_pool_t *p);
 
 #endif  /* MAKEFUNCS_H */

@@ -58,27 +58,28 @@ copy_qualifier(AstQualifier *in, apr_pool_t *p)
 }
 
 static AstOpExpr *
-copy_op_expr(AstOpExpr *in, apr_pool_t *p)
+copy_ast_op_expr(AstOpExpr *in, apr_pool_t *p)
 {
-    return make_op_expr(in->lhs, in->rhs, in->op_kind, p);
+    return make_ast_op_expr(in->lhs, in->rhs, in->op_kind, p);
 }
 
 static AstVarExpr *
-copy_var_expr(AstVarExpr *in, apr_pool_t *p)
+copy_ast_var_expr(AstVarExpr *in, apr_pool_t *p)
 {
-    return make_var_expr(in->name, in->type, p);
+    return make_ast_var_expr(in->name, in->type, p);
 }
 
 static AstConstExpr *
-copy_const_expr(AstConstExpr *in, apr_pool_t *p)
+copy_ast_const_expr(AstConstExpr *in, apr_pool_t *p)
 {
-    return make_const_expr(in->const_kind, in->value, p);
+    return make_ast_const_expr(in->const_kind, in->value, p);
 }
 
 static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
-    return make_filter_plan(in->tbl_name, in->plan.quals, p);
+    return make_filter_plan(in->tbl_name, in->plan.quals,
+                            in->plan.qual_exprs, p);
 }
 
 static InsertPlan *
@@ -90,7 +91,26 @@ copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 static ScanPlan *
 copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 {
-    return make_scan_plan(in->scan_rel, in->plan.quals, p);
+    return make_scan_plan(in->scan_rel, in->plan.quals,
+                          in->plan.qual_exprs, p);
+}
+
+static ExprOp *
+copy_expr_op(ExprOp *in, apr_pool_t *p)
+{
+    return make_expr_op(in->op_kind, in->lhs, in->rhs, p);
+}
+
+static ExprVar *
+copy_expr_var(ExprVar *in, apr_pool_t *p)
+{
+    return make_expr_var(in->attno, in->is_outer, p);
+}
+
+static ExprConst *
+copy_expr_const(ExprConst *in, apr_pool_t *p)
+{
+    return make_expr_const(in->value, p);
 }
 
 void *
@@ -128,13 +148,13 @@ copy_node(void *ptr, apr_pool_t *pool)
             return copy_qualifier((AstQualifier *) n, pool);
 
         case AST_OP_EXPR:
-            return copy_op_expr((AstOpExpr *) n, pool);
+            return copy_ast_op_expr((AstOpExpr *) n, pool);
 
         case AST_VAR_EXPR:
-            return copy_var_expr((AstVarExpr *) n, pool);
+            return copy_ast_var_expr((AstVarExpr *) n, pool);
 
         case AST_CONST_EXPR:
-            return copy_const_expr((AstConstExpr *) n, pool);
+            return copy_ast_const_expr((AstConstExpr *) n, pool);
 
         case PLAN_FILTER:
             return copy_filter_plan((FilterPlan *) n, pool);
@@ -144,6 +164,15 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case PLAN_SCAN:
             return copy_scan_plan((ScanPlan *) n, pool);
+
+        case EXPR_OP:
+            return copy_expr_op((ExprOp *) n, pool);
+
+        case EXPR_VAR:
+            return copy_expr_var((ExprVar *) n, pool);
+
+        case EXPR_CONST:
+            return copy_expr_const((ExprConst *) n, pool);
 
         default:
             ERROR("Unrecognized node kind: %d", (int) n->kind);
