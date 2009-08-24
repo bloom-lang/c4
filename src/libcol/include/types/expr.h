@@ -30,6 +30,8 @@ typedef struct ExprOp
 {
     ColNode node;
     AstOperKind op_kind;
+    ColNode *lhs;
+    ColNode *rhs;
 } ExprOp;
 
 typedef struct ExprConst

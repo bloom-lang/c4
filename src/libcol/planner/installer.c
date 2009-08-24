@@ -81,7 +81,8 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
     op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
     op_chain->pool = chain_pool;
-    op_chain->delta_tbl = apr_pstrdup(chain_pool, chain_plan->delta_tbl);
+    op_chain->delta_tbl = apr_pstrdup(chain_pool,
+                                      chain_plan->delta_tbl->ref->name);
     op_chain->head = copy_node(chain_plan->head, chain_pool);
     op_chain->length = list_length(chain_rev);
     op_chain->chain_start = prev_op;

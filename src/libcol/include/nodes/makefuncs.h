@@ -24,8 +24,8 @@ AstOpExpr *make_op_expr(ColNode *lhs, ColNode *rhs,
 AstVarExpr *make_var_expr(const char *name, DataType type, apr_pool_t *p);
 AstConstExpr *make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p);
 
-FilterPlan *make_filter_plan(List *quals, const char *tbl_name, apr_pool_t *p);
+FilterPlan *make_filter_plan(const char *tbl_name, List *quals, apr_pool_t *p);
 InsertPlan *make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p);
-ScanPlan *make_scan_plan(List *quals, const char *tbl_name, apr_pool_t *p);
+ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals, apr_pool_t *p);
 
 #endif  /* MAKEFUNCS_H */

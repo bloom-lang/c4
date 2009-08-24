@@ -78,7 +78,7 @@ copy_const_expr(AstConstExpr *in, apr_pool_t *p)
 static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
-    return make_filter_plan(in->plan.quals, in->tbl_name, p);
+    return make_filter_plan(in->tbl_name, in->plan.quals, p);
 }
 
 static InsertPlan *
@@ -90,7 +90,7 @@ copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 static ScanPlan *
 copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 {
-    return make_scan_plan(in->plan.quals, in->tbl_name, p);
+    return make_scan_plan(in->scan_rel, in->plan.quals, p);
 }
 
 void *

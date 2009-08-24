@@ -427,7 +427,6 @@ analyze_expr(ColNode *node, AnalyzeState *state)
 
         default:
             ERROR("Unexpected expr node kind: %d", (int) node->kind);
-            break;
     }
 }
 

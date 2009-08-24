@@ -140,7 +140,7 @@ make_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
 }
 
 FilterPlan *
-make_filter_plan(List *quals, const char *tbl_name, apr_pool_t *p)
+make_filter_plan(const char *tbl_name, List *quals, apr_pool_t *p)
 {
     FilterPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_FILTER;
@@ -160,11 +160,11 @@ make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
 }
 
 ScanPlan *
-make_scan_plan(List *quals, const char *tbl_name, apr_pool_t *p)
+make_scan_plan(AstJoinClause *scan_rel, List *quals, apr_pool_t *p)
 {
     ScanPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_SCAN;
     result->plan.quals = list_copy_deep(quals, p);
-    result->tbl_name = apr_pstrdup(p, tbl_name);
+    result->scan_rel = copy_node(scan_rel, p);
     return result;
 }

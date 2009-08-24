@@ -21,7 +21,7 @@ typedef struct RulePlan
 
 typedef struct OpChainPlan
 {
-    char *delta_tbl;
+    AstJoinClause *delta_tbl;
     AstTableRef *head;
     List *chain;
 } OpChainPlan;
@@ -29,7 +29,11 @@ typedef struct OpChainPlan
 typedef struct PlanNode
 {
     ColNode node;
+    /* AST representation of quals: list of AstQualifier */
     List *quals;
+    /* Runtime representation of quals */
+    List *qual_exprs;
+    List *proj_list;
 } PlanNode;
 
 typedef struct FilterPlan
@@ -48,7 +52,7 @@ typedef struct InsertPlan
 typedef struct ScanPlan
 {
     PlanNode plan;
-    char *tbl_name;
+    AstJoinClause *scan_rel;
 } ScanPlan;
 
 ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
