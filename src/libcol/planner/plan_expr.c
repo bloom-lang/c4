@@ -59,6 +59,10 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
     return -1;
 }
 
+/*
+ * XXX: Terribly ugly. Should use a uniform interface for finding the index
+ * associated with a given variable name.
+ */
 static ColNode *
 fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
               OpChainPlan *chain_plan, PlannerState *state)
@@ -151,6 +155,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
     AstJoinClause *scan_rel = NULL;
     ListCell *lc;
 
+    /* Lookup the outer (scan) relation, if any */
     if (plan->node.kind == PLAN_SCAN)
     {
         ScanPlan *scan_plan = (ScanPlan *) plan;
