@@ -63,11 +63,11 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
  * XXX: Terribly ugly. Should use a uniform interface for finding the index
  * associated with a given variable name.
  */
-static ColNode *
+static ExprNode *
 fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
               OpChainPlan *chain_plan, PlannerState *state)
 {
-    ColNode *result;
+    ExprNode *result;
 
     switch (ast_qual->kind)
     {
@@ -82,7 +82,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 expr_const->expr.node.kind = EXPR_CONST;
                 expr_const->expr.type = expr_get_type((ColNode *) ast_const);
                 expr_const->value = const_val;
-                result = (ColNode *) expr_const;
+                result = (ExprNode *) expr_const;
             }
             break;
 
@@ -97,7 +97,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 expr_op->op_kind = ast_op->op_kind;
                 expr_op->lhs = fix_qual_expr(ast_op->lhs, outer_rel, chain_plan, state);
                 expr_op->rhs = fix_qual_expr(ast_op->rhs, outer_rel, chain_plan, state);
-                result = (ColNode *) expr_op;
+                result = (ExprNode *) expr_op;
             }
             break;
 
@@ -137,7 +137,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 expr_var->expr.type = expr_get_type((ColNode *) ast_var);
                 expr_var->attno = var_idx;
                 expr_var->is_outer = is_outer;
-                result = (ColNode *) expr_var;
+                result = (ExprNode *) expr_var;
             }
             break;
 
@@ -168,7 +168,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
     foreach (lc, plan->quals)
     {
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
-        ColNode *expr;
+        ExprNode *expr;
 
         expr = fix_qual_expr(qual->expr, scan_rel, chain_plan, state);
         list_append(plan->qual_exprs, expr);

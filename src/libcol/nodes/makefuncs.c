@@ -177,7 +177,7 @@ make_scan_plan(AstJoinClause *scan_rel, List *quals,
 
 ExprOp *
 make_expr_op(DataType type, AstOperKind op_kind,
-             ColNode *lhs, ColNode *rhs, apr_pool_t *p)
+             ExprNode *lhs, ExprNode *rhs, apr_pool_t *p)
 {
     ExprOp *result = apr_pcalloc(p, sizeof(*result));
     result->expr.node.kind = EXPR_OP;
