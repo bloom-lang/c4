@@ -44,7 +44,7 @@ static void set_var_type(AstVarExpr *var, AstDefine *table,
 static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(ColNode *node);
-static DataType expr_get_type(ColNode *node);
+
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
 static DataType var_expr_get_type(AstVarExpr *var);
@@ -628,7 +628,7 @@ is_dont_care_var(ColNode *node)
     return (bool) (strcmp(var->name, "_") == 0);
 }
 
-static DataType
+DataType
 expr_get_type(ColNode *node)
 {
     switch (node->kind)
