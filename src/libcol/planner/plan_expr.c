@@ -3,6 +3,11 @@
 #include "planner/planner-internal.h"
 #include "types/datum.h"
 
+/*
+ * XXX: If this is a pass-by-ref Datum, we need some means to account for
+ * the reference count on the datum. Otherwise we'll leak the datum when
+ * the plan is destroyed.
+ */
 static Datum
 eval_const_expr(AstConstExpr *ast_const, PlannerState *state)
 {
