@@ -665,7 +665,7 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
         }
 
         default:
-            FAIL();
+            ERROR("Unexpected operator kind: %d", (int) op_expr->op_kind);
     }
 }
 
@@ -691,7 +691,6 @@ const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state)
 
         default:
             ERROR("unexpected const kind: %d", (int) c_expr->const_kind);
-            return 0;   /* keep compiler quiet */
     }
 }
 
