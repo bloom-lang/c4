@@ -44,10 +44,10 @@ static void set_var_type(AstVarExpr *var, AstDefine *table,
 static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(ColNode *node);
-static DataType expr_get_type(ColNode *node, AnalyzeState *state);
-static DataType op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state);
-static DataType const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state);
-static DataType var_expr_get_type(AstVarExpr *var, AnalyzeState *state);
+static DataType expr_get_type(ColNode *node);
+static DataType op_expr_get_type(AstOpExpr *op_expr);
+static DataType const_expr_get_type(AstConstExpr *c_expr);
+static DataType var_expr_get_type(AstVarExpr *var);
 
 
 static void
@@ -374,9 +374,6 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
     analyze_table_ref(join->ref, state);
 }
 
-/*
- * XXX: propagate new type to the rest of the copies of "var" in the rule?
- */
 static void
 set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
 {
@@ -437,7 +434,7 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
     DataType rhs_type;
 
     analyze_expr(op_expr->lhs, state);
-    lhs_type = expr_get_type(op_expr->lhs, state);
+    lhs_type = expr_get_type(op_expr->lhs);
 
     /* Unary operators are simple */
     if (op_expr->op_kind == AST_OP_UMINUS)
@@ -449,7 +446,7 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
     }
 
     analyze_expr(op_expr->rhs, state);
-    rhs_type = expr_get_type(op_expr->rhs, state);
+    rhs_type = expr_get_type(op_expr->rhs);
 
     /* XXX: type compatibility check is far too strict */
     if (lhs_type != rhs_type)
@@ -477,6 +474,23 @@ analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state)
 {
     if (!is_var_defined(var_expr->name, state))
         ERROR("Undefined variable \"%s\"", var_expr->name);
+
+    /*
+     * If the type for the var has not yet been filled-in, do so now by
+     * looking at the variable table. Once analyze_expr() has been called on
+     * an expression tree, it is safe to call expr_get_type() on it.
+     */
+    if (var_expr->type == TYPE_INVALID)
+    {
+        AstVarExpr *def_var;
+
+        def_var = apr_hash_get(state->var_tbl, var_expr->name,
+                               APR_HASH_KEY_STRING);
+        ASSERT(def_var != NULL);
+        ASSERT(def_var->type != TYPE_INVALID);
+
+        var_expr->type = def_var->type;
+    }
 }
 
 static void
@@ -536,7 +550,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         AstSchemaElt *schema_elt;
 
         analyze_expr(col->expr, state);
-        expr_type = expr_get_type(col->expr, state);
+        expr_type = expr_get_type(col->expr);
         schema_elt = (AstSchemaElt *) list_get(define->schema, colno);
         schema_type = get_type_id(schema_elt->type_name);
 
@@ -615,18 +629,18 @@ is_dont_care_var(ColNode *node)
 }
 
 static DataType
-expr_get_type(ColNode *node, AnalyzeState *state)
+expr_get_type(ColNode *node)
 {
     switch (node->kind)
     {
         case AST_OP_EXPR:
-            return op_expr_get_type((AstOpExpr *) node, state);
+            return op_expr_get_type((AstOpExpr *) node);
 
         case AST_VAR_EXPR:
-            return var_expr_get_type((AstVarExpr *) node, state);
+            return var_expr_get_type((AstVarExpr *) node);
 
         case AST_CONST_EXPR:
-            return const_expr_get_type((AstConstExpr *) node, state);
+            return const_expr_get_type((AstConstExpr *) node);
 
         default:
             ERROR("Unexpected node kind: %d", (int) node->kind);
@@ -634,7 +648,7 @@ expr_get_type(ColNode *node, AnalyzeState *state)
 }
 
 static DataType
-op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
+op_expr_get_type(AstOpExpr *op_expr)
 {
     switch (op_expr->op_kind)
     {
@@ -647,7 +661,7 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
             return TYPE_BOOL;
 
         case AST_OP_UMINUS:
-            return expr_get_type(op_expr->lhs, state);
+            return expr_get_type(op_expr->lhs);
 
         case AST_OP_PLUS:
         case AST_OP_MINUS:
@@ -655,8 +669,8 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
         case AST_OP_DIVIDE:
         case AST_OP_MODULUS:
         {
-            DataType lhs_type = expr_get_type(op_expr->lhs, state);
-            DataType rhs_type = expr_get_type(op_expr->rhs, state);
+            DataType lhs_type = expr_get_type(op_expr->lhs);
+            DataType rhs_type = expr_get_type(op_expr->rhs);
 
             /* XXX: probably too strict; need to allow implicit casts */
             ASSERT(lhs_type == rhs_type);
@@ -669,7 +683,7 @@ op_expr_get_type(AstOpExpr *op_expr, AnalyzeState *state)
 }
 
 static DataType
-const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state)
+const_expr_get_type(AstConstExpr *c_expr)
 {
     switch (c_expr->const_kind)
     {
@@ -694,17 +708,13 @@ const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state)
 }
 
 /*
- * Note that we can't actually trust the type in the VarExpr itself, since
- * it might not have been computed; instead we consult the "canonical"
- * (definition-site) VarExpr in the rule's var table. XXX: ugly.
+ * Note that we can only use the DataType in the VarExpr itself if this
+ * routine is called after analyze_expr() has been invoked on the expression
+ * subtree.
  */
 static DataType
-var_expr_get_type(AstVarExpr *var, AnalyzeState *state)
+var_expr_get_type(AstVarExpr *var)
 {
-    AstVarExpr *def_var;
-
-    def_var = apr_hash_get(state->var_tbl, var->name, APR_HASH_KEY_STRING);
-    ASSERT(def_var != NULL);
-    ASSERT(def_var->type != TYPE_INVALID);
-    return def_var->type;
+    ASSERT(var->type != TYPE_INVALID);
+    return var->type;
 }
