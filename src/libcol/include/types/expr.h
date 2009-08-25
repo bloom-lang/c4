@@ -10,25 +10,32 @@ typedef struct ExprEvalContext
     Tuple *outer;
 } ExprEvalContext;
 
+typedef struct ExprNode ExprNode;
+
 typedef struct ExprState
 {
     ExprEvalContext *cxt;
-    ColNode *expr;
-    DataType type;
+    ExprNode *expr;
     struct ExprState *lhs;
     struct ExprState *rhs;
 } ExprState;
 
-typedef struct ExprVar
+struct ExprNode
 {
     ColNode node;
+    DataType type;
+};
+
+typedef struct ExprVar
+{
+    ExprNode expr;
     int attno;
     bool is_outer;
 } ExprVar;
 
 typedef struct ExprOp
 {
-    ColNode node;
+    ExprNode expr;
     AstOperKind op_kind;
     ColNode *lhs;
     ColNode *rhs;
@@ -36,7 +43,7 @@ typedef struct ExprOp
 
 typedef struct ExprConst
 {
-    ColNode node;
+    ExprNode expr;
     Datum value;
 } ExprConst;
 

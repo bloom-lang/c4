@@ -32,8 +32,9 @@ InsertPlan *make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p);
 ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals,
                          List *qual_exprs, apr_pool_t *p);
 
-ExprOp *make_expr_op(AstOperKind op_kind, ColNode *lhs, ColNode *rhs, apr_pool_t *p);
-ExprVar *make_expr_var(int attno, bool is_outer, apr_pool_t *p);
-ExprConst *make_expr_const(Datum val, apr_pool_t *p);
+ExprOp *make_expr_op(DataType type, AstOperKind op_kind,
+                     ColNode *lhs, ColNode *rhs, apr_pool_t *p);
+ExprVar *make_expr_var(DataType type, int attno, bool is_outer, apr_pool_t *p);
+ExprConst *make_expr_const(DataType type, Datum val, apr_pool_t *p);
 
 #endif  /* MAKEFUNCS_H */

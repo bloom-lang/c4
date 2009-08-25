@@ -213,6 +213,30 @@ datum_free(Datum in, DataType type)
         string_unpin(in.s);
 }
 
+static apr_status_t
+datum_cleanup(void *data)
+{
+    /* XXX: We assume the input datum is a string */
+    ColString *str = (ColString *) data;
+
+    string_unpin(str);
+    return APR_SUCCESS;
+}
+
+/*
+ * Instruct the specified pool to "track" the given Datum -- that is, when
+ * the pool is cleared or destroyed, the Datum's refcount will be
+ * decremented once.
+ */
+void
+pool_track_datum(apr_pool_t *pool, Datum datum, DataType type)
+{
+    /* Right now, strings are the only pass-by-ref datums */
+    if (type == TYPE_STRING)
+        apr_pool_cleanup_register(pool, datum.s, datum_cleanup,
+                                  apr_pool_cleanup_null);
+}
+
 static Datum
 bool_from_str(const char *str)
 {

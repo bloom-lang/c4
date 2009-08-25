@@ -8,9 +8,9 @@ eval_op_plus_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->type == TYPE_INT8);
-    ASSERT(state->rhs->type == TYPE_INT8);
-    ASSERT(state->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->rhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
@@ -27,13 +27,13 @@ eval_op_eq(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->type == state->rhs->type);
-    ASSERT(state->type == TYPE_BOOL);
+    ASSERT(state->lhs->expr->type == state->rhs->expr->type);
+    ASSERT(state->expr->type == TYPE_BOOL);
 
     lhs = eval_expr(state);
     rhs = eval_expr(state);
 
-    result.b = datum_equal(lhs, rhs, state->lhs->type);
+    result.b = datum_equal(lhs, rhs, state->lhs->expr->type);
     return result;
 }
 
@@ -44,13 +44,13 @@ eval_op_neq(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->type == state->rhs->type);
-    ASSERT(state->type == TYPE_BOOL);
+    ASSERT(state->lhs->expr->type == state->rhs->expr->type);
+    ASSERT(state->expr->type == TYPE_BOOL);
 
     lhs = eval_expr(state);
     rhs = eval_expr(state);
 
-    result.b = datum_equal(lhs, rhs, state->lhs->type) ? true : false;
+    result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? true : false;
     return result;
 }
 
@@ -100,9 +100,9 @@ eval_const_expr(ExprState *state)
 Datum
 eval_expr(ExprState *state)
 {
-    ColNode *expr = state->expr;
+    ExprNode *expr = state->expr;
 
-    switch (expr->kind)
+    switch (expr->node.kind)
     {
         case EXPR_OP:
             return eval_op_expr(state);
@@ -114,6 +114,6 @@ eval_expr(ExprState *state)
             return eval_const_expr(state);
 
         default:
-            ERROR("Unexpected node kind: %d", (int) expr->kind);
+            ERROR("Unexpected node kind: %d", (int) expr->node.kind);
     }
 }

@@ -3,18 +3,16 @@
 #include "planner/planner-internal.h"
 #include "types/datum.h"
 
-/*
- * XXX: If this is a pass-by-ref Datum, we need some means to account for
- * the reference count on the datum. Otherwise we'll leak the datum when
- * the plan is destroyed.
- */
 static Datum
 eval_const_expr(AstConstExpr *ast_const, PlannerState *state)
 {
     DataType const_type;
+    Datum result;
 
     const_type = expr_get_type((ColNode *) ast_const);
-    return datum_from_str(const_type, ast_const->value);
+    result = datum_from_str(const_type, ast_const->value);
+    pool_track_datum(state->plan_pool, result, const_type);
+    return result;
 }
 
 static int
@@ -77,7 +75,8 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
 
                 const_val = eval_const_expr(ast_const, state);
                 expr_const = apr_pcalloc(state->plan_pool, sizeof(*expr_const));
-                expr_const->node.kind = EXPR_CONST;
+                expr_const->expr.node.kind = EXPR_CONST;
+                expr_const->expr.type = expr_get_type((ColNode *) ast_const);
                 expr_const->value = const_val;
                 result = (ColNode *) expr_const;
             }
@@ -89,7 +88,8 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 ExprOp *expr_op;
 
                 expr_op = apr_pcalloc(state->plan_pool, sizeof(*expr_op));
-                expr_op->node.kind = EXPR_OP;
+                expr_op->expr.node.kind = EXPR_OP;
+                expr_op->expr.type = expr_get_type((ColNode *) ast_op);
                 expr_op->op_kind = ast_op->op_kind;
                 expr_op->lhs = fix_qual_expr(ast_op->lhs, outer_rel, chain_plan, state);
                 expr_op->rhs = fix_qual_expr(ast_op->rhs, outer_rel, chain_plan, state);
@@ -129,7 +129,8 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                     ERROR("Failed to find variable %s", ast_var->name);
 
                 expr_var = apr_pcalloc(state->plan_pool, sizeof(*expr_var));
-                expr_var->node.kind = EXPR_VAR;
+                expr_var->expr.node.kind = EXPR_VAR;
+                expr_var->expr.type = expr_get_type((ColNode *) ast_var);
                 expr_var->attno = var_idx;
                 expr_var->is_outer = is_outer;
                 result = (ColNode *) expr_var;

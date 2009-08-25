@@ -176,10 +176,12 @@ make_scan_plan(AstJoinClause *scan_rel, List *quals,
 }
 
 ExprOp *
-make_expr_op(AstOperKind op_kind, ColNode *lhs, ColNode *rhs, apr_pool_t *p)
+make_expr_op(DataType type, AstOperKind op_kind,
+             ColNode *lhs, ColNode *rhs, apr_pool_t *p)
 {
     ExprOp *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = EXPR_OP;
+    result->expr.node.kind = EXPR_OP;
+    result->expr.type = type;
     result->op_kind = op_kind;
     result->lhs = copy_node(lhs, p);
     result->rhs = copy_node(rhs, p);
@@ -187,20 +189,23 @@ make_expr_op(AstOperKind op_kind, ColNode *lhs, ColNode *rhs, apr_pool_t *p)
 }
 
 ExprVar *
-make_expr_var(int attno, bool is_outer, apr_pool_t *p)
+make_expr_var(DataType type, int attno, bool is_outer, apr_pool_t *p)
 {
     ExprVar *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = EXPR_VAR;
+    result->expr.node.kind = EXPR_VAR;
+    result->expr.type = type;
     result->attno = attno;
     result->is_outer = is_outer;
     return result;
 }
 
 ExprConst *
-make_expr_const(Datum val, apr_pool_t *p)
+make_expr_const(DataType type, Datum val, apr_pool_t *p)
 {
     ExprConst *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = EXPR_CONST;
-    result->value = datum_copy(val, TYPE_INVALID);
+    result->expr.node.kind = EXPR_CONST;
+    result->expr.type = type;
+    result->value = datum_copy(val, type);
+    pool_track_datum(p, result->value, type);
     return result;
 }

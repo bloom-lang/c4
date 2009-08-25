@@ -29,6 +29,7 @@ bool datum_equal(Datum d1, Datum d2, DataType type);
 apr_uint32_t datum_hash(Datum d1, DataType type);
 Datum datum_copy(Datum d, DataType type);
 void datum_free(Datum d, DataType type);
+void pool_track_datum(apr_pool_t *pool, Datum datum, DataType type);
 
 Datum datum_from_str(DataType type, const char *str);
 void datum_to_str(Datum d, DataType type, StrBuf *buf);

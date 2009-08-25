@@ -98,19 +98,19 @@ copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 static ExprOp *
 copy_expr_op(ExprOp *in, apr_pool_t *p)
 {
-    return make_expr_op(in->op_kind, in->lhs, in->rhs, p);
+    return make_expr_op(in->expr.type, in->op_kind, in->lhs, in->rhs, p);
 }
 
 static ExprVar *
 copy_expr_var(ExprVar *in, apr_pool_t *p)
 {
-    return make_expr_var(in->attno, in->is_outer, p);
+    return make_expr_var(in->expr.type, in->attno, in->is_outer, p);
 }
 
 static ExprConst *
 copy_expr_const(ExprConst *in, apr_pool_t *p)
 {
-    return make_expr_const(in->value, p);
+    return make_expr_const(in->expr.type, in->value, p);
 }
 
 void *
