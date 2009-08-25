@@ -71,7 +71,7 @@ eval_op_expr(ExprState *state)
             return eval_op_neq(state);
 
         default:
-            ERROR("unexpected op kind: %d", (int) op->op_kind);
+            ERROR("Unexpected op kind: %d", (int) op->op_kind);
     }
 }
 
@@ -114,6 +114,6 @@ eval_expr(ExprState *state)
             return eval_const_expr(state);
 
         default:
-            ERROR("unexpected node kind: %d", (int) expr->kind);
+            ERROR("Unexpected node kind: %d", (int) expr->kind);
     }
 }

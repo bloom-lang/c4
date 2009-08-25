@@ -41,7 +41,7 @@ do_parse(ColParser *parser, const char *str)
     yylex_destroy(parser->yyscanner);
 
     if (parse_result)
-        ERROR("parsing failed");
+        ERROR("Parsing failed");
 
     return parser->result;
 }

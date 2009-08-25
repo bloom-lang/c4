@@ -629,8 +629,7 @@ expr_get_type(ColNode *node, AnalyzeState *state)
             return const_expr_get_type((AstConstExpr *) node, state);
 
         default:
-            ERROR("unexpected node kind: %d", (int) node->kind);
-            return 0;   /* keep compiler quiet */
+            ERROR("Unexpected node kind: %d", (int) node->kind);
     }
 }
 
@@ -690,7 +689,7 @@ const_expr_get_type(AstConstExpr *c_expr, AnalyzeState *state)
             return TYPE_STRING;
 
         default:
-            ERROR("unexpected const kind: %d", (int) c_expr->const_kind);
+            ERROR("Unexpected const kind: %d", (int) c_expr->const_kind);
     }
 }
 
