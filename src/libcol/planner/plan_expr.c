@@ -1,12 +1,15 @@
 #include "col-internal.h"
+#include "parser/analyze.h"
 #include "planner/planner-internal.h"
+#include "types/datum.h"
 
 static Datum
 eval_const_expr(AstConstExpr *ast_const, PlannerState *state)
 {
-    Datum d;
+    DataType const_type;
 
-    return d;
+    const_type = expr_get_type((ColNode *) ast_const);
+    return datum_from_str(const_type, ast_const->value);
 }
 
 static int
