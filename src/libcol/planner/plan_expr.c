@@ -1,4 +1,5 @@
 #include "col-internal.h"
+#include "nodes/makefuncs.h"
 #include "parser/analyze.h"
 #include "parser/walker.h"
 #include "planner/planner-internal.h"
@@ -107,7 +108,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 AstVarExpr *ast_var = (AstVarExpr *) ast_qual;
                 int var_idx;
                 bool is_outer = false;
-                ExprVar *expr_var;
+                DataType expr_type;
 
                 /*
                  * If we haven't done projection yet, we need to look for
@@ -133,13 +134,11 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 if (var_idx == -1)
                     ERROR("Failed to find variable %s", ast_var->name);
 
-                expr_var = apr_pcalloc(state->plan_pool, sizeof(*expr_var));
-                expr_var->expr.node.kind = EXPR_VAR;
-                expr_var->expr.type = expr_get_type((ColNode *) ast_var);
-                expr_var->attno = var_idx;
-                expr_var->is_outer = is_outer;
-                expr_var->name = apr_pstrdup(state->plan_pool, ast_var->name);
-                result = (ExprNode *) expr_var;
+                expr_type = expr_get_type((ColNode *) ast_var);
+                result = (ExprNode *) make_expr_var(expr_type,
+                                                    var_idx, is_outer,
+                                                    ast_var->name,
+                                                    state->plan_pool);
             }
             break;
 
@@ -186,13 +185,9 @@ make_proj_list_walker(ColNode *n, void *data)
             {
                 ExprVar *expr_var;
 
-                expr_var = apr_pcalloc(cxt->state->plan_pool, sizeof(*expr_var));
-                expr_var->expr.node.kind = EXPR_VAR;
-                expr_var->expr.type = expr_get_type((ColNode *) var);
-                expr_var->attno = var_idx;
-                expr_var->is_outer = is_outer;
-                expr_var->name = apr_pstrdup(cxt->state->plan_pool, var->name);
-
+                expr_var = make_expr_var(expr_get_type((ColNode *) var),
+                                         var_idx, is_outer, var->name,
+                                         cxt->state->plan_pool);
                 list_append(cxt->wip_plist, expr_var);
             }
         }
