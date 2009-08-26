@@ -104,7 +104,7 @@ copy_expr_op(ExprOp *in, apr_pool_t *p)
 static ExprVar *
 copy_expr_var(ExprVar *in, apr_pool_t *p)
 {
-    return make_expr_var(in->expr.type, in->attno, in->is_outer, p);
+    return make_expr_var(in->expr.type, in->attno, in->is_outer, in->name, p);
 }
 
 static ExprConst *

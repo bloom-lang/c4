@@ -49,9 +49,9 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
     i = 0;
     foreach (lc, proj_list)
     {
-        char *s = (char *) lc_ptr(lc);
+        ExprVar *expr_var = (ExprVar *) lc_ptr(lc);
 
-        if (strcmp(var_name, s) == 0)
+        if (strcmp(expr_var->name, var_name) == 0)
             return i;
 
         i++;
@@ -138,6 +138,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
                 expr_var->expr.type = expr_get_type((ColNode *) ast_var);
                 expr_var->attno = var_idx;
                 expr_var->is_outer = is_outer;
+                expr_var->name = apr_pstrdup(state->plan_pool, ast_var->name);
                 result = (ExprNode *) expr_var;
             }
             break;
@@ -190,6 +191,8 @@ make_proj_list_walker(ColNode *n, void *data)
                 expr_var->expr.type = expr_get_type((ColNode *) var);
                 expr_var->attno = var_idx;
                 expr_var->is_outer = is_outer;
+                expr_var->name = apr_pstrdup(cxt->state->plan_pool, var->name);
+
                 list_append(cxt->wip_plist, expr_var);
             }
         }

@@ -189,13 +189,15 @@ make_expr_op(DataType type, AstOperKind op_kind,
 }
 
 ExprVar *
-make_expr_var(DataType type, int attno, bool is_outer, apr_pool_t *p)
+make_expr_var(DataType type, int attno, bool is_outer,
+              const char *name, apr_pool_t *p)
 {
     ExprVar *result = apr_pcalloc(p, sizeof(*result));
     result->expr.node.kind = EXPR_VAR;
     result->expr.type = type;
     result->attno = attno;
     result->is_outer = is_outer;
+    result->name = apr_pstrdup(p, name);
     return result;
 }
 

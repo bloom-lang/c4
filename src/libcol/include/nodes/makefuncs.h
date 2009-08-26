@@ -34,7 +34,8 @@ ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals,
 
 ExprOp *make_expr_op(DataType type, AstOperKind op_kind,
                      ExprNode *lhs, ExprNode *rhs, apr_pool_t *p);
-ExprVar *make_expr_var(DataType type, int attno, bool is_outer, apr_pool_t *p);
+ExprVar *make_expr_var(DataType type, int attno, bool is_outer,
+                       const char *name, apr_pool_t *p);
 ExprConst *make_expr_const(DataType type, Datum val, apr_pool_t *p);
 
 #endif  /* MAKEFUNCS_H */

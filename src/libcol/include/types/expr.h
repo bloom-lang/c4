@@ -31,6 +31,7 @@ typedef struct ExprVar
     ExprNode expr;
     int attno;
     bool is_outer;
+    char *name;
 } ExprVar;
 
 typedef struct ExprOp
