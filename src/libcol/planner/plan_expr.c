@@ -1,5 +1,6 @@
 #include "col-internal.h"
 #include "parser/analyze.h"
+#include "parser/walker.h"
 #include "planner/planner-internal.h"
 #include "types/datum.h"
 
@@ -148,12 +149,103 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
     return result;
 }
 
+typedef struct ProjListContext
+{
+    List *wip_plist;
+    AstJoinClause *outer_rel;
+    AstJoinClause *delta_tbl;
+    PlannerState *state;
+} ProjListContext;
+
+static bool
+make_proj_list_walker(ColNode *n, void *data)
+{
+    if (n->kind == AST_VAR_EXPR)
+    {
+        AstVarExpr *var = (AstVarExpr *) n;
+        ProjListContext *cxt = (ProjListContext *) data;
+        int var_idx;
+        bool is_outer = false;
+
+        if (cxt->state->current_plist == NULL)
+            var_idx = get_var_index_from_join(var->name, cxt->delta_tbl);
+        else
+            var_idx = get_var_index_from_plist(var->name, cxt->state->current_plist);
+
+        if (var_idx == -1 && cxt->outer_rel != NULL)
+        {
+            var_idx = get_var_index_from_join(var->name, cxt->outer_rel);
+            is_outer = true;
+        }
+
+        if (var_idx != -1)
+        {
+            /* Don't add to proj list if it already contains this var */
+            if (get_var_index_from_plist(var->name, cxt->wip_plist) == -1)
+            {
+                ExprVar *expr_var;
+
+                expr_var = apr_pcalloc(cxt->state->plan_pool, sizeof(*expr_var));
+                expr_var->expr.node.kind = EXPR_VAR;
+                expr_var->expr.type = expr_get_type((ColNode *) var);
+                expr_var->attno = var_idx;
+                expr_var->is_outer = is_outer;
+                list_append(cxt->wip_plist, expr_var);
+            }
+        }
+    }
+
+    return true;        /* Continue walking the expr tree */
+}
+
+static List *
+make_proj_list(ListCell *chain_rest, AstJoinClause *outer_rel,
+               AstJoinClause *delta_tbl, PlannerState *state)
+{
+    ProjListContext cxt;
+    ListCell *lc;
+
+    cxt.wip_plist = list_make(state->plan_pool);
+    cxt.outer_rel = outer_rel;
+    cxt.delta_tbl = delta_tbl;
+    cxt.state = state;
+
+    forrest (lc, chain_rest)
+    {
+        PlanNode *plan = (PlanNode *) lc_ptr(lc);
+        ListCell *lc2;
+
+        /*
+         * For each expression subtree in the plan, get the list of variable
+         * names that (a) are referenced (b) are defined by either the
+         * current plist or by the scan relation (c) are not already in
+         * proj_list.
+         */
+        foreach (lc2, plan->quals)
+        {
+            ColNode *qual = (ColNode *) lc_ptr(lc);
+
+            expr_tree_walker(qual, make_proj_list_walker, &cxt);
+        }
+
+        if (plan->node.kind == PLAN_INSERT)
+        {
+            InsertPlan *iplan = (InsertPlan *) plan;
+
+            expr_tree_walker((ColNode *) iplan->head, make_proj_list_walker, &cxt);
+        }
+    }
+
+    return cxt.wip_plist;
+}
+
 static void
 fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
              OpChainPlan *chain_plan, PlannerState *state)
 {
     AstJoinClause *scan_rel = NULL;
     ListCell *lc;
+    List *new_plist;
 
     /* Lookup the outer (scan) relation, if any */
     if (plan->node.kind == PLAN_SCAN)
@@ -174,8 +266,11 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
         list_append(plan->qual_exprs, expr);
     }
 
-    /* XXX: Use chain_rest to compute the projection list for this operator */
-    /* XXX: Update current_plist */
+    new_plist = make_proj_list(chain_rest, scan_rel,
+                               chain_plan->delta_tbl, state);
+    ASSERT(plan->proj_list == NULL);
+    plan->proj_list = new_plist;
+    state->current_plist = new_plist;
 }
 
 /*

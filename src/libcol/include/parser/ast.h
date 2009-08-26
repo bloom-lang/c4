@@ -62,7 +62,7 @@ struct AstTableRef
     ColNode node;
     /* The name of the referenced relation */
     char *name;
-    /* The list of variable names that are bound to the table's columns */
+    /* The list of AstColumnRef that are bound to the table's columns */
     List *cols;
 };
 
