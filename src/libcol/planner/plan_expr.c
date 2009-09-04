@@ -197,11 +197,40 @@ make_proj_list_walker(ColNode *n, void *data)
 }
 
 static List *
-make_proj_list(ListCell *chain_rest, AstJoinClause *outer_rel,
+make_insert_proj_list(InsertPlan *iplan, PlannerState *state)
+{
+    List *proj_list;
+    ListCell *lc;
+
+    proj_list = list_make(state->plan_pool);
+
+    foreach (lc, iplan->head->cols)
+    {
+        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+    }
+
+    return proj_list;
+}
+
+static List *
+make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
                AstJoinClause *delta_tbl, PlannerState *state)
 {
     ProjListContext cxt;
     ListCell *lc;
+
+    /*
+     * We need to handle PLAN_INSERT specially: its projection list is based
+     * on the rule's head clause, not the appears that appear in the rest of
+     * the chain (chain_rest).
+     */
+    if (plan->node.kind == PLAN_INSERT)
+    {
+        InsertPlan *iplan = (InsertPlan *) plan;
+
+        ASSERT(chain_rest == NULL);
+        return make_insert_proj_list(iplan, state);
+    }
 
     cxt.wip_plist = list_make(state->plan_pool);
     cxt.outer_rel = outer_rel;
@@ -265,7 +294,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
         list_append(plan->qual_exprs, expr);
     }
 
-    new_plist = make_proj_list(chain_rest, scan_rel,
+    new_plist = make_proj_list(plan, chain_rest, scan_rel,
                                chain_plan->delta_tbl, state);
     ASSERT(plan->proj_list == NULL);
     plan->proj_list = new_plist;

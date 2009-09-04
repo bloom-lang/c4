@@ -33,6 +33,7 @@ typedef struct PlanNode
     List *quals;
     /* Runtime representation of quals */
     List *qual_exprs;
+    /* Runtime representation of proj list */
     List *proj_list;
 } PlanNode;
 
