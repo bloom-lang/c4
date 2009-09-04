@@ -157,6 +157,7 @@ make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
 {
     InsertPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_INSERT;
+    result->plan.quals = list_make(p);
     result->head = copy_node(head, p);
     result->is_network = is_network;
     return result;

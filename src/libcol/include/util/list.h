@@ -44,8 +44,8 @@ struct ListCell
  * forrest -
  *    starting from the given cell, advance through the rest of the list
  */
-#define forrest(cell, lc)   \
-    for ((cell) = (lc); (cell) != NULL; (cell) = (cell)->next)
+#define forrest(cell, start)   \
+    for ((cell) = (start); (cell) != NULL; (cell) = (cell)->next)
 
 List *list_make(apr_pool_t *pool);
 #define list_make1(datum, pool)         list_append(list_make(pool), (datum))

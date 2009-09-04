@@ -230,7 +230,8 @@ make_proj_list(ListCell *chain_rest, AstJoinClause *outer_rel,
         {
             InsertPlan *iplan = (InsertPlan *) plan;
 
-            expr_tree_walker((ColNode *) iplan->head, make_proj_list_walker, &cxt);
+            expr_tree_walker((ColNode *) iplan->head,
+                             make_proj_list_walker, &cxt);
         }
     }
 

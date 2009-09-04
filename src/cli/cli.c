@@ -83,7 +83,9 @@ exec_file(apr_int16_t port, const char *srcfile)
     col_start(c);
     s = col_install_file(c, srcfile);
     if (s)
-        printf("Failed to install file: %d\n", (int) s);
+        printf("Failed to install file \"%s\": %d\n", srcfile, (int) s);
+    else
+        printf("Successfully installed file \"%s\"\n", srcfile);
 
     while (true)
         ;
