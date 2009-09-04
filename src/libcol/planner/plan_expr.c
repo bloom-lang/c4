@@ -200,7 +200,7 @@ make_proj_list_walker(ColNode *n, void *data)
 }
 
 static List *
-make_insert_proj_list(InsertPlan *iplan, PlannerState *state)
+make_insert_proj_list(InsertPlan *iplan, OpChainPlan *chain_plan, PlannerState *state)
 {
     List *proj_list;
     ListCell *lc;
@@ -210,6 +210,10 @@ make_insert_proj_list(InsertPlan *iplan, PlannerState *state)
     foreach (lc, iplan->head->cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        ExprNode *expr;
+
+        expr = make_eval_expr(cref->expr, NULL, chain_plan, state);
+        list_append(proj_list, expr);
     }
 
     return proj_list;
@@ -217,7 +221,7 @@ make_insert_proj_list(InsertPlan *iplan, PlannerState *state)
 
 static List *
 make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
-               AstJoinClause *delta_tbl, PlannerState *state)
+               OpChainPlan *chain_plan, PlannerState *state)
 {
     ProjListContext cxt;
     ListCell *lc;
@@ -232,12 +236,12 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
         InsertPlan *iplan = (InsertPlan *) plan;
 
         ASSERT(chain_rest == NULL);
-        return make_insert_proj_list(iplan, state);
+        return make_insert_proj_list(iplan, chain_plan, state);
     }
 
     cxt.wip_plist = list_make(state->plan_pool);
     cxt.outer_rel = outer_rel;
-    cxt.delta_tbl = delta_tbl;
+    cxt.delta_tbl = chain_plan->delta_tbl;
     cxt.state = state;
 
     forrest (lc, chain_rest)
@@ -297,8 +301,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
         list_append(plan->qual_exprs, expr);
     }
 
-    new_plist = make_proj_list(plan, chain_rest, scan_rel,
-                               chain_plan->delta_tbl, state);
+    new_plist = make_proj_list(plan, chain_rest, scan_rel, chain_plan, state);
     ASSERT(plan->proj_list == NULL);
     plan->proj_list = new_plist;
     state->current_plist = new_plist;
