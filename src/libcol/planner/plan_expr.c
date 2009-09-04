@@ -62,20 +62,23 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
 }
 
 /*
+ * Convert the AST representation of an expression tree into the Eval
+ * representation.
+ *
  * XXX: Terribly ugly. Should use a uniform interface for finding the index
  * associated with a given variable name.
  */
 static ExprNode *
-fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
-              OpChainPlan *chain_plan, PlannerState *state)
+make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
+               OpChainPlan *chain_plan, PlannerState *state)
 {
     ExprNode *result;
 
-    switch (ast_qual->kind)
+    switch (ast_expr->kind)
     {
         case AST_CONST_EXPR:
             {
-                AstConstExpr *ast_const = (AstConstExpr *) ast_qual;
+                AstConstExpr *ast_const = (AstConstExpr *) ast_expr;
                 Datum const_val;
                 ExprConst *expr_const;
 
@@ -90,22 +93,22 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
 
         case AST_OP_EXPR:
             {
-                AstOpExpr *ast_op = (AstOpExpr *) ast_qual;
+                AstOpExpr *ast_op = (AstOpExpr *) ast_expr;
                 ExprOp *expr_op;
 
                 expr_op = apr_pcalloc(state->plan_pool, sizeof(*expr_op));
                 expr_op->expr.node.kind = EXPR_OP;
                 expr_op->expr.type = expr_get_type((ColNode *) ast_op);
                 expr_op->op_kind = ast_op->op_kind;
-                expr_op->lhs = fix_qual_expr(ast_op->lhs, outer_rel, chain_plan, state);
-                expr_op->rhs = fix_qual_expr(ast_op->rhs, outer_rel, chain_plan, state);
+                expr_op->lhs = make_eval_expr(ast_op->lhs, outer_rel, chain_plan, state);
+                expr_op->rhs = make_eval_expr(ast_op->rhs, outer_rel, chain_plan, state);
                 result = (ExprNode *) expr_op;
             }
             break;
 
         case AST_VAR_EXPR:
             {
-                AstVarExpr *ast_var = (AstVarExpr *) ast_qual;
+                AstVarExpr *ast_var = (AstVarExpr *) ast_expr;
                 int var_idx;
                 bool is_outer = false;
                 DataType expr_type;
@@ -143,7 +146,7 @@ fix_qual_expr(ColNode *ast_qual, AstJoinClause *outer_rel,
             break;
 
         default:
-            ERROR("Unexpected expr node kind: %d", (int) ast_qual->kind);
+            ERROR("Unexpected expr node kind: %d", (int) ast_expr->kind);
     }
 
     return result;
@@ -290,7 +293,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
         ExprNode *expr;
 
-        expr = fix_qual_expr(qual->expr, scan_rel, chain_plan, state);
+        expr = make_eval_expr(qual->expr, scan_rel, chain_plan, state);
         list_append(plan->qual_exprs, expr);
     }
 
