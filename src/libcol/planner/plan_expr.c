@@ -214,10 +214,10 @@ make_proj_list(ListCell *chain_rest, AstJoinClause *outer_rel,
         ListCell *lc2;
 
         /*
-         * For each expression subtree in the plan, get the list of variable
-         * names that (a) are referenced (b) are defined by either the
-         * current plist or by the scan relation (c) are not already in
-         * proj_list.
+         * For each expression subtree in the plan, add to the WIP
+         * projection list all the variable names that (a) are referenced
+         * (b) are defined by either the current plist or by the scan
+         * relation (c) are not already in WIP projection list.
          */
         foreach (lc2, plan->quals)
         {
