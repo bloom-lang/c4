@@ -38,4 +38,6 @@ typedef struct ColNode
     ColNodeKind kind;
 } ColNode;
 
+char *node_get_kind_str(ColNode *node);
+
 #endif  /* NODES_H */

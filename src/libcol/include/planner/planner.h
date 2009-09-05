@@ -23,6 +23,7 @@ typedef struct OpChainPlan
 {
     AstJoinClause *delta_tbl;
     AstTableRef *head;
+    /* A PlanNode for each op in the chain */
     List *chain;
 } OpChainPlan;
 
@@ -57,5 +58,6 @@ typedef struct ScanPlan
 } ScanPlan;
 
 ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
+void print_plan_info(PlanNode *plan, apr_pool_t *p);
 
 #endif  /* PLANNER_H */

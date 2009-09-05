@@ -32,7 +32,7 @@ get_local_addr(int port, apr_pool_t *pool)
         FAIL_APR(s);
 
     snprintf(addr, sizeof(addr), "tcp:%s:%d", buf, port);
-    printf("local address = %s\n", addr);
+    printf("Local address = %s\n", addr);
     return datum_from_str(TYPE_STRING, addr);
 }
 
