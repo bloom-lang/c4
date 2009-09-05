@@ -200,14 +200,15 @@ make_proj_list_walker(ColNode *n, void *data)
 }
 
 static List *
-make_insert_proj_list(InsertPlan *iplan, OpChainPlan *chain_plan, PlannerState *state)
+make_tbl_ref_proj_list(AstTableRef *tbl_ref, OpChainPlan *chain_plan,
+                       PlannerState *state)
 {
     List *proj_list;
     ListCell *lc;
 
     proj_list = list_make(state->plan_pool);
 
-    foreach (lc, iplan->head->cols)
+    foreach (lc, tbl_ref->cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
         ExprNode *expr;
@@ -217,6 +218,20 @@ make_insert_proj_list(InsertPlan *iplan, OpChainPlan *chain_plan, PlannerState *
     }
 
     return proj_list;
+}
+
+static List *
+make_insert_proj_list(InsertPlan *iplan, OpChainPlan *chain_plan,
+                      PlannerState *state)
+{
+    return make_tbl_ref_proj_list(iplan->head, chain_plan, state);
+}
+
+static List *
+make_filter_proj_list(OpChainPlan *chain_plan, PlannerState *state)
+{
+    return make_tbl_ref_proj_list(chain_plan->delta_tbl->ref,
+                                  chain_plan, state);
 }
 
 static List *
@@ -238,6 +253,16 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
         ASSERT(chain_rest == NULL);
         return make_insert_proj_list(iplan, chain_plan, state);
     }
+
+    /*
+     * We also handle PLAN_FILTER specially: we actually skip projection in
+     * this case, because the delta filter doesn't modify its input, so
+     * there is little to be gained by only projecting out the attributes we
+     * need for the rest of the operator chain. Therefore, cookup a
+     * projection list that is equivalent to the filter's input schema.
+     */
+    if (plan->node.kind == PLAN_FILTER)
+        return make_filter_proj_list(chain_plan, state);
 
     cxt.wip_plist = list_make(state->plan_pool);
     cxt.outer_rel = outer_rel;
