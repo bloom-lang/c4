@@ -257,7 +257,7 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
          */
         foreach (lc2, plan->quals)
         {
-            ColNode *qual = (ColNode *) lc_ptr(lc);
+            ColNode *qual = (ColNode *) lc_ptr(lc2);
 
             expr_tree_walker(qual, make_proj_list_walker, &cxt);
         }

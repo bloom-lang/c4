@@ -25,6 +25,15 @@ expr_tree_walker(ColNode *node, expr_callback fn, void *data)
         case AST_CONST_EXPR:
             break;
 
+        case AST_QUALIFIER:
+            {
+                AstQualifier *ast_qual = (AstQualifier *) node;
+
+                if (expr_tree_walker(ast_qual->expr, fn, data) == false)
+                    return false;
+            }
+            break;
+
         case AST_TABLE_REF:
             {
                 AstTableRef *tbl_ref = (AstTableRef *) node;
