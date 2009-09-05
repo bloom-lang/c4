@@ -50,6 +50,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
         PlanNode *plan = (PlanNode *) lc_ptr(lc);
         Operator *op;
 
+        ASSERT(list_length(plan->quals) == list_length(plan->qual_exprs));
         print_plan_info(plan, istate->tmp_pool);
 
         switch (plan->node.kind)
