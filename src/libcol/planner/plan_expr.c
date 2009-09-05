@@ -228,8 +228,8 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
 
     /*
      * We need to handle PLAN_INSERT specially: its projection list is based
-     * on the rule's head clause, not the appears that appear in the rest of
-     * the chain (chain_rest).
+     * on the rule's head clause, not the expressions that appear in the
+     * rest of the chain (chain_rest).
      */
     if (plan->node.kind == PLAN_INSERT)
     {
