@@ -1,6 +1,10 @@
 program t1;
 
 define(foo, keys(0), {string, string, int8});
+define(foo2, keys(0), {string, string});
+define(quux, keys(0), {string, int8, string});
 
 foo(A, B, C) :- foo(B, A, C);
 foo(A, B, 20) :- foo("Baz", "Bar", C), foo(A, B, C);
+
+quux(A, C, B) :- foo(A, B, C), foo2(_, B), C > 20;

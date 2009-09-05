@@ -28,6 +28,26 @@ plan_install_defines(ProgramPlan *plan, InstallState *istate)
 }
 
 static void
+print_op_chain(OpChainPlan *chain_plan)
+{
+    List *chain = chain_plan->chain;
+    ListCell *lc;
+
+    printf("Chain: delta_tbl = %s, [", chain_plan->delta_tbl->ref->name);
+
+    foreach (lc, chain)
+    {
+        ColNode *node = (ColNode *) lc_ptr(lc);
+
+        printf("%s", node_get_kind_str(node));
+        if (lc != list_tail(chain))
+            printf(" => ");
+    }
+
+    printf("]\n");
+}
+
+static void
 install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 {
     List *chain_rev;
@@ -44,6 +64,8 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
      */
     chain_rev = list_reverse(chain_plan->chain, istate->tmp_pool);
     prev_op = NULL;
+
+    print_op_chain(chain_plan);
 
     foreach (lc, chain_rev)
     {
@@ -79,6 +101,8 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         prev_op = op;
     }
+
+    printf("================\n");
 
     op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
     op_chain->pool = chain_pool;
