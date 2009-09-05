@@ -1,6 +1,8 @@
 #include "col-internal.h"
 #include "types/expr.h"
 
+static void print_expr(ExprNode *expr, StrBuf *sbuf);
+
 static Datum
 eval_op_plus_i8(ExprState *state)
 {
@@ -116,4 +118,108 @@ eval_expr(ExprState *state)
         default:
             ERROR("Unexpected node kind: %d", (int) expr->node.kind);
     }
+}
+
+static char *
+get_op_kind_str(AstOperKind op_kind)
+{
+    switch (op_kind)
+    {
+        case AST_OP_PLUS:
+            return "+";
+
+        case AST_OP_MINUS:
+            return "-";
+
+        case AST_OP_TIMES:
+            return "*";
+
+        case AST_OP_DIVIDE:
+            return "/";
+
+        case AST_OP_MODULUS:
+            return "%";
+
+        case AST_OP_UMINUS:
+            return "-";
+
+        case AST_OP_LT:
+            return "<";
+
+        case AST_OP_LTE:
+            return "<=";
+
+        case AST_OP_GT:
+            return ">";
+
+        case AST_OP_GTE:
+            return ">=";
+
+        case AST_OP_EQ:
+            return "=";
+
+        case AST_OP_NEQ:
+            return "!=";
+
+        default:
+            ERROR("Unrecognized op kind: %d", (int) op_kind);
+    }
+}
+
+static void
+print_op_expr(ExprOp *op_expr, StrBuf *sbuf)
+{
+    sbuf_append(sbuf, "OP: (");
+    print_expr(op_expr->lhs, sbuf);
+    sbuf_appendf(sbuf, " %s ", get_op_kind_str(op_expr->op_kind));
+    print_expr(op_expr->rhs, sbuf);
+    sbuf_append(sbuf, ")");
+}
+
+static void
+print_var_expr(ExprVar *var_expr, StrBuf *sbuf)
+{
+    sbuf_appendf(sbuf, "VAR: attno = %d, is_outer = %s, name = %s",
+                 var_expr->attno, var_expr->is_outer ? "true" : "false",
+                 var_expr->name);
+}
+
+static void
+print_const_expr(ExprConst *const_expr, StrBuf *sbuf)
+{
+    sbuf_append(sbuf, "CONST: ");
+    datum_to_str(const_expr->value, const_expr->expr.type, sbuf);
+}
+
+static void
+print_expr(ExprNode *expr, StrBuf *sbuf)
+{
+    switch (expr->node.kind)
+    {
+        case EXPR_OP:
+            print_op_expr((ExprOp *) expr, sbuf);
+            break;
+
+        case EXPR_VAR:
+            print_var_expr((ExprVar *) expr, sbuf);
+            break;
+
+        case EXPR_CONST:
+            print_const_expr((ExprConst *) expr, sbuf);
+            break;
+
+        default:
+            ERROR("Unexpected node kind: %d", (int) expr->node.kind);
+    }
+}
+
+StrBuf *
+expr_to_string(ExprNode *expr, apr_pool_t *p)
+{
+    StrBuf *sbuf;
+
+    sbuf = sbuf_make(p);
+    print_expr(expr, sbuf);
+
+    return sbuf;
 }
