@@ -376,8 +376,31 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
     foreach (lc, plan->quals)
     {
         ColNode *node = (ColNode *) lc_ptr(lc);
+
         sbuf_append(sbuf, node_get_kind_str(node));
         if (lc != list_tail(plan->quals))
+            sbuf_append(sbuf, ", ");
+    }
+    sbuf_append(sbuf, "]\n");
+
+    sbuf_append(sbuf, "  QUALS (Exec): [");
+    foreach (lc, plan->qual_exprs)
+    {
+        ExprNode *expr = (ExprNode *) lc_ptr(lc);
+
+        expr_to_str(expr, sbuf);
+        if (lc != list_tail(plan->qual_exprs))
+            sbuf_append(sbuf, ", ");
+    }
+    sbuf_append(sbuf, "]\n");
+
+    sbuf_append(sbuf, "  PROJ LIST: [");
+    foreach (lc, plan->proj_list)
+    {
+        ExprNode *expr = (ExprNode *) lc_ptr(lc);
+
+        expr_to_str(expr, sbuf);
+        if (lc != list_tail(plan->proj_list))
             sbuf_append(sbuf, ", ");
     }
     sbuf_append(sbuf, "]\n");

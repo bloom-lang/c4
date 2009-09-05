@@ -1,8 +1,6 @@
 #include "col-internal.h"
 #include "types/expr.h"
 
-static void print_expr(ExprNode *expr, StrBuf *sbuf);
-
 static Datum
 eval_op_plus_i8(ExprState *state)
 {
@@ -167,17 +165,17 @@ get_op_kind_str(AstOperKind op_kind)
 }
 
 static void
-print_op_expr(ExprOp *op_expr, StrBuf *sbuf)
+op_expr_to_str(ExprOp *op_expr, StrBuf *sbuf)
 {
     sbuf_append(sbuf, "OP: (");
-    print_expr(op_expr->lhs, sbuf);
+    expr_to_str(op_expr->lhs, sbuf);
     sbuf_appendf(sbuf, " %s ", get_op_kind_str(op_expr->op_kind));
-    print_expr(op_expr->rhs, sbuf);
+    expr_to_str(op_expr->rhs, sbuf);
     sbuf_append(sbuf, ")");
 }
 
 static void
-print_var_expr(ExprVar *var_expr, StrBuf *sbuf)
+var_expr_to_str(ExprVar *var_expr, StrBuf *sbuf)
 {
     sbuf_appendf(sbuf, "VAR: attno = %d, is_outer = %s, name = %s",
                  var_expr->attno, var_expr->is_outer ? "true" : "false",
@@ -185,41 +183,30 @@ print_var_expr(ExprVar *var_expr, StrBuf *sbuf)
 }
 
 static void
-print_const_expr(ExprConst *const_expr, StrBuf *sbuf)
+const_expr_to_str(ExprConst *const_expr, StrBuf *sbuf)
 {
     sbuf_append(sbuf, "CONST: ");
     datum_to_str(const_expr->value, const_expr->expr.type, sbuf);
 }
 
-static void
-print_expr(ExprNode *expr, StrBuf *sbuf)
+void
+expr_to_str(ExprNode *expr, StrBuf *sbuf)
 {
     switch (expr->node.kind)
     {
         case EXPR_OP:
-            print_op_expr((ExprOp *) expr, sbuf);
+            op_expr_to_str((ExprOp *) expr, sbuf);
             break;
 
         case EXPR_VAR:
-            print_var_expr((ExprVar *) expr, sbuf);
+            var_expr_to_str((ExprVar *) expr, sbuf);
             break;
 
         case EXPR_CONST:
-            print_const_expr((ExprConst *) expr, sbuf);
+            const_expr_to_str((ExprConst *) expr, sbuf);
             break;
 
         default:
             ERROR("Unexpected node kind: %d", (int) expr->node.kind);
     }
-}
-
-StrBuf *
-expr_to_string(ExprNode *expr, apr_pool_t *p)
-{
-    StrBuf *sbuf;
-
-    sbuf = sbuf_make(p);
-    print_expr(expr, sbuf);
-
-    return sbuf;
 }
