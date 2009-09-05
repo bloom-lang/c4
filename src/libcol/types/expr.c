@@ -154,7 +154,7 @@ get_op_kind_str(AstOperKind op_kind)
             return ">=";
 
         case AST_OP_EQ:
-            return "=";
+            return "==";
 
         case AST_OP_NEQ:
             return "!=";
@@ -169,7 +169,7 @@ op_expr_to_str(ExprOp *op_expr, StrBuf *sbuf)
 {
     sbuf_append(sbuf, "OP: (");
     expr_to_str(op_expr->lhs, sbuf);
-    sbuf_appendf(sbuf, " %s ", get_op_kind_str(op_expr->op_kind));
+    sbuf_appendf(sbuf, ") %s (", get_op_kind_str(op_expr->op_kind));
     expr_to_str(op_expr->rhs, sbuf);
     sbuf_append(sbuf, ")");
 }
