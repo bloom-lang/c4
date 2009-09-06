@@ -402,7 +402,14 @@ add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
 static void
 analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 {
+    DataType type;
+
     analyze_expr(qual->expr, state);
+
+    type = expr_get_type(qual->expr);
+    if (type != TYPE_BOOL)
+        ERROR("Qualifier must have boolean result, not %s",
+              get_type_name(type));
 }
 
 static void

@@ -145,6 +145,30 @@ make_expr_state(ExprNode *expr, ExprEvalContext *cxt, apr_pool_t *pool)
     return expr_state;
 }
 
+bool
+eval_qual_set(int nquals, ExprState **qual_ary)
+{
+    int i;
+
+    for (i = 0; i < nquals; i++)
+    {
+        ExprState *qual_state = qual_ary[i];
+        Datum result;
+
+        /*
+         * Sanity check: we already require the return type of qual
+         * expressions to be boolean in the analysis phase
+         */
+        ASSERT(qual_state->expr->type == TYPE_BOOL);
+
+        result = eval_expr(qual_state);
+        if (result.b == false)
+            return false;
+    }
+
+    return true;
+}
+
 static char *
 get_op_kind_str(AstOperKind op_kind)
 {

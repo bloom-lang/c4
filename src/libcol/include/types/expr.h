@@ -53,4 +53,6 @@ ExprState *make_expr_state(ExprNode *expr, ExprEvalContext *cxt,
                            apr_pool_t *pool);
 void expr_to_str(ExprNode *expr, StrBuf *sbuf);
 
+bool eval_qual_set(int nquals, ExprState **qual_ary);
+
 #endif  /* EXPR_H */

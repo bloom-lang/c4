@@ -4,7 +4,15 @@
 static void
 filter_invoke(Operator *op, Tuple *t)
 {
-    FilterOperator *filt_op = (FilterOperator *) op;
+    FilterOperator *filter_op = (FilterOperator *) op;
+    ExprEvalContext *exec_cxt;
+
+    exec_cxt = filter_op->op.exec_cxt;
+    exec_cxt->inner = t;
+
+    /* Only route the tuple onward if it passes all the quals */
+    if (eval_qual_set(filter_op->nquals, filter_op->qual_ary))
+        op->next->invoke(op->next, t);
 }
 
 static void

@@ -175,6 +175,5 @@ get_type_name(DataType type_id)
 
         default:
             ERROR("Unexpected type id: %d", type_id);
-            return NULL;        /* Keep compiler quiet */
     }
 }
