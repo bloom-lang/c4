@@ -32,7 +32,7 @@ scan_op_make(ScanPlan *plan, Operator *next_op, apr_pool_t *pool)
     scan_op->qual_ary = apr_palloc(scan_op->op.pool,
                                    sizeof(*scan_op->qual_ary) * scan_op->nquals);
     i = 0;
-    foreach (lc, scan_op->op.plan->quals)
+    foreach (lc, scan_op->op.plan->qual_exprs)
     {
         ExprNode *expr = (ExprNode *) lc_ptr(lc);
 

@@ -40,7 +40,7 @@ filter_op_make(FilterPlan *plan, Operator *next_op, apr_pool_t *pool)
     filter_op->qual_ary = apr_palloc(filter_op->op.pool,
                                      sizeof(*filter_op->qual_ary) * filter_op->nquals);
     i = 0;
-    foreach (lc, filter_op->op.plan->quals)
+    foreach (lc, filter_op->op.plan->qual_exprs)
     {
         ExprNode *expr = (ExprNode *) lc_ptr(lc);
 
