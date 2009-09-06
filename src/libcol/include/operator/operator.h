@@ -2,6 +2,7 @@
 #define OPERATOR_H
 
 #include "parser/ast.h"
+#include "planner/planner.h"
 #include "types/tuple.h"
 
 typedef struct Operator Operator;
@@ -37,15 +38,16 @@ struct Operator
     ColNode node;
     apr_pool_t *pool;
     Operator *next;
+    PlanNode *plan;
 
     op_invoke_func invoke;
     op_destroy_func destroy;
 };
 
 /* Generic support routines for operators */
-Operator *operator_make(ColNodeKind kind, apr_size_t sz, Operator *next_op,
-                        op_invoke_func invoke_f, op_destroy_func destroy_f,
-                        apr_pool_t *pool);
+Operator *operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
+                        Operator *next_op, op_invoke_func invoke_f,
+                        op_destroy_func destroy_f, apr_pool_t *pool);
 void operator_destroy(Operator *op);
 
 #endif  /* OPERATOR_H */

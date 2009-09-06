@@ -1,5 +1,4 @@
 #include "col-internal.h"
-#include "nodes/copyfuncs.h"
 #include "operator/filter.h"
 
 static void
@@ -21,11 +20,11 @@ filter_op_make(FilterPlan *plan, Operator *next_op, apr_pool_t *pool)
 
     filter_op = (FilterOperator *) operator_make(OPER_FILTER,
                                                  sizeof(*filter_op),
+                                                 (PlanNode *) plan,
                                                  next_op,
                                                  filter_invoke,
                                                  filter_destroy,
                                                  pool);
-    filter_op->plan = copy_node(plan, pool);
 
     return filter_op;
 }

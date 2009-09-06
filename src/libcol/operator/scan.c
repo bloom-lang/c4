@@ -1,5 +1,4 @@
 #include "col-internal.h"
-#include "nodes/copyfuncs.h"
 #include "operator/scan.h"
 
 static void
@@ -21,11 +20,11 @@ scan_op_make(ScanPlan *plan, Operator *next_op, apr_pool_t *pool)
 
     scan_op = (ScanOperator *) operator_make(OPER_SCAN,
                                              sizeof(*scan_op),
+                                             (PlanNode *) plan,
                                              next_op,
                                              scan_invoke,
                                              scan_destroy,
                                              pool);
-    scan_op->plan = copy_node(plan, pool);
 
     return scan_op;
 }

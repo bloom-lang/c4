@@ -7,7 +7,6 @@
 typedef struct FilterOperator
 {
     Operator op;
-    FilterPlan *plan;
 } FilterOperator;
 
 FilterOperator *filter_op_make(FilterPlan *plan, Operator *next_op,

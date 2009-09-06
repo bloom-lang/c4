@@ -1,5 +1,4 @@
 #include "col-internal.h"
-#include "nodes/copyfuncs.h"
 #include "operator/insert.h"
 
 static void
@@ -21,11 +20,11 @@ insert_op_make(InsertPlan *plan, apr_pool_t *pool)
 
     insert_op = (InsertOperator *) operator_make(OPER_INSERT,
                                                  sizeof(*insert_op),
+                                                 (PlanNode *) plan,
                                                  NULL,
                                                  insert_invoke,
                                                  insert_destroy,
                                                  pool);
-    insert_op->plan = copy_node(plan, pool);
 
     return insert_op;
 }

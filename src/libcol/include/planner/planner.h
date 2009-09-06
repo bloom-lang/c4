@@ -1,7 +1,6 @@
 #ifndef PLANNER_H
 #define PLANNER_H
 
-#include "operator/operator.h"
 #include "parser/ast.h"
 #include "util/list.h"
 
