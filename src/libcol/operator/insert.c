@@ -18,6 +18,8 @@ insert_op_make(InsertPlan *plan, apr_pool_t *pool)
 {
     InsertOperator *insert_op;
 
+    ASSERT(list_length(plan->plan.quals) == 0);
+
     insert_op = (InsertOperator *) operator_make(OPER_INSERT,
                                                  sizeof(*insert_op),
                                                  (PlanNode *) plan,
