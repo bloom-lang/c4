@@ -2,18 +2,13 @@
 #include "types/expr.h"
 
 static Datum
-eval_op_plus_i8(ExprState *state)
+eval_op_plus_i8(ExprState *state, Datum lhs, Datum rhs)
 {
-    Datum lhs;
-    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
-
-    lhs = eval_expr(state->lhs);
-    rhs = eval_expr(state->rhs);
 
     /* XXX: check for overflow? */
     result.i8 = lhs.i8 + rhs.i8;
@@ -21,34 +16,38 @@ eval_op_plus_i8(ExprState *state)
 }
 
 static Datum
-eval_op_eq(ExprState *state)
+eval_op_minus_i8(ExprState *state, Datum lhs, Datum rhs)
 {
-    Datum lhs;
-    Datum rhs;
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->rhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
+
+    /* XXX: check for underflow? */
+    result.i8 = lhs.i8 - rhs.i8;
+    return result;
+}
+
+static Datum
+eval_op_eq(ExprState *state, Datum lhs, Datum rhs)
+{
     Datum result;
 
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
-
-    lhs = eval_expr(state->lhs);
-    rhs = eval_expr(state->rhs);
 
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type);
     return result;
 }
 
 static Datum
-eval_op_neq(ExprState *state)
+eval_op_neq(ExprState *state, Datum lhs, Datum rhs)
 {
-    Datum lhs;
-    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
-
-    lhs = eval_expr(state->lhs);
-    rhs = eval_expr(state->rhs);
 
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? true : false;
     return result;
@@ -58,19 +57,20 @@ static Datum
 eval_op_expr(ExprState *state)
 {
     ExprOp *op = (ExprOp *) state->expr;
+    Datum lhs;
+    Datum rhs;
+
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
 
     switch (op->op_kind)
     {
         case AST_OP_PLUS:
-            return eval_op_plus_i8(state);
-
-        case AST_OP_EQ:
-            return eval_op_eq(state);
-
-        case AST_OP_NEQ:
-            return eval_op_neq(state);
+            return eval_op_plus_i8(state, lhs, rhs);
 
         case AST_OP_MINUS:
+            return eval_op_minus_i8(state, lhs, rhs);
+
         case AST_OP_TIMES:
         case AST_OP_DIVIDE:
         case AST_OP_MODULUS:
@@ -79,6 +79,14 @@ eval_op_expr(ExprState *state)
         case AST_OP_LTE:
         case AST_OP_GT:
         case AST_OP_GTE:
+            ERROR("Unsupported op kind: %d", (int) op->op_kind);
+
+        case AST_OP_EQ:
+            return eval_op_eq(state, lhs, rhs);
+
+        case AST_OP_NEQ:
+            return eval_op_neq(state, lhs, rhs);
+
         default:
             ERROR("Unexpected op kind: %d", (int) op->op_kind);
     }
