@@ -30,8 +30,8 @@ eval_op_eq(ExprState *state)
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
 
-    lhs = eval_expr(state);
-    rhs = eval_expr(state);
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
 
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type);
     return result;
@@ -47,8 +47,8 @@ eval_op_neq(ExprState *state)
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
 
-    lhs = eval_expr(state);
-    rhs = eval_expr(state);
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
 
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? true : false;
     return result;
