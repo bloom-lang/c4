@@ -141,23 +141,28 @@ make_ast_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
 
 FilterPlan *
 make_filter_plan(const char *tbl_name, List *quals,
-                 List *qual_exprs, apr_pool_t *p)
+                 List *qual_exprs, List *proj_list, apr_pool_t *p)
 {
     FilterPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_FILTER;
     result->plan.quals = list_copy_deep(quals, p);
     if (qual_exprs)
         result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
+    if (proj_list)
+        result->plan.proj_list = list_copy_deep(proj_list, p);
     result->tbl_name = apr_pstrdup(p, tbl_name);
     return result;
 }
 
 InsertPlan *
-make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
+make_insert_plan(AstTableRef *head, List *proj_list,
+                 bool is_network, apr_pool_t *p)
 {
     InsertPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_INSERT;
     result->plan.quals = list_make(p);
+    if (proj_list)
+        result->plan.proj_list = list_copy_deep(proj_list, p);
     result->head = copy_node(head, p);
     result->is_network = is_network;
     return result;
@@ -165,13 +170,15 @@ make_insert_plan(AstTableRef *head, bool is_network, apr_pool_t *p)
 
 ScanPlan *
 make_scan_plan(AstJoinClause *scan_rel, List *quals,
-               List *qual_exprs, apr_pool_t *p)
+               List *qual_exprs, List *proj_list, apr_pool_t *p)
 {
     ScanPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_SCAN;
     result->plan.quals = list_copy_deep(quals, p);
     if (qual_exprs)
         result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
+    if (proj_list)
+        result->plan.proj_list = list_copy_deep(proj_list, p);
     result->scan_rel = copy_node(scan_rel, p);
     return result;
 }

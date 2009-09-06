@@ -198,7 +198,7 @@ add_scan_op(AstJoinClause *ast_join, List *quals,
 {
     ScanPlan *splan;
 
-    splan = make_scan_plan(ast_join, quals, NULL, state->plan_pool);
+    splan = make_scan_plan(ast_join, quals, NULL, NULL, state->plan_pool);
     list_append(chain_plan->chain, splan);
 }
 
@@ -208,7 +208,7 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
     FilterPlan *fplan;
 
     fplan = make_filter_plan(chain_plan->delta_tbl->ref->name, quals,
-                             NULL, state->plan_pool);
+                             NULL, NULL, state->plan_pool);
     list_append(chain_plan->chain, fplan);
 }
 
@@ -217,7 +217,8 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
 
-    iplan = make_insert_plan(rule->head, rule->is_network, state->plan_pool);
+    iplan = make_insert_plan(rule->head, NULL, rule->is_network,
+                             state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 

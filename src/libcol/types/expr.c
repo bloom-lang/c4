@@ -70,6 +70,15 @@ eval_op_expr(ExprState *state)
         case AST_OP_NEQ:
             return eval_op_neq(state);
 
+        case AST_OP_MINUS:
+        case AST_OP_TIMES:
+        case AST_OP_DIVIDE:
+        case AST_OP_MODULUS:
+        case AST_OP_UMINUS:
+        case AST_OP_LT:
+        case AST_OP_LTE:
+        case AST_OP_GT:
+        case AST_OP_GTE:
         default:
             ERROR("Unexpected op kind: %d", (int) op->op_kind);
     }

@@ -5,6 +5,11 @@ static void
 insert_invoke(Operator *op, Tuple *t)
 {
     InsertOperator *insert_op = (InsertOperator *) op;
+    char *str;
+
+    /* XXX */
+    str = tuple_to_str(t, op->pool);
+    printf("INSERT: %s\n", str);
 }
 
 static void

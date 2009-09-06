@@ -29,6 +29,8 @@ scan_op_make(ScanPlan *plan, Operator *next_op, apr_pool_t *pool)
                                              pool);
 
     scan_op->nquals = list_length(scan_op->op.plan->quals);
+    scan_op->qual_ary = apr_palloc(scan_op->op.pool,
+                                   sizeof(*scan_op->qual_ary) * scan_op->nquals);
     i = 0;
     foreach (lc, scan_op->op.plan->quals)
     {

@@ -79,20 +79,20 @@ static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
     return make_filter_plan(in->tbl_name, in->plan.quals,
-                            in->plan.qual_exprs, p);
+                            in->plan.qual_exprs, in->plan.proj_list, p);
 }
 
 static InsertPlan *
 copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 {
-    return make_insert_plan(in->head, in->is_network, p);
+    return make_insert_plan(in->head, in->plan.proj_list, in->is_network, p);
 }
 
 static ScanPlan *
 copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 {
     return make_scan_plan(in->scan_rel, in->plan.quals,
-                          in->plan.qual_exprs, p);
+                          in->plan.qual_exprs, in->plan.proj_list, p);
 }
 
 static ExprOp *

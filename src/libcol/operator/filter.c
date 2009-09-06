@@ -37,6 +37,8 @@ filter_op_make(FilterPlan *plan, Operator *next_op, apr_pool_t *pool)
                                                  pool);
 
     filter_op->nquals = list_length(filter_op->op.plan->quals);
+    filter_op->qual_ary = apr_palloc(filter_op->op.pool,
+                                     sizeof(*filter_op->qual_ary) * filter_op->nquals);
     i = 0;
     foreach (lc, filter_op->op.plan->quals)
     {

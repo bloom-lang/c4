@@ -241,6 +241,8 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
     ProjListContext cxt;
     ListCell *lc;
 
+    printf("%s: plan = %p\n", __func__, (void *) plan);
+
     /*
      * We need to handle PLAN_INSERT specially: its projection list is based
      * on the rule's head clause, not the expressions that appear in the
@@ -248,10 +250,9 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
      */
     if (plan->node.kind == PLAN_INSERT)
     {
-        InsertPlan *iplan = (InsertPlan *) plan;
-
         ASSERT(chain_rest == NULL);
-        return make_insert_proj_list(iplan, chain_plan, state);
+        return make_insert_proj_list((InsertPlan *) plan,
+                                     chain_plan, state);
     }
 
     /*
