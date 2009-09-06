@@ -9,6 +9,6 @@ typedef struct InsertOperator
     Operator op;
 } InsertOperator;
 
-InsertOperator *insert_op_make(InsertPlan *plan, apr_pool_t *pool);
+InsertOperator *insert_op_make(InsertPlan *plan, OpChain *chain);
 
 #endif  /* INSERT_H */

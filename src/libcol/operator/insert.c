@@ -19,7 +19,7 @@ insert_destroy(Operator *op)
 }
 
 InsertOperator *
-insert_op_make(InsertPlan *plan, apr_pool_t *pool)
+insert_op_make(InsertPlan *plan, OpChain *chain)
 {
     InsertOperator *insert_op;
 
@@ -29,9 +29,9 @@ insert_op_make(InsertPlan *plan, apr_pool_t *pool)
                                                  sizeof(*insert_op),
                                                  (PlanNode *) plan,
                                                  NULL,
+                                                 chain,
                                                  insert_invoke,
-                                                 insert_destroy,
-                                                 pool);
+                                                 insert_destroy);
 
     return insert_op;
 }

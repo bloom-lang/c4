@@ -56,7 +56,18 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     apr_pool_t *chain_pool;
     OpChain *op_chain;
 
+    print_op_chain(chain_plan);
+
     chain_pool = make_subpool(istate->col->pool);
+
+    op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
+    op_chain->pool = chain_pool;
+    op_chain->col = istate->col;
+    op_chain->delta_tbl = apr_pstrdup(chain_pool,
+                                      chain_plan->delta_tbl->ref->name);
+    op_chain->head = copy_node(chain_plan->head, chain_pool);
+    op_chain->length = list_length(chain_plan->chain);
+    op_chain->next = NULL;
 
     /*
      * We build the operator chain in reverse, so that each operator knows
@@ -64,8 +75,6 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
      */
     chain_rev = list_reverse(chain_plan->chain, istate->tmp_pool);
     prev_op = NULL;
-
-    print_op_chain(chain_plan);
 
     foreach (lc, chain_rev)
     {
@@ -79,19 +88,18 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
         {
             case PLAN_FILTER:
                 op = (Operator *) filter_op_make((FilterPlan *) plan,
-                                                 prev_op, chain_pool);
+                                                 prev_op, op_chain);
                 break;
 
             case PLAN_INSERT:
                 /* Should be the last op in the chain */
                 ASSERT(prev_op == NULL);
-                op = (Operator *) insert_op_make((InsertPlan *) plan,
-                                                 chain_pool);
+                op = (Operator *) insert_op_make((InsertPlan *) plan, op_chain);
                 break;
 
             case PLAN_SCAN:
                 op = (Operator *) scan_op_make((ScanPlan *) plan,
-                                               prev_op, chain_pool);
+                                               prev_op, op_chain);
                 break;
 
             default:
@@ -101,19 +109,10 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         prev_op = op;
     }
-
-    printf("================\n");
-
-    op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
-    op_chain->pool = chain_pool;
-    op_chain->delta_tbl = apr_pstrdup(chain_pool,
-                                      chain_plan->delta_tbl->ref->name);
-    op_chain->head = copy_node(chain_plan->head, chain_pool);
-    op_chain->length = list_length(chain_rev);
     op_chain->chain_start = prev_op;
-    op_chain->next = NULL;
 
     router_add_op_chain(istate->col->router, op_chain);
+    printf("================\n");
 }
 
 static void

@@ -6,9 +6,10 @@ static apr_status_t operator_cleanup(void *data);
 
 Operator *
 operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
-              Operator *next_op, op_invoke_func invoke_f,
-              op_destroy_func destroy_f, apr_pool_t *pool)
+              Operator *next_op, OpChain *chain,
+              op_invoke_func invoke_f, op_destroy_func destroy_f)
 {
+    apr_pool_t *pool = chain->pool;
     Operator *op;
     ListCell *lc;
     int i;
@@ -18,6 +19,7 @@ operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
     op->pool = pool;
     op->plan = copy_node(plan, pool);
     op->next = next_op;
+    op->chain = chain;
     op->exec_cxt = apr_pcalloc(pool, sizeof(*op->exec_cxt));
     op->invoke = invoke_f;
     op->destroy = destroy_f;

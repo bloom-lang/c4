@@ -19,6 +19,7 @@ typedef struct OpChain OpChain;
 struct OpChain
 {
     apr_pool_t *pool;
+    ColInstance *col;
     char *delta_tbl;
     AstTableRef *head;
     Operator *chain_start;
@@ -41,6 +42,7 @@ struct Operator
     PlanNode *plan;
     Operator *next;
     ExprEvalContext *exec_cxt;
+    OpChain *chain;
 
     /* Projection info */
     int nproj;
@@ -52,8 +54,8 @@ struct Operator
 
 /* Generic support routines for operators */
 Operator *operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
-                        Operator *next_op, op_invoke_func invoke_f,
-                        op_destroy_func destroy_f, apr_pool_t *pool);
+                        Operator *next_op, OpChain *chain,
+                        op_invoke_func invoke_f, op_destroy_func destroy_f);
 void operator_destroy(Operator *op);
 
 #endif  /* OPERATOR_H */

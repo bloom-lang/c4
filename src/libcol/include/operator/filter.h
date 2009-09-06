@@ -12,6 +12,6 @@ typedef struct FilterOperator
 } FilterOperator;
 
 FilterOperator *filter_op_make(FilterPlan *plan, Operator *next_op,
-                               apr_pool_t *pool);
+                               OpChain *chain);
 
 #endif  /* FILTER_H */

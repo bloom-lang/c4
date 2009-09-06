@@ -4,6 +4,7 @@
 #include "types/schema.h"
 
 typedef struct ColCatalog ColCatalog;
+struct ColTable;
 
 typedef struct TableDef
 {
@@ -13,6 +14,8 @@ typedef struct TableDef
     List *key_list;
     /* Column number of location spec, or -1 if none */
     int ls_colno;
+    /* Table implementation */
+    struct ColTable *table;
 } TableDef;
 
 ColCatalog *cat_make(ColInstance *col);
@@ -21,6 +24,7 @@ void cat_define_table(ColCatalog *cat, const char *name,
                       List *schema, List *key_list);
 void cat_delete_table(ColCatalog *cat, const char *name);
 TableDef *cat_get_table(ColCatalog *cat, const char *name);
+struct ColTable *cat_get_table_impl(ColCatalog *cat, const char *name);
 
 Schema *cat_get_schema(ColCatalog *cat, const char *name);
 
