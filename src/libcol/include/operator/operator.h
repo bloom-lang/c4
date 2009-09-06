@@ -3,6 +3,7 @@
 
 #include "parser/ast.h"
 #include "planner/planner.h"
+#include "types/expr.h"
 #include "types/tuple.h"
 
 typedef struct Operator Operator;
@@ -37,8 +38,13 @@ struct Operator
 {
     ColNode node;
     apr_pool_t *pool;
-    Operator *next;
     PlanNode *plan;
+    Operator *next;
+    ExprEvalContext *exec_cxt;
+
+    /* Projection info */
+    int nproj;
+    ExprState **proj_ary;
 
     op_invoke_func invoke;
     op_destroy_func destroy;

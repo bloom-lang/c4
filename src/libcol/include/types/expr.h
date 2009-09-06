@@ -49,6 +49,8 @@ typedef struct ExprConst
 } ExprConst;
 
 Datum eval_expr(ExprState *state);
+ExprState *make_expr_state(ExprNode *expr, ExprEvalContext *cxt,
+                           apr_pool_t *pool);
 void expr_to_str(ExprNode *expr, StrBuf *sbuf);
 
 #endif  /* EXPR_H */

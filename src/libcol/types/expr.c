@@ -118,6 +118,33 @@ eval_expr(ExprState *state)
     }
 }
 
+ExprState *
+make_expr_state(ExprNode *expr, ExprEvalContext *cxt, apr_pool_t *pool)
+{
+    ExprState *expr_state;
+
+    expr_state = apr_pcalloc(pool, sizeof(*expr_state));
+    expr_state->cxt = cxt;
+    expr_state->expr = expr;
+
+    /*
+     * XXX: Slightly ugly, but we need to down-cast to determine whether we
+     * need to initialize sub-ExprStates.
+     */
+    if (expr->node.kind == EXPR_OP)
+    {
+        ExprOp *op_expr = (ExprOp *) expr;
+
+        if (op_expr->lhs)
+            expr_state->lhs = make_expr_state(op_expr->lhs, cxt, pool);
+
+        if (op_expr->rhs)
+            expr_state->rhs = make_expr_state(op_expr->rhs, cxt, pool);
+    }
+
+    return expr_state;
+}
+
 static char *
 get_op_kind_str(AstOperKind op_kind)
 {
