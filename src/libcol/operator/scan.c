@@ -21,9 +21,9 @@ scan_invoke(Operator *op, Tuple *t)
 
         if (eval_qual_set(scan_op->nquals, scan_op->qual_ary))
         {
-            /* XXX: do projection */
-            Tuple *join_tuple = NULL;
+            Tuple *join_tuple;
 
+            join_tuple = operator_do_project(op);
             op->next->invoke(op->next, join_tuple);
         }
     }

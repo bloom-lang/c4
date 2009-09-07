@@ -5,7 +5,7 @@
 #include "types/tuple.h"
 #include "util/socket.h"
 
-static Tuple *
+Tuple *
 tuple_make_empty(Schema *s)
 {
     Tuple *t;

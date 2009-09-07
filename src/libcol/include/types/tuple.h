@@ -15,6 +15,7 @@ typedef struct Tuple
     /*
      * XXX: Our dataflow is strictly typed, so we don't actually need to
      * store the schema in the tuple (other than for convenience).
+     * XXX: Refcount this? Or deep-copy it?
      */
     Schema *schema;
 
@@ -30,6 +31,7 @@ typedef struct Tuple
 
 #define tuple_get_val(t, i)     ((t)->vals[(i)])
 
+Tuple *tuple_make_empty(Schema *s);
 Tuple *tuple_make(Schema *s, Datum *values);
 Tuple *tuple_make_from_strings(Schema *s, char **values);
 

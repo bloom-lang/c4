@@ -35,6 +35,8 @@ operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
         op->proj_ary[i++] = make_expr_state(expr, op->exec_cxt, pool);
     }
 
+    op->proj_schema = schema_make_from_exprs(op->nproj, op->proj_ary, pool);
+
     apr_pool_cleanup_register(pool, op, operator_cleanup,
                               apr_pool_cleanup_null);
 
@@ -54,4 +56,23 @@ void
 operator_destroy(Operator *op)
 {
     ;
+}
+
+Tuple *
+operator_do_project(Operator *op)
+{
+    Tuple *proj_tuple;
+    int i;
+
+    proj_tuple = tuple_make_empty(op->proj_schema);
+    for (i = 0; i < op->nproj; i++)
+    {
+        ExprState *proj_state = op->proj_ary[i];
+        Datum result;
+
+        result = eval_expr(proj_state);
+        proj_tuple->vals[i] = datum_copy(result, proj_state->expr->type);
+    }
+
+    return proj_tuple;
 }

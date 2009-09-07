@@ -47,6 +47,7 @@ struct Operator
     /* Projection info */
     int nproj;
     ExprState **proj_ary;
+    Schema *proj_schema;
 
     op_invoke_func invoke;
     op_destroy_func destroy;
@@ -57,5 +58,7 @@ Operator *operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
                         Operator *next_op, OpChain *chain,
                         op_invoke_func invoke_f, op_destroy_func destroy_f);
 void operator_destroy(Operator *op);
+
+Tuple *operator_do_project(Operator *op);
 
 #endif  /* OPERATOR_H */
