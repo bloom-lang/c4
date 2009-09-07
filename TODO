@@ -35,6 +35,8 @@ Network:
   representation of tuple's loc spec into C-style string
   representation: either hash directly on the Datum representation, or
   make the Datum->C-style string conversion more efficient
+* Add a UDP transport
+* Consider adding an SSL-over-TCP transport, and/or security in general
 
 Data types:
 
