@@ -80,13 +80,113 @@ datum_equal(Datum d1, Datum d2, DataType type)
 
         case TYPE_INVALID:
             ERROR("Invalid data type: TYPE_INVALID");
-            return false;       /* Keep compiler quiet */
 
         default:
             ERROR("Unexpected data type: %uc", type);
-            return false;       /* Keep compiler quiet */
     }
 }
+
+static int
+bool_cmp(bool b1, bool b2)
+{
+    ERROR("%s: Not implemented yet", __func__);
+}
+
+static int
+char_cmp(unsigned char c1, unsigned char c2)
+{
+    if (c1 < c2)
+        return -1;
+    else if (c1 > c2)
+        return 1;
+    else
+        return 0;
+}
+
+static int
+double_cmp(double d1, double d2)
+{
+    if (d1 < d2)
+        return -1;
+    else if (d1 > d2)
+        return 1;
+    else
+        return 0;
+}
+
+static int
+int2_cmp(apr_int16_t i1, apr_int16_t i2)
+{
+    if (i1 < i2)
+        return -1;
+    else if (i1 > i2)
+        return 1;
+    else
+        return 0;
+}
+
+static int
+int4_cmp(apr_int32_t i1, apr_int32_t i2)
+{
+    if (i1 < i2)
+        return -1;
+    else if (i1 > i2)
+        return 1;
+    else
+        return 0;
+}
+
+static int
+int8_cmp(apr_int64_t i1, apr_int64_t i2)
+{
+    if (i1 < i2)
+        return -1;
+    else if (i1 > i2)
+        return 1;
+    else
+        return 0;
+}
+
+static int
+string_cmp(ColString *s1, ColString *s2)
+{
+    ERROR("%s: Not implemented yet", __func__);
+}
+
+int
+datum_cmp(Datum d1, Datum d2, DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_cmp(d1.b, d2.b);
+
+        case TYPE_CHAR:
+            return char_cmp(d1.c, d2.c);
+
+        case TYPE_DOUBLE:
+            return double_cmp(d1.d8, d2.d8);
+
+        case TYPE_INT2:
+            return int2_cmp(d1.i2, d2.i2);
+
+        case TYPE_INT4:
+            return int4_cmp(d1.i4, d2.i4);
+
+        case TYPE_INT8:
+            return int8_cmp(d1.i8, d2.i8);
+
+        case TYPE_STRING:
+            return string_cmp(d1.s, d2.s);
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+            
 
 static apr_uint32_t
 bool_hash(bool b)

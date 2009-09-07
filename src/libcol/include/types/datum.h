@@ -26,6 +26,7 @@ typedef union Datum
 } Datum;
 
 bool datum_equal(Datum d1, Datum d2, DataType type);
+int datum_cmp(Datum d1, Datum d2, DataType type);
 apr_uint32_t datum_hash(Datum d1, DataType type);
 Datum datum_copy(Datum d, DataType type);
 void datum_free(Datum d, DataType type);

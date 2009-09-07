@@ -109,6 +109,41 @@ eval_op_neq(ExprState *state, Datum lhs, Datum rhs)
 }
 
 static Datum
+eval_op_logical(ExprState *state, AstOperKind op_kind, Datum lhs, Datum rhs)
+{
+    Datum result;
+    int cmp_result;
+
+    ASSERT(state->lhs->expr->type == state->rhs->expr->type);
+    ASSERT(state->expr->type == TYPE_BOOL);
+
+    cmp_result = datum_cmp(lhs, rhs, state->lhs->expr->type);
+    switch (op_kind)
+    {
+        case AST_OP_LT:
+            result.b = (cmp_result < 0 ? true : false);
+            break;
+
+        case AST_OP_LTE:
+            result.b = (cmp_result <= 0 ? true : false);
+            break;
+
+        case AST_OP_GT:
+            result.b = (cmp_result > 0 ? true : false);
+            break;
+
+        case AST_OP_GTE:
+            result.b = (cmp_result >= 0 ? true : false);
+            break;
+
+        default:
+            ERROR("Unexpected op kind: %d", (int) op_kind);
+    }
+
+    return result;
+}
+
+static Datum
 eval_op_expr(ExprState *state)
 {
     ExprOp *op = (ExprOp *) state->expr;
@@ -142,7 +177,7 @@ eval_op_expr(ExprState *state)
         case AST_OP_LTE:
         case AST_OP_GT:
         case AST_OP_GTE:
-            ERROR("Unsupported op kind: %d", (int) op->op_kind);
+            return eval_op_logical(state, op->op_kind, lhs, rhs);
 
         case AST_OP_EQ:
             return eval_op_eq(state, lhs, rhs);
