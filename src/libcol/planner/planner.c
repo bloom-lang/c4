@@ -406,6 +406,28 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
     }
     sbuf_append(sbuf, "]\n");
 
+    /* Print extra info about certain plan types */
+    switch (plan->node.kind)
+    {
+        case PLAN_INSERT:
+            {
+                InsertPlan *iplan = (InsertPlan *) plan;
+                sbuf_appendf(sbuf, "  HEAD: %s\n", iplan->head->name);
+            }
+            break;
+
+        case PLAN_SCAN:
+            {
+                ScanPlan *splan = (ScanPlan *) plan;
+                sbuf_appendf(sbuf, "  SCAN REL: %s\n",
+                             splan->scan_rel->ref->name);
+            }
+            break;
+
+        default:
+            break; /* Do nothing */
+    }
+
     sbuf_append_char(sbuf, '\0');
     printf("%s", sbuf->data);
 }
