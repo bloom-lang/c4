@@ -2,6 +2,18 @@
 #include "types/expr.h"
 
 static Datum
+eval_op_uminus_i8(ExprState *state, Datum lhs)
+{
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
+
+    result.i8 = -(lhs.i8);
+    return result;
+}
+
+static Datum
 eval_op_plus_i8(ExprState *state, Datum lhs, Datum rhs)
 {
     Datum result;
@@ -26,6 +38,49 @@ eval_op_minus_i8(ExprState *state, Datum lhs, Datum rhs)
 
     /* XXX: check for underflow? */
     result.i8 = lhs.i8 - rhs.i8;
+    return result;
+}
+
+static Datum
+eval_op_times_i8(ExprState *state, Datum lhs, Datum rhs)
+{
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->rhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
+
+    /* XXX: check for overflow? */
+    result.i8 = lhs.i8 * rhs.i8;
+    return result;
+}
+
+static Datum
+eval_op_divide_i8(ExprState *state, Datum lhs, Datum rhs)
+{
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->rhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
+
+    /* XXX: error checking? e.g. divide by zero */
+    /* XXX: should the return type be integer or float? */
+    result.i8 = lhs.i8 / rhs.i8;
+    return result;
+}
+
+static Datum
+eval_op_modulus_i8(ExprState *state, Datum lhs, Datum rhs)
+{
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_INT8);
+    ASSERT(state->rhs->expr->type == TYPE_INT8);
+    ASSERT(state->expr->type == TYPE_INT8);
+
+    /* XXX: error checking?  */
+    result.i8 = lhs.i8 % rhs.i8;
     return result;
 }
 
@@ -61,6 +116,9 @@ eval_op_expr(ExprState *state)
     Datum rhs;
 
     lhs = eval_expr(state->lhs);
+    if (op->op_kind == AST_OP_UMINUS)
+        return eval_op_uminus_i8(state, lhs);
+
     rhs = eval_expr(state->rhs);
 
     switch (op->op_kind)
@@ -72,9 +130,14 @@ eval_op_expr(ExprState *state)
             return eval_op_minus_i8(state, lhs, rhs);
 
         case AST_OP_TIMES:
+            return eval_op_times_i8(state, lhs, rhs);
+
         case AST_OP_DIVIDE:
+            return eval_op_divide_i8(state, lhs, rhs);
+
         case AST_OP_MODULUS:
-        case AST_OP_UMINUS:
+            return eval_op_modulus_i8(state, lhs, rhs);
+
         case AST_OP_LT:
         case AST_OP_LTE:
         case AST_OP_GT:
@@ -87,6 +150,7 @@ eval_op_expr(ExprState *state)
         case AST_OP_NEQ:
             return eval_op_neq(state, lhs, rhs);
 
+        /* AST_OP_UMINUS is handled above */
         default:
             ERROR("Unexpected op kind: %d", (int) op->op_kind);
     }
