@@ -2,8 +2,11 @@ program t1;
 
 define(foo, keys(0), {string, string, int8});
 define(bar, keys(0), {string, string, int8});
+define(bax, keys(0), {string, string, int8});
 
 foo("XXX", "YYY", 5);
 foo("XXX", "YYY", 10);
+bax("XXX", "ZZZ", 1000);
+bax("XXX", "KKK", 1001);
 
-bar(A, B, C) :- foo(A, B, C), C == 5;
+bar(A, D, C) :- bax(A, D, _), foo(A, B, C), C == 5;
