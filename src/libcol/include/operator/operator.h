@@ -3,6 +3,7 @@
 
 #include "parser/ast.h"
 #include "planner/planner.h"
+#include "types/catalog.h"
 #include "types/expr.h"
 #include "types/tuple.h"
 
@@ -20,7 +21,7 @@ struct OpChain
 {
     apr_pool_t *pool;
     ColInstance *col;
-    char *delta_tbl;
+    TableDef *delta_tbl;
     AstTableRef *head;
     Operator *chain_start;
     int length;

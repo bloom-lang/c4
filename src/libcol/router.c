@@ -306,9 +306,9 @@ router_add_op_chain(ColRouter *router, OpChain *op_chain)
     OpChain *old_chain;
 
     ASSERT(op_chain->next == NULL);
-    old_chain = apr_hash_get(router->delta_tbl, op_chain->delta_tbl,
+    old_chain = apr_hash_get(router->delta_tbl, op_chain->delta_tbl->name,
                              APR_HASH_KEY_STRING);
     op_chain->next = old_chain;
-    apr_hash_set(router->delta_tbl, op_chain->delta_tbl,
+    apr_hash_set(router->delta_tbl, op_chain->delta_tbl->name,
                  APR_HASH_KEY_STRING, op_chain);
 }
