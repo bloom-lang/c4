@@ -10,6 +10,7 @@
 #include "planner/planner.h"
 #include "router.h"
 #include "types/catalog.h"
+#include "types/table.h"
 #include "util/list.h"
 
 struct ColRouter
@@ -149,16 +150,20 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     if (route_tuple_remote(router, tuple, tbl_name))
         return;
 
+    router->ntuple_routed++;
     op_chain = apr_hash_get(router->delta_tbl, tbl_name,
                             APR_HASH_KEY_STRING);
+
+    /* If the tuple is a duplicate, no need to route it */
+    if (table_insert(op_chain->delta_tbl->table, tuple) == false)
+        return;
+
     while (op_chain != NULL)
     {
         Operator *start = op_chain->chain_start;
         start->invoke(start, tuple);
         op_chain = op_chain->next;
     }
-
-    router->ntuple_routed++;
 }
 
 static void
