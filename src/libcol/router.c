@@ -13,20 +13,43 @@
 #include "types/table.h"
 #include "util/list.h"
 
+/*
+ * RouteBuffers are used to hold derived tuples in the midst of a fixpoint
+ * computation. RouteBufferEntry is a single entry in a RouteBuffer.
+ */
+typedef struct RouteBufferEntry
+{
+    Tuple *tuple;
+    TableDef *tbl_def;
+} RouteBufferEntry;
+
+typedef struct RouteBuffer
+{
+    int size;           /* # of entries allocated in this buffer */
+    int start;          /* Index of first valid (to-be-routed) entry */
+    int end;            /* Index of last valid (to-be-routed) entry */
+    RouteBufferEntry *entries;
+} RouteBuffer;
+
+#define route_buf_is_empty(buf)     ((buf)->start == (buf)->end)
+
 struct ColRouter
 {
     ColInstance *col;
     apr_pool_t *pool;
 
     /* Map from table name => OpChain list */
-    apr_hash_t *delta_tbl;
+    apr_hash_t *op_chain_tbl;
 
     /* Thread info for router thread */
     apr_threadattr_t *thread_attr;
     apr_thread_t *thread;
 
-    /* Queue of to-be-routed tuples; accessed by other threads */
+    /* Queue of to-be-routed tuples inserted by clients */
     apr_queue_t *queue;
+
+    /* Derived tuples computed within the current fixpoint; to-be-routed */
+    RouteBuffer *route_buf;
 
     int ntuple_routed;
 };
@@ -52,6 +75,35 @@ typedef struct WorkItem
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
 static void router_enqueue(ColRouter *router, WorkItem *wi);
+static apr_status_t route_buf_cleanup(void *data);
+static void compute_fixpoint(ColRouter *router);
+
+static RouteBuffer *
+route_buf_make(apr_pool_t *pool)
+{
+    RouteBuffer *buf;
+
+    buf = ol_alloc(sizeof(*buf));
+    buf->size = 4096;
+    buf->start = 0;
+    buf->end = 0;
+    buf->entries = ol_alloc(sizeof(RouteBufferEntry) * buf->size);
+
+    apr_pool_cleanup_register(pool, buf, route_buf_cleanup,
+                              apr_pool_cleanup_null);
+
+    return buf;
+}
+
+static apr_status_t
+route_buf_cleanup(void *data)
+{
+    RouteBuffer *buf = (RouteBuffer *) data;
+
+    ol_free(buf->entries);
+    ol_free(buf);
+    return APR_SUCCESS;
+}
 
 ColRouter *
 router_make(ColInstance *col)
@@ -64,7 +116,8 @@ router_make(ColInstance *col)
     router = apr_pcalloc(pool, sizeof(*router));
     router->col = col;
     router->pool = pool;
-    router->delta_tbl = apr_hash_make(pool);
+    router->op_chain_tbl = apr_hash_make(pool);
+    router->route_buf = route_buf_make(pool);
     router->ntuple_routed = 0;
 
     s = apr_queue_create(&router->queue, 128, router->pool);
@@ -143,7 +196,7 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     col_log(router->col, "%s: %s",
             __func__, log_tuple(router->col, tuple));
 
-    op_chain = apr_hash_get(router->delta_tbl, tbl_name,
+    op_chain = apr_hash_get(router->op_chain_tbl, tbl_name,
                             APR_HASH_KEY_STRING);
 
     if (route_tuple_remote(router, tuple, op_chain->delta_tbl))
@@ -155,11 +208,34 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     if (table_insert(op_chain->delta_tbl->table, tuple) == false)
         return;
 
-    while (op_chain != NULL)
+    ASSERT(route_buf_is_empty(router->route_buf));
+    router_enqueue_internal(router, tuple, op_chain->delta_tbl);
+    compute_fixpoint(router);
+}
+
+static void
+compute_fixpoint(ColRouter *router)
+{
+    RouteBuffer *route_buf = router->route_buf;
+
+    while (!route_buf_is_empty(route_buf))
     {
-        Operator *start = op_chain->chain_start;
-        start->invoke(start, tuple);
-        op_chain = op_chain->next;
+        RouteBufferEntry *ent;
+        OpChain *op_chain;
+
+        ent = &route_buf->entries[route_buf->start];
+        route_buf->start++;
+        op_chain = apr_hash_get(router->op_chain_tbl, ent->tbl_def->name,
+                                APR_HASH_KEY_STRING);
+
+        while (op_chain != NULL)
+        {
+            Operator *start = op_chain->chain_start;
+            start->invoke(start, ent->tuple);
+            op_chain = op_chain->next;
+        }
+
+        tuple_unpin(ent->tuple);
     }
 }
 
@@ -308,9 +384,52 @@ router_add_op_chain(ColRouter *router, OpChain *op_chain)
     OpChain *old_chain;
 
     ASSERT(op_chain->next == NULL);
-    old_chain = apr_hash_get(router->delta_tbl, op_chain->delta_tbl->name,
+    old_chain = apr_hash_get(router->op_chain_tbl, op_chain->delta_tbl->name,
                              APR_HASH_KEY_STRING);
     op_chain->next = old_chain;
-    apr_hash_set(router->delta_tbl, op_chain->delta_tbl->name,
+    apr_hash_set(router->op_chain_tbl, op_chain->delta_tbl->name,
                  APR_HASH_KEY_STRING, op_chain);
+}
+
+void
+router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+{
+    RouteBuffer *buf;
+    RouteBufferEntry *ent;
+
+    buf = router->route_buf;
+    if (buf->end == buf->size)
+    {
+        /*
+         * If we've reached the end of the buffer, we need to make room for
+         * more insertions. We can recover some space by moving the valid
+         * buffer content back to the beginning of the buffer. If this is
+         * impossible or not worth the effort, allocate a larger buffer.
+         *
+         * Our quick-and-dirty test for whether moving the buffer contents
+         * is worthwhile is whether we'd regain >= 33% of the buffer space.
+         * XXX: This could likely be improved.
+         */
+        if (buf->start >= (buf->size / 3))
+        {
+            int nvalid = buf->end - buf->start;
+
+            memmove(buf->entries, &buf->entries[buf->start],
+                    nvalid * sizeof(RouteBufferEntry));
+            buf->start = 0;
+            buf->end = nvalid;
+        }
+        else
+        {
+            buf->size *= 2;
+            buf->entries = ol_realloc(buf->entries, buf->size);
+        }
+    }
+
+    ent = &buf->entries[buf->end];
+    ent->tuple = tuple;
+    ent->tbl_def = tbl_def;
+    tuple_pin(ent->tuple);
+
+    buf->end++;
 }
