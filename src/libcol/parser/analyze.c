@@ -27,12 +27,15 @@ static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
 static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
-static void analyze_expr(ColNode *node, AnalyzeState *state);
-static void analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state);
-static void analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state);
+static void analyze_expr(ColNode *node, bool inside_qual, AnalyzeState *state);
+static void analyze_op_expr(AstOpExpr *op_expr, bool inside_qual,
+                            AnalyzeState *state);
+static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
+                             AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 
-static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state);
+static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
+                                            AnalyzeState *state);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
@@ -168,7 +171,8 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
         if (is_dont_care_var(col->expr))
-            ERROR("Don't care variables (\"_\") cannot appear in rule heads");
+            ERROR("Don't care variables (\"_\") cannot "
+                  "appear in the head of a rule");
     }
 
     /*
@@ -286,6 +290,7 @@ is_var_defined(const char *name, AnalyzeState *state)
 static void
 define_var(AstVarExpr *var, AnalyzeState *state)
 {
+    ASSERT(!is_dont_care_var((ColNode *) var));
     ASSERT(!is_var_defined(var->name, state));
     apr_hash_set(state->var_tbl, var->name,
                  APR_HASH_KEY_STRING, var);
@@ -334,7 +339,8 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
             ColNode *const_expr = cref->expr;
             char *var_name;
 
-            var_name = make_anon_var_name("const", state);
+            var_name = make_anon_var_name("Const", state);
+            /* Type will be filled-in shortly */
             var = make_ast_var_expr(var_name, TYPE_INVALID, state->pool);
             cref->expr = (ColNode *) var;
 
@@ -342,6 +348,9 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
         }
         else
         {
+            if (is_dont_care_var(cref->expr))
+                goto done;
+
             ASSERT(cref->expr->kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
 
@@ -361,13 +370,18 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
             }
         }
 
-        /* We should now be left with a uniquely-occurring variable */
+done:
+        /*
+         * We are left with either a uniquely-occurring variable or a don't
+         * care variable.
+         */
         ASSERT(cref->expr->kind == AST_VAR_EXPR);
         var = (AstVarExpr *) cref->expr;
 
-        /* Fill-in variable's type, add to variable table */
-        set_var_type((AstVarExpr *) cref->expr, define, colno, state);
-        define_var(var, state);
+        /* Fill-in variable's type, add to variable table (unless don't care) */
+        set_var_type(var, define, colno, state);
+        if (!is_dont_care_var((ColNode *) var))
+            define_var(var, state);
         colno++;
     }
 
@@ -404,7 +418,7 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 {
     DataType type;
 
-    analyze_expr(qual->expr, state);
+    analyze_expr(qual->expr, true, state);
 
     type = expr_get_type(qual->expr);
     if (type != TYPE_BOOL)
@@ -413,16 +427,16 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 }
 
 static void
-analyze_expr(ColNode *node, AnalyzeState *state)
+analyze_expr(ColNode *node, bool inside_qual, AnalyzeState *state)
 {
     switch (node->kind)
     {
         case AST_OP_EXPR:
-            analyze_op_expr((AstOpExpr *) node, state);
+            analyze_op_expr((AstOpExpr *) node, inside_qual, state);
             break;
 
         case AST_VAR_EXPR:
-            analyze_var_expr((AstVarExpr *) node, state);
+            analyze_var_expr((AstVarExpr *) node, inside_qual, state);
             break;
 
         case AST_CONST_EXPR:
@@ -435,12 +449,12 @@ analyze_expr(ColNode *node, AnalyzeState *state)
 }
 
 static void
-analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
+analyze_op_expr(AstOpExpr *op_expr, bool inside_qual, AnalyzeState *state)
 {
     DataType lhs_type;
     DataType rhs_type;
 
-    analyze_expr(op_expr->lhs, state);
+    analyze_expr(op_expr->lhs, inside_qual, state);
     lhs_type = expr_get_type(op_expr->lhs);
 
     /* Unary operators are simple */
@@ -452,7 +466,7 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
         return;
     }
 
-    analyze_expr(op_expr->rhs, state);
+    analyze_expr(op_expr->rhs, inside_qual, state);
     rhs_type = expr_get_type(op_expr->rhs);
 
     /* XXX: type compatibility check is far too strict */
@@ -477,8 +491,17 @@ analyze_op_expr(AstOpExpr *op_expr, AnalyzeState *state)
 }
 
 static void
-analyze_var_expr(AstVarExpr *var_expr, AnalyzeState *state)
+analyze_var_expr(AstVarExpr *var_expr, bool inside_qual, AnalyzeState *state)
 {
+    if (is_dont_care_var((ColNode *) var_expr))
+    {
+        if (inside_qual)
+            ERROR("Don't care variables (\"_\") cannot be "
+                  "referenced in qualifiers");
+
+        return;
+    }
+
     if (!is_var_defined(var_expr->name, state))
         ERROR("Undefined variable \"%s\"", var_expr->name);
 
@@ -556,7 +579,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         DataType schema_type;
         AstSchemaElt *schema_elt;
 
-        analyze_expr(col->expr, state);
+        analyze_expr(col->expr, false, state);
         expr_type = expr_get_type(col->expr);
         schema_elt = (AstSchemaElt *) list_get(define->schema, colno);
         schema_type = get_type_id(schema_elt->type_name);
