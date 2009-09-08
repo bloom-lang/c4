@@ -69,9 +69,9 @@ table_hash_tuple(const char *key, apr_ssize_t *klen)
 }
 
 /*
- * Add the specified tuple to this table. Returns "true" if the tuple was
- * added; returns false if the insert was a no-op because the tuple is
- * already contained by this table.
+ * Insert the tuple into this table. Returns "true" if the tuple was added;
+ * returns false if the insert was a no-op because the tuple is already
+ * contained by this table.
  */
 bool
 table_insert(ColTable *tbl, Tuple *t)
