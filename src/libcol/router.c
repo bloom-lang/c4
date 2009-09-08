@@ -106,14 +106,8 @@ router_start(ColRouter *router)
  * send; false otherwise.
  */
 static bool
-route_tuple_remote(ColRouter *router, Tuple *tuple, const char *tbl_name)
+route_tuple_remote(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
-    TableDef *tbl_def;
-
-    tbl_def = cat_get_table(router->col->cat, tbl_name);
-    if (tbl_def == NULL)
-        FAIL();
-
     if (tbl_def->ls_colno != -1)
     {
         Datum tuple_addr;
@@ -124,7 +118,9 @@ route_tuple_remote(ColRouter *router, Tuple *tuple, const char *tbl_name)
             col_log(router->col, "Remote tuple: %s => %s",
                     log_tuple(router->col, tuple),
                     log_datum(router->col, tuple_addr, TYPE_STRING));
-            network_send(router->col->net, tuple_addr, tbl_name, tuple);
+
+            network_send(router->col->net, tuple_addr,
+                         tbl_def->name, tuple);
             return true;
         }
     }
@@ -147,12 +143,13 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     col_log(router->col, "%s: %s",
             __func__, log_tuple(router->col, tuple));
 
-    if (route_tuple_remote(router, tuple, tbl_name))
+    op_chain = apr_hash_get(router->delta_tbl, tbl_name,
+                            APR_HASH_KEY_STRING);
+
+    if (route_tuple_remote(router, tuple, op_chain->delta_tbl))
         return;
 
     router->ntuple_routed++;
-    op_chain = apr_hash_get(router->delta_tbl, tbl_name,
-                            APR_HASH_KEY_STRING);
 
     /* If the tuple is a duplicate, no need to route it */
     if (table_insert(op_chain->delta_tbl->table, tuple) == false)
