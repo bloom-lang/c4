@@ -499,6 +499,12 @@ analyze_var_expr(AstVarExpr *var_expr, bool inside_qual, AnalyzeState *state)
             ERROR("Don't care variables (\"_\") cannot be "
                   "referenced in qualifiers");
 
+        /*
+         * If we're not inside a qual, we're done: we don't want to lookup
+         * the variable's name, and don't care variables in join clauses or
+         * rule heads have already had their type computed.
+         */
+        ASSERT(var_expr->type != TYPE_INVALID);
         return;
     }
 
