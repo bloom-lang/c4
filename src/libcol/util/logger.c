@@ -5,7 +5,7 @@
 struct ColLogger
 {
     ColInstance *col;
-    /* This is reset on each call to log() */
+    /* This is reset on each call to col_log() */
     apr_pool_t *tmp_pool;
 };
 

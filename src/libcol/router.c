@@ -232,6 +232,7 @@ router_thread_start(apr_thread_t *thread, void *data)
                 break;
 
             case WI_SHUTDOWN:
+                /* XXX: TODO */
                 break;
 
             default:
