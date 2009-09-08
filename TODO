@@ -13,6 +13,7 @@ Parser and lexer:
   code points?
 * Error reporting; location of syntax error
 * Support for assignments?
+* Check for variables that are only referenced once => _
 
 Planner:
 
