@@ -3,10 +3,12 @@
 
 #include "operator/operator.h"
 #include "planner/planner.h"
+#include "types/table.h"
 
 typedef struct InsertOperator
 {
     Operator op;
+    TableDef *tbl_def;
 } InsertOperator;
 
 InsertOperator *insert_op_make(InsertPlan *plan, OpChain *chain);

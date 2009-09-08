@@ -7,15 +7,19 @@ insert_invoke(Operator *op, Tuple *t)
     InsertOperator *insert_op = (InsertOperator *) op;
     ExprEvalContext *exec_cxt;
     Tuple *proj_tuple;
-    char *str;
 
     exec_cxt = insert_op->op.exec_cxt;
     exec_cxt->inner = t;
     proj_tuple = operator_do_project(op);
 
-    /* XXX */
-    str = tuple_to_str(proj_tuple, op->pool);
-    printf("INSERT: %s\n", str);
+    if (table_insert(insert_op->tbl_def->table, t))
+    {
+        /* XXX: Enqueue tuple */
+    }
+
+    /* XXX debug */
+    col_log(op->chain->col, "INSERT: %s",
+            log_tuple(op->chain->col, proj_tuple));
 }
 
 static void
@@ -38,6 +42,8 @@ insert_op_make(InsertPlan *plan, OpChain *chain)
                                                  chain,
                                                  insert_invoke,
                                                  insert_destroy);
+
+    insert_op->tbl_def = cat_get_table(chain->col->cat, plan->head->name);
 
     return insert_op;
 }
