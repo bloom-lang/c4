@@ -9,12 +9,11 @@ StrBuf *
 sbuf_make(apr_pool_t *pool)
 {
     StrBuf *sbuf = apr_palloc(pool, sizeof(*sbuf));
-    sbuf->pool = pool;
     sbuf->data = ol_alloc(256);
     sbuf->max_len = 256;
     sbuf_reset(sbuf);
 
-    apr_pool_cleanup_register(sbuf->pool, sbuf, sbuf_cleanup,
+    apr_pool_cleanup_register(pool, sbuf, sbuf_cleanup,
                               apr_pool_cleanup_null);
 
     return sbuf;

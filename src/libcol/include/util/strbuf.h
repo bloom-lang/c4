@@ -23,7 +23,6 @@
  */
 typedef struct StrBuf
 {
-    apr_pool_t *pool;
     char *data;
     apr_size_t len;
     apr_size_t max_len;
