@@ -19,6 +19,11 @@ Planner:
 
 * Generate implied equalities from the qualifier list
 * Avoid Cartesian products, if possible
+* We can skip projection in an operator if no operator in the
+  remainder of the op chain requires values that are NOT in the input
+  to that operator; e.g. if we do a join and there isn't anything in
+  the rest of the op chain that needs a value in the scan_rel, we can
+  skip projection on the output of the join
 
 Executor/Router/Operators:
 
