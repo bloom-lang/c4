@@ -19,7 +19,7 @@ struct ColRouter
     ColInstance *col;
     apr_pool_t *pool;
 
-    /* Map from table name => OpChain list */
+    /* Map from table name => OpChainList */
     apr_hash_t *op_chain_tbl;
 
     /* Thread info for router thread */
@@ -154,9 +154,8 @@ compute_fixpoint(ColRouter *router)
 
         ent = &route_buf->entries[route_buf->start];
         route_buf->start++;
-        op_chain = apr_hash_get(router->op_chain_tbl, ent->tbl_def->name,
-                                APR_HASH_KEY_STRING);
 
+        op_chain = ent->tbl_def->op_chain_list->head;
         while (op_chain != NULL)
         {
             Operator *start = op_chain->chain_start;
@@ -336,17 +335,35 @@ router_enqueue(ColRouter *router, WorkItem *wi)
     }
 }
 
+/*
+ * Get the list of OpChains associated with the given delta table. If the
+ * OpChainList doesn't exist yet, it is created on the fly.
+ */
+OpChainList *
+router_get_opchain_list(ColRouter *router, const char *tbl_name)
+{
+    OpChainList *result;
+
+    result = apr_hash_get(router->op_chain_tbl, tbl_name,
+                          APR_HASH_KEY_STRING);
+    if (result == NULL)
+    {
+        result = opchain_list_make(router->pool);
+        apr_hash_set(router->op_chain_tbl, tbl_name,
+                     APR_HASH_KEY_STRING, result);
+    }
+
+    return result;
+}
+
 void
 router_add_op_chain(ColRouter *router, OpChain *op_chain)
 {
-    OpChain *old_chain;
+    OpChainList *opc_list;
 
-    ASSERT(op_chain->next == NULL);
-    old_chain = apr_hash_get(router->op_chain_tbl, op_chain->delta_tbl->name,
-                             APR_HASH_KEY_STRING);
-    op_chain->next = old_chain;
-    apr_hash_set(router->op_chain_tbl, op_chain->delta_tbl->name,
-                 APR_HASH_KEY_STRING, op_chain);
+    opc_list = apr_hash_get(router->op_chain_tbl, op_chain->delta_tbl->name,
+                            APR_HASH_KEY_STRING);
+    opchain_list_add(opc_list, op_chain);
 }
 
 /*

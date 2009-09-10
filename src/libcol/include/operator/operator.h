@@ -54,6 +54,17 @@ struct Operator
     op_destroy_func destroy;
 };
 
+/*
+ * A list of OpChains that all have the same delta_tbl. This is just used
+ * for convenience in the router (specifically, we need something for
+ * TableDef to point at, even if the list happens to be empty).
+ */
+typedef struct OpChainList
+{
+    OpChain *head;
+    int length;
+} OpChainList;
+
 /* Generic support routines for operators */
 Operator *operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
                         Operator *next_op, OpChain *chain,
@@ -61,5 +72,8 @@ Operator *operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
 void operator_destroy(Operator *op);
 
 Tuple *operator_do_project(Operator *op);
+
+OpChainList *opchain_list_make(apr_pool_t *pool);
+void opchain_list_add(OpChainList *list, OpChain *op_chain);
 
 #endif  /* OPERATOR_H */

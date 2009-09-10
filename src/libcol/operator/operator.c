@@ -76,3 +76,25 @@ operator_do_project(Operator *op)
 
     return proj_tuple;
 }
+
+OpChainList *
+opchain_list_make(apr_pool_t *pool)
+{
+    OpChainList *result;
+
+    result = apr_palloc(pool, sizeof(*result));
+    result->length = 0;
+    result->head = NULL;
+
+    return result;
+}
+
+void
+opchain_list_add(OpChainList *list, OpChain *op_chain)
+{
+    ASSERT(op_chain->next == NULL);
+
+    op_chain->next = list->head;
+    list->head = op_chain;
+    list->length++;
+}

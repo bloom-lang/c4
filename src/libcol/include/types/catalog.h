@@ -4,7 +4,9 @@
 #include "types/schema.h"
 
 typedef struct ColCatalog ColCatalog;
+
 struct ColTable;
+struct OpChainList;
 
 typedef struct TableDef
 {
@@ -12,10 +14,19 @@ typedef struct TableDef
     char *name;
     Schema *schema;
     List *key_list;
+
     /* Column number of location spec, or -1 if none */
     int ls_colno;
+
     /* Table implementation */
     struct ColTable *table;
+
+    /*
+     * We keep a direct pointer to router's OpChainList for this delta
+     * table. This is mildly gross, but useful for perf: it means we can
+     * skip a hash table lookup for each derived tuple that is routed.
+     */
+    struct OpChainList *op_chain_list;
 } TableDef;
 
 ColCatalog *cat_make(ColInstance *col);
