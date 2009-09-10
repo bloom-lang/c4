@@ -6,7 +6,9 @@
 # APR_LIBS, linker switches to use with ld to link against apr
 # APR_EXTRALIBS, additional libraries to link against
 # APR_CFLAGS, the flags to use to compile
-# APR_FOUND, set to 'yes' if found
+# APR_FOUND, set to TRUE if found, FALSE otherwise
+
+set(APR_FOUND FALSE)
 
 find_program(APR_CONFIG_EXECUTABLE apr-1-config)
 mark_as_advanced(APR_CONFIG_EXECUTABLE)
@@ -43,7 +45,5 @@ _apr_invoke(APR_CFLAGS     ""        --cppflags --cflags)
 _apr_invoke(APR_EXTRALIBS "(^| )-l" --libs)
 _apr_invoke(APR_LIBS      ""        --link-ld)
 
-if(APR_INCLUDES AND APR_EXTRALIBS AND APR_LIBS AND APR_CFLAGS)
-    set(APR_FOUND "YES")
-    message (STATUS "apr found: YES ${APR_LIBS}")
-endif(APR_INCLUDES AND APR_EXTRALIBS AND APR_LIBS AND APR_CFLAGS)
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(APR DEFAULT_MSG APR_INCLUDES APR_EXTRALIBS APR_LIBS APR_CFLAGS)

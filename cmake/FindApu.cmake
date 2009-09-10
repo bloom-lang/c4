@@ -6,7 +6,9 @@
 # APU_LIBS, linker switches to use with ld to link against apr-util
 # APU_EXTRALIBS, additional libraries to link against
 # APU_LDFLAGS, additional linker flags that must be used
-# APU_FOUND, set to 'yes' if found
+# APU_FOUND, set to TRUE if found, FALSE otherwise
+
+set(APU_FOUND FALSE)
 
 find_program(APU_CONFIG_EXECUTABLE apu-1-config)
 mark_as_advanced(APU_CONFIG_EXECUTABLE)
@@ -43,7 +45,5 @@ _apu_invoke(APU_EXTRALIBS "(^| )-l" --libs)
 _apu_invoke(APU_LIBS      ""        --link-ld)
 _apu_invoke(APU_LDFLAGS   ""        --ldflags)
 
-if(APU_INCLUDES AND APU_EXTRALIBS AND APU_LIBS AND APU_LDFLAGS)
-    set(APU_FOUND "YES")
-    message (STATUS "apu found: YES ${APU_LIBS}")
-endif(APU_INCLUDES AND APU_EXTRALIBS AND APU_LIBS AND APU_LDFLAGS)
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(APU DEFAULT_MSG APU_INCLUDES APU_EXTRALIBS APU_LIBS)
