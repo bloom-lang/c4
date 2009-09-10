@@ -38,8 +38,8 @@ Network:
 * Add an ad-hoc compression method, to avoid resending table names in
   every single packet
   * Have the client and server negotiate that "table 10" means "table
-    foo, with schema bar" once, and use that information for the rest
-    of the connection
+    foo, with schema bar" once, and use that information for the
+    remainder of the session
 * In network_send(), avoid the ugly conversion from Datum
   representation of tuple's loc spec into C-style string
   representation: either hash directly on the Datum representation, or
