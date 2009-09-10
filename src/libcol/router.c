@@ -120,9 +120,10 @@ router_start(ColRouter *router)
 void
 router_install_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
+#if 0
     col_log(router->col, "%s: %s (=> %s)",
             __func__, log_tuple(router->col, tuple), tbl_def->name);
-
+#endif
     if (tuple_is_remote(tuple, tbl_def, router->col))
     {
         router_enqueue_net(router, tuple, tbl_def);
@@ -166,7 +167,7 @@ compute_fixpoint(ColRouter *router)
         tuple_unpin(ent->tuple);
         router->ntuple_routed++;
         /* XXX: temporary */
-        if (router->ntuple_routed == 100000)
+        if (router->ntuple_routed == 3000000)
             exit(0);
     }
 
