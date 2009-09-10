@@ -9,4 +9,7 @@ add_flex_bison_dependency(Lexer Parser)
 set(libcol_SRCS ${libcol_SRCS} ${FLEX_Lexer_OUTPUTS} ${BISON_Parser_OUTPUTS})
 
 add_library(col ${libcol_SRCS})
-set_target_properties(col PROPERTIES LINK_FLAGS ${APU_LDFLAGS})
+if(APU_LDFLAGS)
+    set_target_properties(col PROPERTIES LINK_FLAGS ${APU_LDFLAGS})
+endif(APU_LDFLAGS)
+
