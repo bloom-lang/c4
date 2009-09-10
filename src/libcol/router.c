@@ -117,32 +117,25 @@ router_start(ColRouter *router)
  * Otherwise, we route the tuple locally (pass it to the appropriate
  * operator chains).
  */
-static void
-route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
+void
+router_install_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
-    OpChain *op_chain;
+    col_log(router->col, "%s: %s (=> %s)",
+            __func__, log_tuple(router->col, tuple), tbl_def->name);
 
-    col_log(router->col, "%s: %s",
-            __func__, log_tuple(router->col, tuple));
-
-    op_chain = apr_hash_get(router->op_chain_tbl, tbl_name,
-                            APR_HASH_KEY_STRING);
-
-    if (tuple_is_remote(tuple, op_chain->delta_tbl, router->col))
+    if (tuple_is_remote(tuple, tbl_def, router->col))
     {
-        router_enqueue_net(router, tuple, op_chain->delta_tbl);
+        router_enqueue_net(router, tuple, tbl_def);
         return;
     }
 
     router->ntuple_routed++;
 
     /* If the tuple is a duplicate, no need to route it */
-    if (table_insert(op_chain->delta_tbl->table, tuple) == false)
+    if (table_insert(tbl_def->table, tuple) == false)
         return;
 
-    ASSERT(tuple_buf_is_empty(router->route_buf));
-    router_enqueue_internal(router, tuple, op_chain->delta_tbl);
-    compute_fixpoint(router);
+    router_enqueue_internal(router, tuple, tbl_def);
 }
 
 static void
@@ -189,6 +182,15 @@ compute_fixpoint(ColRouter *router)
     ASSERT(tuple_buf_is_empty(route_buf));
     tuple_buf_reset(route_buf);
     tuple_buf_reset(net_buf);
+}
+
+static void
+route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
+{
+    TableDef *tbl_def;
+
+    tbl_def = cat_get_table(router->col->cat, tbl_name);
+    router_install_tuple(router, tuple, tbl_def);
 }
 
 static void
@@ -269,6 +271,7 @@ router_thread_start(apr_thread_t *thread, void *data)
                 ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
         }
 
+        compute_fixpoint(router);
         workitem_destroy(wi);
     }
 

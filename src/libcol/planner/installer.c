@@ -135,18 +135,17 @@ plan_install_rules(ProgramPlan *plan, InstallState *istate)
 }
 
 static Tuple *
-fact_make_tuple(AstFact *fact, InstallState *istate)
+fact_make_tuple(AstFact *fact, TableDef *tbl_def, InstallState *istate)
 {
-    AstTableRef *target = fact->head;
     Schema *schema;
     char **values;
     int i;
     ListCell *lc;
 
-    schema = cat_get_schema(istate->col->cat, target->name);
+    schema = tbl_def->schema;
     values = apr_palloc(istate->tmp_pool, schema->len * sizeof(*values));
     i = 0;
-    foreach (lc, target->cols)
+    foreach (lc, fact->head->cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
         AstConstExpr *c_expr = (AstConstExpr *) cref->expr;
@@ -166,10 +165,12 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
     foreach (lc, plan->facts)
     {
         AstFact *fact = (AstFact *) lc_ptr(lc);
+        TableDef *tbl_def;
         Tuple *t;
 
-        t = fact_make_tuple(fact, istate);
-        router_enqueue_tuple(istate->col->router, t, fact->head->name);
+        tbl_def = cat_get_table(istate->col->cat, fact->head->name);
+        t = fact_make_tuple(fact, tbl_def, istate);
+        router_install_tuple(istate->col->router, t, tbl_def);
         tuple_unpin(t);
     }
 }
