@@ -1,0 +1,7 @@
+program loop;
+
+define(foo, keys(0), {int8});
+
+foo(0);
+
+foo(A + 1) :- foo(A);

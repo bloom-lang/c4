@@ -129,8 +129,6 @@ router_install_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
         return;
     }
 
-    router->ntuple_routed++;
-
     /* If the tuple is a duplicate, no need to route it */
     if (table_insert(tbl_def->table, tuple) == false)
         return;
@@ -166,6 +164,10 @@ compute_fixpoint(ColRouter *router)
         }
 
         tuple_unpin(ent->tuple);
+        router->ntuple_routed++;
+        /* XXX: temporary */
+        if (router->ntuple_routed == 100000)
+            exit(0);
     }
 
     while (!tuple_buf_is_empty(net_buf))
