@@ -248,6 +248,7 @@ column_ref:
 column_ref_expr:
   const_expr
 | var_expr
+| op_expr
 ;
 
 %%
