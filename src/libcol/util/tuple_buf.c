@@ -8,7 +8,7 @@ tuple_buf_make(apr_pool_t *pool)
 {
     TupleBuf *buf;
 
-    buf = ol_alloc(sizeof(*buf));
+    buf = apr_palloc(pool, sizeof(*buf));
     buf->size = 4096;
     buf->start = 0;
     buf->end = 0;
@@ -26,7 +26,6 @@ tuple_buf_cleanup(void *data)
     TupleBuf *buf = (TupleBuf *) data;
 
     ol_free(buf->entries);
-    ol_free(buf);
     return APR_SUCCESS;
 }
 
