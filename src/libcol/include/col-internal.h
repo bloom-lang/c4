@@ -1,6 +1,11 @@
 #ifndef COL_INTERNAL_H
 #define COL_INTERNAL_H
 
+/* Enable assertions? */
+#if 0
+#define ASSERT_ENABLED
+#endif
+
 #include "col-api.h"
 
 /* Commonly-used external headers */

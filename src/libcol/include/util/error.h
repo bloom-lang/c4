@@ -10,11 +10,15 @@
 #define FAIL()          simple_error(__FILE__, __LINE__)
 #define FAIL_APR(s)     apr_error((s), __FILE__, __LINE__)
 
+#ifdef ASSERT_ENABLED
 #define ASSERT(cond)    \
     do {                \
         if (!(cond))    \
             assert_fail(APR_STRINGIFY(cond), __FILE__, __LINE__);   \
     } while (0)
+#else
+#define ASSERT(cond)
+#endif
 
 void apr_error(apr_status_t s, const char *file, int line_num) __attribute__((noreturn));
 void simple_error(const char *file, int line_num) __attribute__((noreturn));
