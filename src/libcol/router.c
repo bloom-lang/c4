@@ -12,31 +12,7 @@
 #include "types/catalog.h"
 #include "types/table.h"
 #include "util/list.h"
-
-/*
- * RouteBuffers are used to hold derived tuples in the midst of a fixpoint
- * computation. RouteBufferEntry is a single entry in a RouteBuffer.
- *
- * XXX: Storing a TableDef with each entry is unfortunate, because many of
- * the TableDefs in a large RouteBuffer will be identical. For now seems
- * better to trade memory consumption for faster routing performance, but
- * this tradeoff should be examined.
- */
-typedef struct RouteBufferEntry
-{
-    Tuple *tuple;
-    TableDef *tbl_def;
-} RouteBufferEntry;
-
-typedef struct RouteBuffer
-{
-    int size;           /* # of entries allocated in this buffer */
-    int start;          /* Index of first valid (to-be-routed) entry */
-    int end;            /* Index of last valid (to-be-routed) entry */
-    RouteBufferEntry *entries;
-} RouteBuffer;
-
-#define route_buf_is_empty(buf)     ((buf)->start == (buf)->end)
+#include "util/tuple_buf.h"
 
 struct ColRouter
 {
@@ -54,9 +30,9 @@ struct ColRouter
     apr_queue_t *queue;
 
     /* Derived tuples computed within the current fixpoint; to-be-routed */
-    RouteBuffer *route_buf;
+    TupleBuf *route_buf;
     /* Pending network output tuples computed within current fixpoint */
-    RouteBuffer *net_buf;
+    TupleBuf *net_buf;
 
     int ntuple_routed;
 };
@@ -82,42 +58,7 @@ typedef struct WorkItem
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
 static void router_enqueue(ColRouter *router, WorkItem *wi);
-static apr_status_t route_buf_cleanup(void *data);
 static void compute_fixpoint(ColRouter *router);
-
-static RouteBuffer *
-route_buf_make(apr_pool_t *pool)
-{
-    RouteBuffer *buf;
-
-    buf = ol_alloc(sizeof(*buf));
-    buf->size = 4096;
-    buf->start = 0;
-    buf->end = 0;
-    buf->entries = ol_alloc(sizeof(RouteBufferEntry) * buf->size);
-
-    apr_pool_cleanup_register(pool, buf, route_buf_cleanup,
-                              apr_pool_cleanup_null);
-
-    return buf;
-}
-
-static apr_status_t
-route_buf_cleanup(void *data)
-{
-    RouteBuffer *buf = (RouteBuffer *) data;
-
-    ol_free(buf->entries);
-    ol_free(buf);
-    return APR_SUCCESS;
-}
-
-static void
-route_buf_reset(RouteBuffer *buf)
-{
-    buf->start = 0;
-    buf->end = 0;
-}
 
 ColRouter *
 router_make(ColInstance *col)
@@ -131,8 +72,8 @@ router_make(ColInstance *col)
     router->col = col;
     router->pool = pool;
     router->op_chain_tbl = apr_hash_make(pool);
-    router->route_buf = route_buf_make(pool);
-    router->net_buf = route_buf_make(pool);
+    router->route_buf = tuple_buf_make(pool);
+    router->net_buf = tuple_buf_make(pool);
     router->ntuple_routed = 0;
 
     s = apr_queue_create(&router->queue, 128, router->pool);
@@ -199,7 +140,7 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     if (table_insert(op_chain->delta_tbl->table, tuple) == false)
         return;
 
-    ASSERT(route_buf_is_empty(router->route_buf));
+    ASSERT(tuple_buf_is_empty(router->route_buf));
     router_enqueue_internal(router, tuple, op_chain->delta_tbl);
     compute_fixpoint(router);
 }
@@ -207,16 +148,16 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
 static void
 compute_fixpoint(ColRouter *router)
 {
-    RouteBuffer *route_buf = router->route_buf;
-    RouteBuffer *net_buf = router->net_buf;
+    TupleBuf *route_buf = router->route_buf;
+    TupleBuf *net_buf = router->net_buf;
 
     /*
-     * NB: We route tuples from the RouteBuffer in a FIFO manner, but that
-     * is not necessarily the only choice.
+     * NB: We route tuples from the route_buf in a FIFO manner, but that is
+     * not necessarily the only choice.
      */
-    while (!route_buf_is_empty(route_buf))
+    while (!tuple_buf_is_empty(route_buf))
     {
-        RouteBufferEntry *ent;
+        TupleBufEntry *ent;
         OpChain *op_chain;
 
         ent = &route_buf->entries[route_buf->start];
@@ -234,9 +175,9 @@ compute_fixpoint(ColRouter *router)
         tuple_unpin(ent->tuple);
     }
 
-    while (!route_buf_is_empty(net_buf))
+    while (!tuple_buf_is_empty(net_buf))
     {
-        RouteBufferEntry *ent;
+        TupleBufEntry *ent;
 
         ent = &net_buf->entries[net_buf->start];
         net_buf->start++;
@@ -245,9 +186,9 @@ compute_fixpoint(ColRouter *router)
         tuple_unpin(ent->tuple);
     }
 
-    ASSERT(route_buf_is_empty(route_buf));
-    route_buf_reset(route_buf);
-    route_buf_reset(net_buf);
+    ASSERT(tuple_buf_is_empty(route_buf));
+    tuple_buf_reset(route_buf);
+    tuple_buf_reset(net_buf);
 }
 
 static void
@@ -410,44 +351,7 @@ router_add_op_chain(ColRouter *router, OpChain *op_chain)
 void
 router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
-    RouteBuffer *buf;
-    RouteBufferEntry *ent;
-
-    buf = router->route_buf;
-    if (buf->end == buf->size)
-    {
-        /*
-         * If we've reached the end of the buffer, we need to make room for
-         * more insertions. We can recover some space by moving the valid
-         * buffer content back to the beginning of the buffer. If this is
-         * impossible or not worth the effort, allocate a larger buffer.
-         *
-         * Our quick-and-dirty test for whether moving the buffer contents
-         * is worthwhile is whether we'd regain >= 33% of the buffer space.
-         * XXX: This could likely be improved.
-         */
-        if (buf->start >= (buf->size / 3))
-        {
-            int nvalid = buf->end - buf->start;
-
-            memmove(buf->entries, &buf->entries[buf->start],
-                    nvalid * sizeof(RouteBufferEntry));
-            buf->start = 0;
-            buf->end = nvalid;
-        }
-        else
-        {
-            buf->size *= 2;
-            buf->entries = ol_realloc(buf->entries, buf->size);
-        }
-    }
-
-    ent = &buf->entries[buf->end];
-    ent->tuple = tuple;
-    ent->tbl_def = tbl_def;
-    tuple_pin(ent->tuple);
-
-    buf->end++;
+    tuple_buf_push(router->route_buf, tuple, tbl_def);
 }
 
 /*
@@ -459,5 +363,5 @@ router_enqueue_net(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
     ASSERT(tbl_def->ls_colno != -1);
 
-    /* XXX: TODO */
+    tuple_buf_push(router->net_buf, tuple, tbl_def);
 }
