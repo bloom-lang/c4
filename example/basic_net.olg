@@ -1,5 +1,8 @@
 program basic_net;
 
-define(foo, keys(0, 1), {@string, string});
+define(foo, keys(0), {@string, string});
+define(bar, keys(0), {@string, string});
 
-foo(A, B) :- foo(B, A), A != "foo", A == "bar";
+foo("tcp:W88256X9YJX.local:10001", "foo");
+
+bar("tcp:W88256X9YJX.local:10002", X) :- foo(D, X), D == "tcp:W88256X9YJX.local:10001";
