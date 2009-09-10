@@ -19,6 +19,8 @@ insert_invoke(Operator *op, Tuple *t)
                                 proj_tuple, insert_op->tbl_def);
     }
 
+    tuple_unpin(proj_tuple);
+
     /* XXX debug */
     col_log(op->chain->col, "INSERT => %s: %s",
             insert_op->tbl_def->name,
