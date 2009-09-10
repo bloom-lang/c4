@@ -95,3 +95,8 @@ Broader issues:
 * Change the node system to work with strict aliasing per C99
 * Add a concept of "programs" or "modules"
 * Implement a simple interactive shell
+
+Minor:
+
+* If a fact is defined at node X but has a location specifier for node
+  Y, should we send the tuple to node Y, or simply ignore it?
