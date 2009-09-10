@@ -7,12 +7,13 @@ static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 static unsigned int table_hash_tuple(const char *key, apr_ssize_t *klen);
 
 ColTable *
-table_make(TableDef *def, apr_pool_t *pool)
+table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
 {
     ColTable *tbl;
 
     tbl = apr_pcalloc(pool, sizeof(*tbl));
     tbl->pool = pool;
+    tbl->col = col;
     tbl->def = def;
     tbl->tuples = col_hash_make_custom(pool,
                                        table_hash_tuple,

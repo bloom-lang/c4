@@ -8,11 +8,12 @@
 typedef struct ColTable
 {
     apr_pool_t *pool;
+    ColInstance *col;
     TableDef *def;
     col_hash_t *tuples;
 } ColTable;
 
-ColTable *table_make(TableDef *def, apr_pool_t *pool);
+ColTable *table_make(TableDef *def, ColInstance *col, apr_pool_t *pool);
 bool table_insert(ColTable *tbl, Tuple *t);
 
 #endif  /* TABLE_H */

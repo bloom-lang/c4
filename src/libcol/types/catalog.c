@@ -70,7 +70,7 @@ cat_define_table(ColCatalog *cat, const char *name,
     tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
     tbl_def->ls_colno = find_loc_spec_colno(schema);
-    tbl_def->table = table_make(tbl_def, tbl_pool);
+    tbl_def->table = table_make(tbl_def, cat->col, tbl_pool);
 
     apr_hash_set(cat->tbl_def_tbl, tbl_def->name,
                  APR_HASH_KEY_STRING, tbl_def);
