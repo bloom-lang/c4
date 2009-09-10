@@ -234,13 +234,13 @@ send_thread_main(apr_thread_t *thread, void *data)
  * XXX: The two malloc()s here are really obnoxious.
  */
 void
-send_thread_enqueue(SendThread *st, const char *tbl_name, Tuple *tuple)
+send_thread_enqueue(SendThread *st, Tuple *tuple, TableDef *tbl_def)
 {
     SendMessage *msg;
 
     msg = ol_alloc(sizeof(*msg));
-    msg->tbl_name = ol_strdup(tbl_name);
     msg->tuple = tuple;
+    msg->tbl_name = ol_strdup(tbl_def->name);
     tuple_pin(msg->tuple);
 
     while (true)

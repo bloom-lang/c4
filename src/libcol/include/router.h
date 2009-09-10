@@ -18,6 +18,8 @@ void router_enqueue_tuple(ColRouter *router, Tuple *tuple,
 
 void router_enqueue_internal(ColRouter *router, Tuple *tuple,
                              TableDef *tbl_def);
+void router_enqueue_net(ColRouter *router, Tuple *tuple,
+                        TableDef *tbl_def);
 
 void router_add_op_chain(ColRouter *router, OpChain *op_chain);
 

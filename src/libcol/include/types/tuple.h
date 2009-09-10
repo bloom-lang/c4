@@ -1,6 +1,7 @@
 #ifndef TUPLE_H
 #define TUPLE_H
 
+#include "types/catalog.h"
 #include "types/datum.h"
 #include "types/schema.h"
 #include "util/strbuf.h"
@@ -40,6 +41,8 @@ void tuple_unpin(Tuple *tuple);
 
 bool tuple_equal(Tuple *t1, Tuple *t2);
 apr_uint32_t tuple_hash(Tuple *t);
+
+bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col);
 
 char *tuple_to_str(Tuple *tuple, apr_pool_t *pool);
 void tuple_to_buf(Tuple *tuple, StrBuf *buf);

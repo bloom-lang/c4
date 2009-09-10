@@ -55,6 +55,8 @@ struct ColRouter
 
     /* Derived tuples computed within the current fixpoint; to-be-routed */
     RouteBuffer *route_buf;
+    /* Pending network output tuples computed within current fixpoint */
+    RouteBuffer *net_buf;
 
     int ntuple_routed;
 };
@@ -110,6 +112,13 @@ route_buf_cleanup(void *data)
     return APR_SUCCESS;
 }
 
+static void
+route_buf_reset(RouteBuffer *buf)
+{
+    buf->start = 0;
+    buf->end = 0;
+}
+
 ColRouter *
 router_make(ColInstance *col)
 {
@@ -123,6 +132,7 @@ router_make(ColInstance *col)
     router->pool = pool;
     router->op_chain_tbl = apr_hash_make(pool);
     router->route_buf = route_buf_make(pool);
+    router->net_buf = route_buf_make(pool);
     router->ntuple_routed = 0;
 
     s = apr_queue_create(&router->queue, 128, router->pool);
@@ -160,36 +170,9 @@ router_start(ColRouter *router)
 }
 
 /*
- * Returns true if the tuple is remote and we've enqueued it for network
- * send; false otherwise.
- */
-static bool
-route_tuple_remote(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
-{
-    if (tbl_def->ls_colno != -1)
-    {
-        Datum tuple_addr;
-
-        tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
-        if (!datum_equal(router->col->local_addr, tuple_addr, TYPE_STRING))
-        {
-            col_log(router->col, "Remote tuple: %s => %s",
-                    log_tuple(router->col, tuple),
-                    log_datum(router->col, tuple_addr, TYPE_STRING));
-
-            network_send(router->col->net, tuple_addr,
-                         tbl_def->name, tuple);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/*
- * Route a new tuple. If the tuple is remote (i.e. the specified table has a
- * location specifier that denotes an address other than the local node
- * address), then we enqueue the tuple in the appropriate network buffer.
+ * Route a new tuple that belongs to the given table. If the tuple is remote
+ * (i.e. the tuple's location specifier denotes an address other than the
+ * local node address), then we enqueue the tuple in the network buffer.
  * Otherwise, we route the tuple locally (pass it to the appropriate
  * operator chains).
  */
@@ -204,8 +187,11 @@ route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
     op_chain = apr_hash_get(router->op_chain_tbl, tbl_name,
                             APR_HASH_KEY_STRING);
 
-    if (route_tuple_remote(router, tuple, op_chain->delta_tbl))
+    if (tuple_is_remote(tuple, op_chain->delta_tbl, router->col))
+    {
+        router_enqueue_net(router, tuple, op_chain->delta_tbl);
         return;
+    }
 
     router->ntuple_routed++;
 
@@ -222,6 +208,7 @@ static void
 compute_fixpoint(ColRouter *router)
 {
     RouteBuffer *route_buf = router->route_buf;
+    RouteBuffer *net_buf = router->net_buf;
 
     /*
      * NB: We route tuples from the RouteBuffer in a FIFO manner, but that
@@ -246,6 +233,21 @@ compute_fixpoint(ColRouter *router)
 
         tuple_unpin(ent->tuple);
     }
+
+    while (!route_buf_is_empty(net_buf))
+    {
+        RouteBufferEntry *ent;
+
+        ent = &net_buf->entries[net_buf->start];
+        net_buf->start++;
+
+        network_send(router->col->net, ent->tuple, ent->tbl_def);
+        tuple_unpin(ent->tuple);
+    }
+
+    ASSERT(route_buf_is_empty(route_buf));
+    route_buf_reset(route_buf);
+    route_buf_reset(net_buf);
 }
 
 static void
@@ -446,4 +448,16 @@ router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
     tuple_pin(ent->tuple);
 
     buf->end++;
+}
+
+/*
+ * Enqueue a network output tuple to be sent at the end of the current
+ * fixpoint.
+ */
+void
+router_enqueue_net(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+{
+    ASSERT(tbl_def->ls_colno != -1);
+
+    /* XXX: TODO */
 }

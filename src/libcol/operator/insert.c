@@ -5,6 +5,7 @@
 static void
 insert_invoke(Operator *op, Tuple *t)
 {
+    ColInstance *col = op->chain->col;
     InsertOperator *insert_op = (InsertOperator *) op;
     ExprEvalContext *exec_cxt;
     Tuple *proj_tuple;
@@ -13,18 +14,25 @@ insert_invoke(Operator *op, Tuple *t)
     exec_cxt->inner = t;
     proj_tuple = operator_do_project(op);
 
-    if (table_insert(insert_op->tbl_def->table, proj_tuple))
+    if (tuple_is_remote(proj_tuple, insert_op->tbl_def, col))
     {
-        router_enqueue_internal(op->chain->col->router,
-                                proj_tuple, insert_op->tbl_def);
+        router_enqueue_net(col->router, proj_tuple, insert_op->tbl_def);
+    }
+    else
+    {
+        if (table_insert(insert_op->tbl_def->table, proj_tuple))
+        {
+            router_enqueue_internal(col->router, proj_tuple,
+                                    insert_op->tbl_def);
+        }
     }
 
     tuple_unpin(proj_tuple);
 
     /* XXX debug */
-    col_log(op->chain->col, "INSERT => %s: %s",
+    col_log(col, "INSERT => %s: %s",
             insert_op->tbl_def->name,
-            log_tuple(op->chain->col, proj_tuple));
+            log_tuple(col, proj_tuple));
 }
 
 static void

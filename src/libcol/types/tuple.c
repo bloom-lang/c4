@@ -176,3 +176,15 @@ tuple_from_buf(ColInstance *col, StrBuf *buf, const char *tbl_name)
 
     return result;
 }
+
+bool
+tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col)
+{
+    Datum tuple_addr;
+
+    if (tbl_def->ls_colno == -1)
+        return false;
+
+    tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
+    return (datum_equal(col->local_addr, tuple_addr, TYPE_STRING) == false);
+}

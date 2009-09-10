@@ -31,7 +31,7 @@ struct ColNetwork
 
 static void * APR_THREAD_FUNC network_thread_main(apr_thread_t *thread, void *data);
 static void new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool);
-static SendThread *get_send_thread(ColNetwork *net, Datum loc_spec);
+static SendThread *get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -163,21 +163,23 @@ new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool)
 }
 
 void
-network_send(ColNetwork *net, Datum loc_spec,
-             const char *tbl_name, Tuple *tuple)
+network_send(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
 {
     SendThread *st;
 
-    st = get_send_thread(net, loc_spec);
-    send_thread_enqueue(st, tbl_name, tuple);
+    ASSERT(tbl_def->ls_colno != -1);
+    st = get_send_thread(net, tuple, tbl_def);
+    send_thread_enqueue(st, tuple, tbl_def);
 }
 
 static SendThread *
-get_send_thread(ColNetwork *net, Datum loc_spec)
+get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
 {
     SendThread *st;
+    Datum loc_spec;
     char *tmp_loc_str;
 
+    loc_spec = tuple_get_val(tuple, tbl_def->ls_colno);
     /*
      * XXX: Convert tuple address in Datum format into a C-style
      * string. This is hacky.
