@@ -27,7 +27,7 @@ typedef struct TupleBuf
 
 #define tuple_buf_is_empty(buf)     ((buf)->start == (buf)->end)
 
-TupleBuf *tuple_buf_make(apr_pool_t *pool);
+TupleBuf *tuple_buf_make(int size, apr_pool_t *pool);
 void tuple_buf_reset(TupleBuf *buf);
 void tuple_buf_push(TupleBuf *buf, Tuple *tuple, TableDef *tbl_def);
 

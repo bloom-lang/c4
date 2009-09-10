@@ -72,11 +72,11 @@ router_make(ColInstance *col)
     router->col = col;
     router->pool = pool;
     router->op_chain_tbl = apr_hash_make(pool);
-    router->route_buf = tuple_buf_make(pool);
-    router->net_buf = tuple_buf_make(pool);
+    router->route_buf = tuple_buf_make(4096, pool);
+    router->net_buf = tuple_buf_make(1024, pool);
     router->ntuple_routed = 0;
 
-    s = apr_queue_create(&router->queue, 128, router->pool);
+    s = apr_queue_create(&router->queue, 256, router->pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
