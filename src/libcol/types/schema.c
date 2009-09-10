@@ -57,15 +57,6 @@ schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
     return schema;
 }
 
-DataType
-schema_get_type(Schema *s, int idx)
-{
-    if (idx >= s->len || idx < 0)
-        ERROR("Illegal schema index: %d", idx);
-
-    return s->types[idx];
-}
-
 bool
 schema_equal(Schema *s1, Schema *s2)
 {
