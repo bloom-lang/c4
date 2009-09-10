@@ -16,6 +16,11 @@
 /*
  * RouteBuffers are used to hold derived tuples in the midst of a fixpoint
  * computation. RouteBufferEntry is a single entry in a RouteBuffer.
+ *
+ * XXX: Storing a TableDef with each entry is unfortunate, because many of
+ * the TableDefs in a large RouteBuffer will be identical. For now seems
+ * better to trade memory consumption for faster routing performance, but
+ * this tradeoff should be examined.
  */
 typedef struct RouteBufferEntry
 {
@@ -218,6 +223,10 @@ compute_fixpoint(ColRouter *router)
 {
     RouteBuffer *route_buf = router->route_buf;
 
+    /*
+     * NB: We route tuples from the RouteBuffer in a FIFO manner, but that
+     * is not necessarily the only choice.
+     */
     while (!route_buf_is_empty(route_buf))
     {
         RouteBufferEntry *ent;
@@ -391,6 +400,11 @@ router_add_op_chain(ColRouter *router, OpChain *op_chain)
                  APR_HASH_KEY_STRING, op_chain);
 }
 
+/*
+ * COL-internal: enqueue a new tuple to be routed within the CURRENT
+ * fixpoint. Because we don't insert into the router's work queue, this
+ * should typically be invoked by the router thread itself.
+ */
 void
 router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
