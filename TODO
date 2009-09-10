@@ -45,7 +45,8 @@ Network:
   representation: either hash directly on the Datum representation, or
   make the Datum->C-style string conversion more efficient
 * Add a UDP transport
-* Consider adding an SSL-over-TCP transport, and/or security in general
+* Consider adding an SSL-over-TCP transport, and/or secure
+  communication in general
 * Consider adding a multicast transport?
 
 Data types:
