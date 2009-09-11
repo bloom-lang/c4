@@ -706,10 +706,9 @@ op_expr_get_type(AstOpExpr *op_expr)
         case AST_OP_MODULUS:
         {
             DataType lhs_type = expr_get_type(op_expr->lhs);
-            DataType rhs_type = expr_get_type(op_expr->rhs);
 
             /* XXX: probably too strict; need to allow implicit casts */
-            ASSERT(lhs_type == rhs_type);
+            ASSERT(lhs_type == expr_get_type(op_expr->rhs));
             return lhs_type;
         }
 
