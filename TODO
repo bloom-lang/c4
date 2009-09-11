@@ -65,6 +65,7 @@ Tables:
 * Support a more generic table interface
 * Consider adding a "regexp" table type: given a string input, parses
   into tuple format by applying a regular expression
+* Optimize the hash table implementation
 
 Build system:
 
@@ -89,9 +90,6 @@ Broader issues:
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
 * Consider caching per-tuple hash code
-* Measure the performance difference between looking up a function
-  pointer and doing a table-style lookup (switch statement) for
-  functions like datum_equal(), datum_hash()
 * Change the node system to work with strict aliasing per C99
 * Add a concept of "programs" or "modules"
 * Implement a simple interactive shell
