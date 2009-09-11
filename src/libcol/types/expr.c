@@ -213,24 +213,22 @@ eval_const_expr(ExprState *state)
     return c_expr->value;
 }
 
-Datum
-eval_expr(ExprState *state)
+static eval_expr_func
+lookup_expr_eval_func(ColNodeKind kind)
 {
-    ExprNode *expr = state->expr;
-
-    switch (expr->node.kind)
+    switch (kind)
     {
         case EXPR_OP:
-            return eval_op_expr(state);
+            return eval_op_expr;
 
         case EXPR_VAR:
-            return eval_var_expr(state);
+            return eval_var_expr;
 
         case EXPR_CONST:
-            return eval_const_expr(state);
+            return eval_const_expr;
 
         default:
-            ERROR("Unexpected node kind: %d", (int) expr->node.kind);
+            ERROR("Unexpected node kind: %d", (int) kind);
     }
 }
 
@@ -242,6 +240,7 @@ make_expr_state(ExprNode *expr, ExprEvalContext *cxt, apr_pool_t *pool)
     expr_state = apr_pcalloc(pool, sizeof(*expr_state));
     expr_state->cxt = cxt;
     expr_state->expr = expr;
+    expr_state->expr_func = lookup_expr_eval_func(expr_state->expr->node.kind);
 
     /*
      * XXX: Slightly ugly, but we need to down-cast to determine whether we

@@ -11,14 +11,18 @@ typedef struct ExprEvalContext
 } ExprEvalContext;
 
 typedef struct ExprNode ExprNode;
+typedef struct ExprState ExprState;
 
-typedef struct ExprState
+typedef Datum (*eval_expr_func)(ExprState *state);
+
+struct ExprState
 {
     ExprEvalContext *cxt;
     ExprNode *expr;
-    struct ExprState *lhs;
-    struct ExprState *rhs;
-} ExprState;
+    eval_expr_func expr_func;
+    ExprState *lhs;
+    ExprState *rhs;
+};
 
 struct ExprNode
 {
@@ -48,7 +52,8 @@ typedef struct ExprConst
     Datum value;
 } ExprConst;
 
-Datum eval_expr(ExprState *state);
+#define eval_expr(state)        ((state)->expr_func(state))
+
 ExprState *make_expr_state(ExprNode *expr, ExprEvalContext *cxt,
                            apr_pool_t *pool);
 void expr_to_str(ExprNode *expr, StrBuf *sbuf);
