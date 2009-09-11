@@ -2,68 +2,86 @@
 #include "types/expr.h"
 
 static Datum
-eval_op_uminus_i8(ExprState *state, Datum lhs)
+eval_op_uminus_i8(ExprState *state)
 {
+    Datum lhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
     result.i8 = -(lhs.i8);
     return result;
 }
 
 static Datum
-eval_op_plus_i8(ExprState *state, Datum lhs, Datum rhs)
+eval_op_plus_i8(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     /* XXX: check for overflow? */
     result.i8 = lhs.i8 + rhs.i8;
     return result;
 }
 
 static Datum
-eval_op_minus_i8(ExprState *state, Datum lhs, Datum rhs)
+eval_op_minus_i8(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     /* XXX: check for underflow? */
     result.i8 = lhs.i8 - rhs.i8;
     return result;
 }
 
 static Datum
-eval_op_times_i8(ExprState *state, Datum lhs, Datum rhs)
+eval_op_times_i8(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     /* XXX: check for overflow? */
     result.i8 = lhs.i8 * rhs.i8;
     return result;
 }
 
 static Datum
-eval_op_divide_i8(ExprState *state, Datum lhs, Datum rhs)
+eval_op_divide_i8(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     /* XXX: error checking? e.g. divide by zero */
     /* XXX: should the return type be integer or float? */
     result.i8 = lhs.i8 / rhs.i8;
@@ -71,54 +89,72 @@ eval_op_divide_i8(ExprState *state, Datum lhs, Datum rhs)
 }
 
 static Datum
-eval_op_modulus_i8(ExprState *state, Datum lhs, Datum rhs)
+eval_op_modulus_i8(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == TYPE_INT8);
     ASSERT(state->rhs->expr->type == TYPE_INT8);
     ASSERT(state->expr->type == TYPE_INT8);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     /* XXX: error checking?  */
     result.i8 = lhs.i8 % rhs.i8;
     return result;
 }
 
 static Datum
-eval_op_eq(ExprState *state, Datum lhs, Datum rhs)
+eval_op_eq(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type);
     return result;
 }
 
 static Datum
-eval_op_neq(ExprState *state, Datum lhs, Datum rhs)
+eval_op_neq(ExprState *state)
 {
+    Datum lhs;
+    Datum rhs;
     Datum result;
 
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
     result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? true : false;
     return result;
 }
 
 static Datum
-eval_op_logical(ExprState *state, AstOperKind op_kind, Datum lhs, Datum rhs)
+eval_op_logical(ExprState *state)
 {
+    ExprOp *op = (ExprOp *) state->expr;
+    Datum lhs;
+    Datum rhs;
     Datum result;
     int cmp_result;
 
     ASSERT(state->lhs->expr->type == state->rhs->expr->type);
     ASSERT(state->expr->type == TYPE_BOOL);
 
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
+
     cmp_result = datum_cmp(lhs, rhs, state->lhs->expr->type);
-    switch (op_kind)
+    switch (op->op_kind)
     {
         case AST_OP_LT:
             result.b = (cmp_result < 0 ? true : false);
@@ -137,58 +173,10 @@ eval_op_logical(ExprState *state, AstOperKind op_kind, Datum lhs, Datum rhs)
             break;
 
         default:
-            ERROR("Unexpected op kind: %d", (int) op_kind);
+            ERROR("Unexpected op kind: %d", (int) op->op_kind);
     }
 
     return result;
-}
-
-static Datum
-eval_op_expr(ExprState *state)
-{
-    ExprOp *op = (ExprOp *) state->expr;
-    Datum lhs;
-    Datum rhs;
-
-    lhs = eval_expr(state->lhs);
-    if (op->op_kind == AST_OP_UMINUS)
-        return eval_op_uminus_i8(state, lhs);
-
-    rhs = eval_expr(state->rhs);
-
-    switch (op->op_kind)
-    {
-        case AST_OP_PLUS:
-            return eval_op_plus_i8(state, lhs, rhs);
-
-        case AST_OP_MINUS:
-            return eval_op_minus_i8(state, lhs, rhs);
-
-        case AST_OP_TIMES:
-            return eval_op_times_i8(state, lhs, rhs);
-
-        case AST_OP_DIVIDE:
-            return eval_op_divide_i8(state, lhs, rhs);
-
-        case AST_OP_MODULUS:
-            return eval_op_modulus_i8(state, lhs, rhs);
-
-        case AST_OP_LT:
-        case AST_OP_LTE:
-        case AST_OP_GT:
-        case AST_OP_GTE:
-            return eval_op_logical(state, op->op_kind, lhs, rhs);
-
-        case AST_OP_EQ:
-            return eval_op_eq(state, lhs, rhs);
-
-        case AST_OP_NEQ:
-            return eval_op_neq(state, lhs, rhs);
-
-        /* AST_OP_UMINUS is handled above */
-        default:
-            ERROR("Unexpected op kind: %d", (int) op->op_kind);
-    }
 }
 
 static Datum
@@ -214,12 +202,53 @@ eval_const_expr(ExprState *state)
 }
 
 static eval_expr_func
-lookup_expr_eval_func(ColNodeKind kind)
+lookup_op_expr_eval_func(ExprOp *op_expr)
 {
-    switch (kind)
+    switch (op_expr->op_kind)
+    {
+        case AST_OP_UMINUS:
+            return eval_op_uminus_i8;
+
+        case AST_OP_PLUS:
+            return eval_op_plus_i8;
+
+        case AST_OP_MINUS:
+            return eval_op_minus_i8;
+
+        case AST_OP_TIMES:
+            return eval_op_times_i8;
+
+        case AST_OP_DIVIDE:
+            return eval_op_divide_i8;
+
+        case AST_OP_MODULUS:
+            return eval_op_modulus_i8;
+
+        case AST_OP_LT:
+        case AST_OP_LTE:
+        case AST_OP_GT:
+        case AST_OP_GTE:
+            return eval_op_logical;
+
+        case AST_OP_EQ:
+            return eval_op_eq;
+
+        case AST_OP_NEQ:
+            return eval_op_neq;
+
+        /* AST_OP_UMINUS is handled above */
+        default:
+            ERROR("Unexpected op kind: %d", (int) op_expr->op_kind);
+    }
+}
+
+static eval_expr_func
+lookup_expr_eval_func(ExprNode *expr)
+{
+    switch (expr->node.kind)
     {
         case EXPR_OP:
-            return eval_op_expr;
+            return lookup_op_expr_eval_func((ExprOp *) expr);
 
         case EXPR_VAR:
             return eval_var_expr;
@@ -228,7 +257,7 @@ lookup_expr_eval_func(ColNodeKind kind)
             return eval_const_expr;
 
         default:
-            ERROR("Unexpected node kind: %d", (int) kind);
+            ERROR("Unexpected node kind: %d", (int) expr->node.kind);
     }
 }
 
@@ -240,7 +269,7 @@ make_expr_state(ExprNode *expr, ExprEvalContext *cxt, apr_pool_t *pool)
     expr_state = apr_pcalloc(pool, sizeof(*expr_state));
     expr_state->cxt = cxt;
     expr_state->expr = expr;
-    expr_state->expr_func = lookup_expr_eval_func(expr_state->expr->node.kind);
+    expr_state->expr_func = lookup_expr_eval_func(expr_state->expr);
 
     /*
      * XXX: Slightly ugly, but we need to down-cast to determine whether we
