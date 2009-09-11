@@ -113,9 +113,7 @@ make_ast_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
     result->node.kind = AST_OP_EXPR;
     result->op_kind = op_kind;
     result->lhs = copy_node(lhs, p);
-    if (rhs)
-        result->rhs = copy_node(rhs, p);
-
+    result->rhs = copy_node(rhs, p);
     return result;
 }
 

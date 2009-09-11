@@ -279,9 +279,7 @@ make_expr_state(ExprNode *expr, ExprEvalContext *cxt, apr_pool_t *pool)
     {
         ExprOp *op_expr = (ExprOp *) expr;
 
-        if (op_expr->lhs)
-            expr_state->lhs = make_expr_state(op_expr->lhs, cxt, pool);
-
+        expr_state->lhs = make_expr_state(op_expr->lhs, cxt, pool);
         if (op_expr->rhs)
             expr_state->rhs = make_expr_state(op_expr->rhs, cxt, pool);
     }
@@ -362,10 +360,10 @@ get_op_kind_str(AstOperKind op_kind)
 static void
 op_expr_to_str(ExprOp *op_expr, StrBuf *sbuf)
 {
-    sbuf_append(sbuf, "OP: (");
+    sbuf_appendf(sbuf, "OP: (%s ", get_op_kind_str(op_expr->op_kind));
     expr_to_str(op_expr->lhs, sbuf);
-    sbuf_appendf(sbuf, ") %s (", get_op_kind_str(op_expr->op_kind));
-    expr_to_str(op_expr->rhs, sbuf);
+    if (op_expr->rhs)
+        expr_to_str(op_expr->rhs, sbuf);
     sbuf_append(sbuf, ")");
 }
 

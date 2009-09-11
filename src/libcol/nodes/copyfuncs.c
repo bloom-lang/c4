@@ -118,6 +118,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 {
     ColNode *n = (ColNode *) ptr;
 
+    if (n == NULL)
+        return NULL;
+
     switch (n->kind)
     {
         case AST_PROGRAM:

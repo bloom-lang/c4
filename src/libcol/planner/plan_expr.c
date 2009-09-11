@@ -101,7 +101,8 @@ make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
                 expr_op->expr.type = expr_get_type((ColNode *) ast_op);
                 expr_op->op_kind = ast_op->op_kind;
                 expr_op->lhs = make_eval_expr(ast_op->lhs, outer_rel, chain_plan, state);
-                expr_op->rhs = make_eval_expr(ast_op->rhs, outer_rel, chain_plan, state);
+                if (ast_op->rhs)
+                    expr_op->rhs = make_eval_expr(ast_op->rhs, outer_rel, chain_plan, state);
                 result = (ExprNode *) expr_op;
             }
             break;
