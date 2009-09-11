@@ -144,8 +144,8 @@ compute_fixpoint(ColRouter *router)
     TupleBuf *net_buf = router->net_buf;
 
     /*
-     * NB: We route tuples from the route_buf in a FIFO manner, but that is
-     * not necessarily the only choice.
+     * NB: We route tuples from route_buf in a FIFO manner, but that is not
+     * necessarily the only choice.
      */
     while (!tuple_buf_is_empty(route_buf))
     {
