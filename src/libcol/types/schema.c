@@ -4,6 +4,8 @@
 #include "types/expr.h"
 #include "types/schema.h"
 
+static void lookup_type_funcs(Schema *schema, apr_pool_t *pool);
+
 Schema *
 schema_make(int len, DataType *types, apr_pool_t *pool)
 {
@@ -12,6 +14,7 @@ schema_make(int len, DataType *types, apr_pool_t *pool)
     schema = apr_palloc(pool, sizeof(*schema));
     schema->len = len;
     schema->types = apr_pmemdup(pool, types, len * sizeof(DataType));
+    lookup_type_funcs(schema, pool);
 
     return schema;
 }
@@ -35,6 +38,7 @@ schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
         schema->types[i] = get_type_id(elt->type_name);
         i++;
     }
+    lookup_type_funcs(schema, pool);
 
     return schema;
 }
@@ -53,6 +57,7 @@ schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
     {
         schema->types[i] = expr_ary[i]->expr->type;
     }
+    lookup_type_funcs(schema, pool);
 
     return schema;
 }
@@ -72,4 +77,19 @@ schema_equal(Schema *s1, Schema *s2)
     }
 
     return true;
+}
+
+static
+void lookup_type_funcs(Schema *s, apr_pool_t *pool)
+{
+    int i;
+
+    s->hash_funcs = apr_palloc(pool, s->len * sizeof(datum_hash_func));
+    s->eq_funcs = apr_palloc(pool, s->len * sizeof(datum_eq_func));
+
+    for (i = 0; i < s->len; i++)
+    {
+        s->hash_funcs[i] = type_get_hash_func(s->types[i]);
+        s->eq_funcs[i] = type_get_eq_func(s->types[i]);
+    }
 }

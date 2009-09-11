@@ -1,7 +1,9 @@
 #ifndef CATALOG_H
 #define CATALOG_H
 
+#include "types/datum.h"
 #include "types/schema.h"
+#include "util/list.h"
 
 typedef struct ColCatalog ColCatalog;
 
@@ -43,5 +45,7 @@ bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);
 DataType get_type_id(const char *type_name);
 char *get_type_name(DataType type_id);
+datum_hash_func type_get_hash_func(DataType type);
+datum_eq_func type_get_eq_func(DataType type);
 
 #endif  /* CATALOG_H */

@@ -7,45 +7,48 @@
 static Datum int8_from_buf(StrBuf *buf);
 static void int8_to_buf(apr_int64_t i, StrBuf *buf);
 
-static bool
-bool_equal(bool b1, bool b2)
+bool
+bool_equal(Datum d1, Datum d2)
 {
-    return b1 == b2;
+    return d1.b == d2.b;
 }
 
-static bool
-char_equal(unsigned char c1, unsigned char c2)
+bool
+char_equal(Datum d1, Datum d2)
 {
-    return c1 == c2;
+    return d1.c == d2.c;
 }
 
-static bool
-double_equal(double d1, double d2)
+bool
+double_equal(Datum d1, Datum d2)
 {
-    return d1 == d2;
+    return d1.d8 == d2.d8;
 }
 
-static bool
-int2_equal(apr_int16_t i1, apr_int16_t i2)
+bool
+int2_equal(Datum d1, Datum d2)
 {
-    return i1 == i2;
+    return d1.i2 == d2.i2;
 }
 
-static bool
-int4_equal(apr_int32_t i1, apr_int32_t i2)
+bool
+int4_equal(Datum d1, Datum d2)
 {
-    return i1 == i2;
+    return d1.i4 == d2.i4;
 }
 
-static bool
-int8_equal(apr_int64_t i1, apr_int64_t i2)
+bool
+int8_equal(Datum d1, Datum d2)
 {
-    return i1 == i2;
+    return d1.i8 == d2.i8;
 }
 
-static bool
-string_equal(ColString *s1, ColString *s2)
+bool
+string_equal(Datum d1, Datum d2)
 {
+    ColString *s1 = d1.s;
+    ColString *s2 = d2.s;
+
     if (s1->len != s2->len)
         return false;
 
@@ -58,25 +61,25 @@ datum_equal(Datum d1, Datum d2, DataType type)
     switch (type)
     {
         case TYPE_BOOL:
-            return bool_equal(d1.b, d2.b);
+            return bool_equal(d1, d2);
 
         case TYPE_CHAR:
-            return char_equal(d1.c, d2.c);
+            return char_equal(d1, d2);
 
         case TYPE_DOUBLE:
-            return double_equal(d1.d8, d2.d8);
+            return double_equal(d1, d2);
 
         case TYPE_INT2:
-            return int2_equal(d1.i2, d2.i2);
+            return int2_equal(d1, d2);
 
         case TYPE_INT4:
-            return int4_equal(d1.i4, d2.i4);
+            return int4_equal(d1, d2);
 
         case TYPE_INT8:
-            return int8_equal(d1.i8, d2.i8);
+            return int8_equal(d1, d2);
 
         case TYPE_STRING:
-            return string_equal(d1.s, d2.s);
+            return string_equal(d1, d2);
 
         case TYPE_INVALID:
             ERROR("Invalid data type: TYPE_INVALID");
@@ -186,24 +189,23 @@ datum_cmp(Datum d1, Datum d2, DataType type)
             ERROR("Unexpected data type: %uc", type);
     }
 }
-            
 
-static apr_uint32_t
-bool_hash(bool b)
+apr_uint32_t
+bool_hash(Datum d)
 {
     apr_ssize_t len = sizeof(bool);
-    return apr_hashfunc_default((char *) &b, &len);
+    return apr_hashfunc_default((char *) &(d.b), &len);
 }
 
-static apr_uint32_t
-char_hash(unsigned char c)
+apr_uint32_t
+char_hash(Datum d)
 {
     apr_ssize_t len = sizeof(unsigned char);
-    return apr_hashfunc_default((char *) &c, &len);
+    return apr_hashfunc_default((char *) &(d.c), &len);
 }
 
-static apr_uint32_t
-double_hash(double d)
+apr_uint32_t
+double_hash(Datum d)
 {
     apr_ssize_t len = sizeof(double);
 
@@ -212,38 +214,38 @@ double_hash(double d)
      * they should compare as equal. Therefore, ensure they hash to the same
      * value.
      */
-    if (d == 0)
+    if (d.d8 == 0)
         return 0;
 
-    return apr_hashfunc_default((char *) &d, &len);
+    return apr_hashfunc_default((char *) &(d.d8), &len);
 }
 
-static apr_uint32_t
-int2_hash(apr_int16_t i)
+apr_uint32_t
+int2_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int16_t);
-    return apr_hashfunc_default((char *) &i, &len);
+    return apr_hashfunc_default((char *) &(d.i2), &len);
 }
 
-static apr_uint32_t
-int4_hash(apr_int32_t i)
+apr_uint32_t
+int4_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int32_t);
-    return apr_hashfunc_default((char *) &i, &len);
+    return apr_hashfunc_default((char *) &(d.i4), &len);
 }
 
-static apr_uint32_t
-int8_hash(apr_int64_t i)
+apr_uint32_t
+int8_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int64_t);
-    return apr_hashfunc_default((char *) &i, &len);
+    return apr_hashfunc_default((char *) &(d.i8), &len);
 }
 
-static apr_uint32_t
-string_hash(ColString *s)
+apr_uint32_t
+string_hash(Datum d)
 {
-    apr_ssize_t len = s->len;
-    return apr_hashfunc_default(s->data, &len);
+    apr_ssize_t len = d.s->len;
+    return apr_hashfunc_default(d.s->data, &len);
 }
 
 apr_uint32_t
@@ -252,33 +254,31 @@ datum_hash(Datum d, DataType type)
     switch (type)
     {
         case TYPE_BOOL:
-            return bool_hash(d.b);
+            return bool_hash(d);
 
         case TYPE_CHAR:
-            return char_hash(d.c);
+            return char_hash(d);
 
         case TYPE_DOUBLE:
-            return double_hash(d.d8);
+            return double_hash(d);
 
         case TYPE_INT2:
-            return int2_hash(d.i2);
+            return int2_hash(d);
 
         case TYPE_INT4:
-            return int4_hash(d.i4);
+            return int4_hash(d);
 
         case TYPE_INT8:
-            return int8_hash(d.i8);
+            return int8_hash(d);
 
         case TYPE_STRING:
-            return string_hash(d.s);
+            return string_hash(d);
 
         case TYPE_INVALID:
             ERROR("Invalid data type: TYPE_INVALID");
-            return 0;       /* Keep compiler quiet */
 
         default:
             ERROR("Unexpected data type: %uc", type);
-            return 0;       /* Keep compiler quiet */
     }
 }
 

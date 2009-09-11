@@ -80,11 +80,10 @@ tuple_equal(Tuple *t1, Tuple *t2)
 
     for (i = 0; i < s->len; i++)
     {
-        DataType dt = schema_get_type(s, i);
+        Datum val1 = tuple_get_val(t1, i);
+        Datum val2 = tuple_get_val(t2, i);
 
-        if (!datum_equal(tuple_get_val(t1, i),
-                         tuple_get_val(t2, i),
-                         dt))
+        if ((s->eq_funcs[i])(val1, val2) == false)
             return false;
     }
 
@@ -102,9 +101,8 @@ tuple_hash(Tuple *tuple)
     result = 37;
     for (i = 0; i < s->len; i++)
     {
-        DataType type = schema_get_type(s, i);
         Datum val = tuple_get_val(tuple, i);
-        apr_uint32_t h = datum_hash(val, type);
+        apr_uint32_t h = (s->hash_funcs[i])(val);
 
         /* XXX: choose a better mixing function than XOR */
         result ^= h;
@@ -186,5 +184,5 @@ tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col)
         return false;
 
     tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
-    return (datum_equal(col->local_addr, tuple_addr, TYPE_STRING) == false);
+    return (string_equal(col->local_addr, tuple_addr) == false);
 }

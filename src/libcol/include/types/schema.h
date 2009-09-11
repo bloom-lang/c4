@@ -1,28 +1,16 @@
 #ifndef SCHEMA_H
 #define SCHEMA_H
 
+#include "types/datum.h"
 #include "util/error.h"
 #include "util/list.h"
-
-/*
- * This is effectively a set of type IDs. A more sophisticated type ID
- * system is probably a natural next step.
- */
-typedef unsigned char DataType;
-
-#define TYPE_INVALID 0
-#define TYPE_BOOL    1
-#define TYPE_CHAR    2
-#define TYPE_DOUBLE  3
-#define TYPE_INT2    4
-#define TYPE_INT4    5
-#define TYPE_INT8    6
-#define TYPE_STRING  7
 
 typedef struct Schema
 {
     int len;
     DataType *types;
+    datum_hash_func *hash_funcs;
+    datum_eq_func *eq_funcs;
 } Schema;
 
 struct ExprState;

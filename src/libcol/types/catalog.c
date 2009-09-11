@@ -188,3 +188,71 @@ get_type_name(DataType type_id)
             ERROR("Unexpected type id: %d", type_id);
     }
 }
+
+datum_hash_func
+type_get_hash_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_hash;
+
+        case TYPE_CHAR:
+            return char_hash;
+
+        case TYPE_DOUBLE:
+            return double_hash;
+
+        case TYPE_INT2:
+            return int2_hash;
+
+        case TYPE_INT4:
+            return int4_hash;
+
+        case TYPE_INT8:
+            return int8_hash;
+
+        case TYPE_STRING:
+            return string_hash;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
+datum_eq_func
+type_get_eq_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_equal;
+
+        case TYPE_CHAR:
+            return char_equal;
+
+        case TYPE_DOUBLE:
+            return double_equal;
+
+        case TYPE_INT2:
+            return int2_equal;
+
+        case TYPE_INT4:
+            return int4_equal;
+
+        case TYPE_INT8:
+            return int8_equal;
+
+        case TYPE_STRING:
+            return string_equal;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
