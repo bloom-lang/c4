@@ -27,7 +27,6 @@ Planner:
 
 Executor/Router/Operators:
 
-* Consider writing a specialized allocator for Tuples
 * Don't copy WorkItem in the router: have the queue store kind + pointer directly
 * More efficient joins: the existing approach to joins essentially
   re-materializes intermediate join results. Stems and stairs from
