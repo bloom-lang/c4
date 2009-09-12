@@ -14,11 +14,22 @@
 typedef struct Tuple
 {
     /*
-     * XXX: Our dataflow is strictly typed, so we don't actually need to
-     * store the schema in the tuple (other than for convenience).
-     * XXX: Refcount this? Or deep-copy it?
+     * When tuples are on a TuplePool freelist, we need a way to record the
+     * next element of the freelist. Since we don't care about the schema of
+     * Tuples on the freelist, we just reuse this struct element. We could
+     * also use the refcount, of course, but that field might not be large
+     * enough to store a pointer.
      */
-    Schema *schema;
+    union
+    {
+        /*
+         * XXX: Our dataflow is strictly typed, so we don't actually need to
+         * store the schema in the tuple (other than for convenience).  XXX:
+         * Refcount this? Or deep-copy it?
+         */
+        Schema *schema;
+        struct Tuple *next_free;
+    } ptr;
 
     /*
      * XXX: This could be smaller, but APR's atomic ops are only defined for
@@ -30,6 +41,7 @@ typedef struct Tuple
     Datum vals[1];      /* Variable-length array */
 } Tuple;
 
+#define tuple_get_schema(t)     ((t)->ptr.schema)
 #define tuple_get_val(t, i)     ((t)->vals[(i)])
 
 Tuple *tuple_make_empty(Schema *s);

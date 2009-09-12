@@ -10,9 +10,8 @@ tuple_make_empty(Schema *s)
 {
     Tuple *t;
 
-    t = ol_alloc(offsetof(Tuple, vals) + (s->len * sizeof(Datum)));
-    t->schema = s;
-    t->refcount = 1;
+    t = tuple_pool_loan(s->tuple_pool);
+    ASSERT(tuple_get_schema(t) == s);
 
     return t;
 }
@@ -59,12 +58,14 @@ tuple_unpin(Tuple *tuple)
 {
     if (apr_atomic_dec32(&tuple->refcount) == 0)
     {
-        Schema *s = tuple->schema;
+        Schema *s = tuple_get_schema(tuple);
         int i;
 
         for (i = 0; i < s->len; i++)
             datum_free(tuple_get_val(tuple, i),
                        schema_get_type(s, i));
+
+        tuple_pool_return(s->tuple_pool, tuple);
     }
 }
 
@@ -74,9 +75,9 @@ tuple_equal(Tuple *t1, Tuple *t2)
     Schema *s;
     int i;
 
+    s = tuple_get_schema(t1);
     /* XXX: Should we support this case? */
-    ASSERT(schema_equal(t1->schema, t2->schema));
-    s = t1->schema;
+    ASSERT(schema_equal(s, tuple_get_schema(t2)));
 
     for (i = 0; i < s->len; i++)
     {
@@ -97,7 +98,7 @@ tuple_hash(Tuple *tuple)
     Schema *s;
     int i;
 
-    s = tuple->schema;
+    s = tuple_get_schema(tuple);
     result = 37;
     for (i = 0; i < s->len; i++)
     {
@@ -119,10 +120,11 @@ tuple_hash(Tuple *tuple)
 char *
 tuple_to_str(Tuple *tuple, apr_pool_t *pool)
 {
-    Schema *schema = tuple->schema;
+    Schema *schema;
     StrBuf *buf;
     int i;
 
+    schema = tuple_get_schema(tuple);
     buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
     {
@@ -142,9 +144,10 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
 void
 tuple_to_buf(Tuple *tuple, StrBuf *buf)
 {
-    Schema *schema = tuple->schema;
+    Schema *schema;
     int i;
 
+    schema = tuple_get_schema(tuple);
     for (i = 0; i < schema->len; i++)
     {
         DataType type = schema_get_type(schema, i);

@@ -1,6 +1,7 @@
 #include "col-internal.h"
 #include "parser/ast.h"
 #include "types/catalog.h"
+#include "types/datum.h"
 #include "types/expr.h"
 #include "types/schema.h"
 
@@ -15,6 +16,7 @@ schema_make(int len, DataType *types, apr_pool_t *pool)
     schema->len = len;
     schema->types = apr_pmemdup(pool, types, len * sizeof(DataType));
     lookup_type_funcs(schema, pool);
+    schema->tuple_pool = make_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -39,6 +41,7 @@ schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
         i++;
     }
     lookup_type_funcs(schema, pool);
+    schema->tuple_pool = make_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -58,6 +61,7 @@ schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
         schema->types[i] = expr_ary[i]->expr->type;
     }
     lookup_type_funcs(schema, pool);
+    schema->tuple_pool = make_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -77,6 +81,15 @@ schema_equal(Schema *s1, Schema *s2)
     }
 
     return true;
+}
+
+/*
+ * Returns the size of a Tuple that has the given schema.
+ */
+apr_size_t
+schema_get_tuple_size(Schema *schema)
+{
+    return offsetof(Tuple, vals) + (schema->len * sizeof(Datum));
 }
 
 static
