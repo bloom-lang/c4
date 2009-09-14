@@ -385,6 +385,8 @@ const_expr_to_str(ExprConst *const_expr, StrBuf *sbuf)
 void
 expr_to_str(ExprNode *expr, StrBuf *sbuf)
 {
+    sbuf_append_char(sbuf, '(');
+
     switch (expr->node.kind)
     {
         case EXPR_OP:
@@ -402,4 +404,6 @@ expr_to_str(ExprNode *expr, StrBuf *sbuf)
         default:
             ERROR("Unexpected node kind: %d", (int) expr->node.kind);
     }
+
+    sbuf_append_char(sbuf, ')');
 }
