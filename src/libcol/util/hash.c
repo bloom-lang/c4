@@ -57,14 +57,17 @@ struct col_hash_index_t {
 };
 
 /*
- * The size of the array is always a power of two. We use the maximum
- * index rather than the size so that we can use bitwise-AND for
- * modular arithmetic.
- * The count of hash entries may be greater depending on the chosen
- * collision rate.
+ * The size of the array is always a power of two. We use the maximum index
+ * rather than the size so that we can use bitwise-AND for modular
+ * arithmetic. The count of hash entries may be greater depending on the
+ * chosen collision rate.
+ *
+ * We allocate the bucket array in a sub-pool, "array_pool". This allows us
+ * to reclaim the old bucket array after an expansion.
  */
 struct col_hash_t {
     apr_pool_t          *pool;
+    apr_pool_t          *array_pool;
     col_hash_entry_t   **array;
     col_hash_index_t     iterator;  /* For col_hash_first(NULL, ...) */
     unsigned int         count, max;
@@ -82,7 +85,7 @@ struct col_hash_t {
 
 static col_hash_entry_t **alloc_array(col_hash_t *ht, unsigned int max)
 {
-   return apr_pcalloc(ht->pool, sizeof(*ht->array) * (max + 1));
+   return apr_pcalloc(ht->array_pool, sizeof(*ht->array) * (max + 1));
 }
 
 col_hash_t *col_hash_make(apr_pool_t *pool)
@@ -90,6 +93,7 @@ col_hash_t *col_hash_make(apr_pool_t *pool)
     col_hash_t *ht;
     ht = apr_palloc(pool, sizeof(col_hash_t));
     ht->pool = pool;
+    apr_pool_create(&ht->array_pool, pool); /* XXX: error checking */
     ht->free = NULL;
     ht->count = 0;
     ht->max = INITIAL_MAX;
@@ -159,9 +163,13 @@ void col_hash_this(col_hash_index_t *hi,
 
 static void expand_array(col_hash_t *ht)
 {
+    apr_pool_t *old_array_pool;
     col_hash_index_t *hi;
     col_hash_entry_t **new_array;
     unsigned int new_max;
+
+    old_array_pool = ht->array_pool;
+    apr_pool_create(&ht->array_pool, ht->pool); /* XXX: error checking */
 
     new_max = ht->max * 2 + 1;
     new_array = alloc_array(ht, new_max);
@@ -172,6 +180,8 @@ static void expand_array(col_hash_t *ht)
     }
     ht->array = new_array;
     ht->max = new_max;
+
+    apr_pool_destroy(old_array_pool);
 }
 
 unsigned int col_hashfunc_default(const char *char_key,
@@ -289,18 +299,17 @@ col_hash_t *col_hash_copy(apr_pool_t *pool,
     unsigned int i, j;
 
     ht = apr_palloc(pool, sizeof(col_hash_t) +
-                    sizeof(*ht->array) * (orig->max + 1) +
                     sizeof(col_hash_entry_t) * orig->count);
     ht->pool = pool;
+    apr_pool_create(&ht->array_pool, ht->pool); /* XXX: error checking */
     ht->free = NULL;
     ht->count = orig->count;
     ht->max = orig->max;
     ht->hash_func = orig->hash_func;
     ht->cmp_func = orig->cmp_func;
-    ht->array = (col_hash_entry_t **)((char *)ht + sizeof(col_hash_t));
+    ht->array = alloc_array(ht, ht->max);
 
-    new_vals = (col_hash_entry_t *)((char *)(ht) + sizeof(col_hash_t) +
-                                    sizeof(*ht->array) * (orig->max + 1));
+    new_vals = (col_hash_entry_t *)((char *)(ht) + sizeof(col_hash_t));
     j = 0;
     for (i = 0; i <= ht->max; i++) {
         col_hash_entry_t **new_entry = &(ht->array[i]);
@@ -409,6 +418,7 @@ col_hash_t *col_hash_merge(apr_pool_t *p,
 
     res = apr_palloc(p, sizeof(col_hash_t));
     res->pool = p;
+    apr_pool_create(&res->array_pool, p); /* XXX: error checking */
     res->free = NULL;
     res->hash_func = base->hash_func;
     res->cmp_func = base->cmp_func;
