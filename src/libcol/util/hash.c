@@ -364,6 +364,7 @@ void *col_hash_set_if_new(col_hash_t *ht,
 
     ASSERT(val != NULL);
     he = *find_entry(ht, key, klen, val);
+    /* if new key, check that the collision rate isn't too high */
     if (he->val == val && ht->count > ht->max) {
         expand_array(ht);
     }
