@@ -3,6 +3,7 @@
 #include "col-internal.h"
 #include "nodes/makefuncs.h"
 #include "parser/analyze.h"
+#include "parser/walker.h"
 #include "types/catalog.h"
 
 typedef struct AnalyzeState
@@ -37,6 +38,7 @@ static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
+static void find_unused_vars(AstRule *rule, AnalyzeState *state);
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2,
@@ -185,8 +187,14 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     generate_implied_quals(rule, state);
 
     analyze_rule_location(rule, state);
+
+    find_unused_vars(rule, state);
 }
 
+/*
+ * Check the consistency of the location specifiers used in the rule, and
+ * determine whether it is a network rule.
+ */
 static void
 analyze_rule_location(AstRule *rule, AnalyzeState *state)
 {
@@ -195,8 +203,8 @@ analyze_rule_location(AstRule *rule, AnalyzeState *state)
     ListCell *lc;
 
     /*
-     * Check the consistency of the location specifiers. At most one
-     * distinct location specifier can be used in the rule body.
+     * NB: At present, at most one distinct location specifier can be used
+     * in the rule body.
      */
     body_loc_spec = NULL;
     foreach (lc, rule->joins)
@@ -224,6 +232,63 @@ analyze_rule_location(AstRule *rule, AnalyzeState *state)
     if (body_loc_spec != NULL && head_loc_spec != NULL &&
         !loc_spec_equal(body_loc_spec, head_loc_spec, state))
         rule->is_network = true;
+}
+
+typedef struct
+{
+    apr_hash_t *var_seen;
+} UnusedVarContext;
+
+static bool
+unused_var_walker(ColNode *n, void *data)
+{
+    UnusedVarContext *cxt = (UnusedVarContext *) data;
+
+    if (n->kind == AST_VAR_EXPR)
+    {
+        AstVarExpr *var = (AstVarExpr *) n;
+
+        apr_hash_set(cxt->var_seen, var->name,
+                     APR_HASH_KEY_STRING, var->name);
+    }
+
+    return true;
+}
+
+/*
+ * Search for variables that are defined by a join clause, but are not
+ * referenced by a qual or the rule head. Such a variable need not be
+ * assigned a name, so we emit a warning.
+ */
+static void
+find_unused_vars(AstRule *rule, AnalyzeState *state)
+{
+    UnusedVarContext cxt;
+    ListCell *lc;
+    apr_hash_index_t *hi;
+
+    cxt.var_seen = apr_hash_make(state->pool);
+
+    expr_tree_walker((ColNode *) rule->head, unused_var_walker, &cxt);
+
+    foreach (lc, rule->quals)
+    {
+        ColNode *qual = (ColNode *) lc_ptr(lc);
+
+        expr_tree_walker(qual, unused_var_walker, &cxt);
+    }
+
+    for (hi = apr_hash_first(state->pool, state->var_tbl);
+         hi != NULL; hi = apr_hash_next(hi))
+    {
+        char *var_name;
+
+        apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
+        if (apr_hash_get(cxt.var_seen, var_name, APR_HASH_KEY_STRING) == NULL)
+        {
+            printf("Unused variable name: %s\n", var_name);
+        }
+    }
 }
 
 static int
