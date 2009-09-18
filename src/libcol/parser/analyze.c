@@ -318,6 +318,7 @@ is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state)
 {
     List *eq_list;
 
+    /* We don't bother storing X = X in the var equality table */
     if (strcmp(v1->name, v2->name) == 0)
         return true;
 
