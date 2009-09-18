@@ -38,20 +38,22 @@ static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
-static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
+static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2,
+                           AnalyzeState *state);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
 static AstVarExpr *lookup_var(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
+static bool is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
-static void set_var_type(AstVarExpr *var, AstDefine *table,
-                         int colno, AnalyzeState *state);
+static void set_var_type(AstVarExpr *var, AstDefine *table, int colno);
 static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(ColNode *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
+static List *get_eq_list(const char *varname, bool make_new, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -197,7 +199,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         if (loc_spec != NULL)
         {
             if (body_loc_spec != NULL &&
-                !loc_spec_equal(loc_spec, body_loc_spec))
+                !loc_spec_equal(loc_spec, body_loc_spec, state))
                 ERROR("Distinct location specifiers in the body "
                       "of a single rule are not allowed");
 
@@ -211,7 +213,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
      */
     head_loc_spec = table_ref_get_loc_spec(rule->head, state);
     if (body_loc_spec != NULL && head_loc_spec != NULL &&
-        !loc_spec_equal(body_loc_spec, head_loc_spec))
+        !loc_spec_equal(body_loc_spec, head_loc_spec, state))
         rule->is_network = true;
 }
 
@@ -252,18 +254,19 @@ table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state)
 }
 
 static bool
-loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2)
+loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2, AnalyzeState *state)
 {
     /* Only variable location specifiers supported for now */
     ASSERT(s1->expr->kind == AST_VAR_EXPR);
     ASSERT(s2->expr->kind == AST_VAR_EXPR);
 
     /*
-     * XXX: Implementing this is non-trivial, because it requires testing
-     * whether the two variables are equivalent. For now, should at least
-     * check that variable names are identical.
+     * NB: This only checks if there is an explicit or implied equality
+     * constraint between the two variable names. In practice, this is
+     * probably sufficient.
      */
-    return true;
+    return is_var_equal((AstVarExpr *) s1->expr, (AstVarExpr *) s2->expr,
+                        state);
 }
 
 static char *
@@ -308,6 +311,15 @@ define_var(AstVarExpr *var, AnalyzeState *state)
     ASSERT(!is_var_defined(var->name, state));
     apr_hash_set(state->var_tbl, var->name,
                  APR_HASH_KEY_STRING, var);
+}
+
+static bool
+is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state)
+{
+    List *eq_list;
+
+    eq_list = get_eq_list(v1->name, false, state);
+    return list_member_str(eq_list, v2->name);
 }
 
 static char *
@@ -393,7 +405,7 @@ done:
         var = (AstVarExpr *) cref->expr;
 
         /* Fill-in variable's type, add to variable table (unless don't care) */
-        set_var_type(var, define, colno, state);
+        set_var_type(var, define, colno);
         if (!is_dont_care_var((ColNode *) var))
             define_var(var, state);
         colno++;
@@ -403,7 +415,7 @@ done:
 }
 
 static void
-set_var_type(AstVarExpr *var, AstDefine *table, int colno, AnalyzeState *state)
+set_var_type(AstVarExpr *var, AstDefine *table, int colno)
 {
     AstSchemaElt *elt;
 
