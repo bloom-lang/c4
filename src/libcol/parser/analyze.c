@@ -35,6 +35,7 @@ static void analyze_op_expr(AstOpExpr *op_expr, bool inside_qual,
 static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
                              AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
+static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
@@ -130,8 +131,6 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
-    AstColumnRef *body_loc_spec;
-    AstColumnRef *head_loc_spec;
     ListCell *lc;
 
     printf("RULE => %s\n", rule->head->name);
@@ -184,6 +183,16 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     make_var_eq_table(rule, state);
     generate_implied_quals(rule, state);
+
+    analyze_rule_location(rule, state);
+}
+
+static void
+analyze_rule_location(AstRule *rule, AnalyzeState *state)
+{
+    AstColumnRef *body_loc_spec;
+    AstColumnRef *head_loc_spec;
+    ListCell *lc;
 
     /*
      * Check the consistency of the location specifiers. At most one
