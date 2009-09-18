@@ -102,6 +102,22 @@ list_member_int(List *list, int datum)
     return false;
 }
 
+bool
+list_member_str(List *list, const char *str)
+{
+    ListCell *lc;
+
+    foreach (lc, list)
+    {
+        char *s = (char *) lc_ptr(lc);
+
+        if (strcmp(s, str) == 0)
+            return true;
+    }
+
+    return false;
+}
+
 static ListCell *
 list_get_cell(List *list, int idx)
 {

@@ -59,6 +59,7 @@ List *list_prepend_int(List *list, int datum);
 
 bool list_member(List *list, void *datum);
 bool list_member_int(List *list, int datum);
+bool list_member_str(List *list, const char *str);
 
 void *list_get(List *list, int idx);
 int list_get_int(List *list, int idx);
