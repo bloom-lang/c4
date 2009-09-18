@@ -6,7 +6,6 @@ Parser and lexer:
 * Trinary conditional operator ("?:")
 * Allow location specifiers to be attached to constants
 * Unicode identifiers and string literals
-* Locking / concurrency control
 * Make bison parser "pure"
 * In string literals, support the "\000" syntax (Octal ASCII
   character) from C89; or perhaps some syntax for specifying Unicode
@@ -69,7 +68,7 @@ Tables:
 Build system:
 
 * Make use of profile-guided optimization with GCC
-* Add a compile-time flag to disable assertions
+* Add a build-time flag to disable assertions
 
 APR:
 
@@ -92,6 +91,7 @@ Broader issues:
 * Change the node system to work with strict aliasing per C99
 * Add a concept of "programs" or "modules"
 * Implement a simple interactive shell
+* Locking / concurrency control
 
 Minor:
 
