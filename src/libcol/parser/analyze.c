@@ -318,6 +318,9 @@ is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state)
 {
     List *eq_list;
 
+    if (strcmp(v1->name, v2->name) == 0)
+        return true;
+
     eq_list = get_eq_list(v1->name, false, state);
     return list_member_str(eq_list, v2->name);
 }
