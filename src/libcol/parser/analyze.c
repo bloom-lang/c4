@@ -16,8 +16,10 @@ typedef struct AnalyzeState
     int tmp_ruleno;
 
     /* Per-clause state: */
-    /* Mapping from variable name => AstVarExpr */
+    /* Map from variable name => AstVarExpr */
     apr_hash_t *var_tbl;
+    /* Map from variable name => list of equal variable names */
+    apr_hash_t *eq_tbl;
     /* Current index for system-generated variable names */
     int tmp_varno;
 } AnalyzeState;
@@ -40,6 +42,7 @@ static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
+static AstVarExpr *lookup_var(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void set_var_type(AstVarExpr *var, AstDefine *table,
@@ -47,6 +50,8 @@ static void set_var_type(AstVarExpr *var, AstDefine *table,
 static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(ColNode *node);
+static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
+static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -175,6 +180,9 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
                   "appear in the head of a rule");
     }
 
+    make_var_eq_table(rule, state);
+    generate_implied_quals(rule, state);
+
     /*
      * Check the consistency of the location specifiers. At most one
      * distinct location specifier can be used in the rule body.
@@ -283,8 +291,14 @@ is_rule_defined(const char *name, AnalyzeState *state)
 static bool
 is_var_defined(const char *name, AnalyzeState *state)
 {
-    return (bool) (apr_hash_get(state->var_tbl, name,
-                                APR_HASH_KEY_STRING) != NULL);
+    return (bool) (lookup_var(name, state) != NULL);
+}
+
+static AstVarExpr *
+lookup_var(const char *name, AnalyzeState *state)
+{
+    return (AstVarExpr *) apr_hash_get(state->var_tbl, name,
+                                       APR_HASH_KEY_STRING);
 }
 
 static void
@@ -520,8 +534,7 @@ analyze_var_expr(AstVarExpr *var_expr, bool inside_qual, AnalyzeState *state)
     {
         AstVarExpr *def_var;
 
-        def_var = apr_hash_get(state->var_tbl, var_expr->name,
-                               APR_HASH_KEY_STRING);
+        def_var = lookup_var(var_expr->name, state);
         ASSERT(def_var != NULL);
         ASSERT(def_var->type != TYPE_INVALID);
 
@@ -616,6 +629,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
+    state->eq_tbl = apr_hash_make(pool);
     state->tmp_ruleno = 0;
 
     printf("Program name: %s\n", program->name);
@@ -635,6 +649,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 
         /* Reset per-clause state */
         apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->eq_tbl);
         state->tmp_varno = 0;
 
         analyze_fact(fact, state);
@@ -646,6 +661,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
 
         /* Reset per-clause state */
         apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->eq_tbl);
         state->tmp_varno = 0;
 
         analyze_rule(rule, state);
@@ -662,6 +678,163 @@ is_dont_care_var(ColNode *node)
 
     var = (AstVarExpr *) node;
     return (bool) (strcmp(var->name, "_") == 0);
+}
+
+static List *
+get_eq_list(const char *varname, bool make_new, AnalyzeState *state)
+{
+    List *eq_list;
+
+    eq_list = apr_hash_get(state->eq_tbl, varname, APR_HASH_KEY_STRING);
+    if (eq_list == NULL)
+    {
+        if (!make_new)
+            ERROR("Failed to find equality list for var %s", varname);
+
+        eq_list = list_make(state->pool);
+        apr_hash_set(state->eq_tbl, varname, APR_HASH_KEY_STRING, eq_list);
+    }
+
+    return eq_list;
+}
+
+/* Record that "v2" is an alias for "v1". */
+static void
+add_var_eq(char *v1, char *v2, AnalyzeState *state)
+{
+    List *eq_list;
+
+    eq_list = get_eq_list(v1, true, state);
+    list_append(eq_list, v2);
+}
+
+/*
+ * We use a simple definition of "equality": we look for an op expression
+ * consisting of "=" between two bare variables.
+ */
+static bool
+is_simple_equality(AstQualifier *qual, AstVarExpr **lhs, AstVarExpr **rhs)
+{
+    AstOpExpr *op_expr;
+
+    if (qual->expr->kind != AST_OP_EXPR)
+        return false;
+
+    op_expr = (AstOpExpr *) qual->expr;
+    if (op_expr->op_kind != AST_OP_EQ)
+        return false;
+
+    if (op_expr->lhs->kind != AST_VAR_EXPR ||
+        op_expr->rhs->kind != AST_VAR_EXPR)
+        return false;
+
+    *lhs = (AstVarExpr *) op_expr->lhs;
+    *rhs = (AstVarExpr *) op_expr->rhs;
+    return true;
+}
+
+static void
+make_var_eq_table(AstRule *rule, AnalyzeState *state)
+{
+    ListCell *lc;
+
+    ASSERT(apr_hash_count(state->eq_tbl) == 0);
+
+    foreach (lc, rule->quals)
+    {
+        AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
+        AstVarExpr *lhs;
+        AstVarExpr *rhs;
+
+        if (!is_simple_equality(qual, &lhs, &rhs))
+            continue;
+
+        add_var_eq(lhs->name, rhs->name, state);
+        add_var_eq(rhs->name, lhs->name, state);
+    }
+}
+
+static int
+add_qual_list(AstVarExpr *target, List *var_list,
+              AstRule *rule, AnalyzeState *state)
+{
+    ListCell *lc;
+    int count;
+
+    count = 0;
+    foreach (lc, var_list)
+    {
+        char *var = (char *) lc_ptr(lc);
+        List *eq_list;
+
+        if (strcmp(var, target->name) == 0)
+            continue;
+
+        eq_list = get_eq_list(var, false, state);
+        if (!list_member_str(eq_list, target->name))
+        {
+            /* Create the actual qual */
+            AstVarExpr *rhs;
+            AstOpExpr *op_expr;
+            AstQualifier *qual;
+
+            rhs = lookup_var(var, state);
+            op_expr = make_ast_op_expr((ColNode *) target,
+                                       (ColNode *) rhs,
+                                       AST_OP_EQ,
+                                       state->pool);
+            qual = make_qualifier((ColNode *) op_expr, state->pool);
+            list_append(rule->quals, qual);
+
+            add_var_eq(var, target->name, state);
+            add_var_eq(target->name, var, state);
+            list_append(eq_list, target->name);
+            count++;
+        }
+    }
+
+    return count;
+}
+
+/*
+ * Compute qualifiers that are implied by the set of quals explicitly stated
+ * in the query. We only try to do this for the trivial case of computing
+ * the transitive closure over the simple var-equality quals: that is, given
+ * A = B and B = C, we generate A = C.
+ *
+ * This is useful, because it gives the planner more choice for join
+ * options. It is also necessary for counting the number of distinct
+ * location specifiers in the rule.
+ *
+ * XXX: We currently do this via a braindead algorithm.
+ */
+static void
+generate_implied_quals(AstRule *rule, AnalyzeState *state)
+{
+    ListCell *lc;
+    int count;
+
+top:
+    count = 0;
+    foreach (lc, rule->quals)
+    {
+        AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
+        AstVarExpr *lhs;
+        AstVarExpr *rhs;
+        List *eq_list;
+
+        if (!is_simple_equality(qual, &lhs, &rhs))
+            continue;
+
+        eq_list = get_eq_list(lhs->name, false, state);
+        count += add_qual_list(rhs, eq_list, rule, state);
+
+        eq_list = get_eq_list(rhs->name, false, state);
+        count += add_qual_list(lhs, eq_list, rule, state);
+    }
+
+    if (count > 0)
+        goto top;
 }
 
 DataType
