@@ -120,7 +120,7 @@ done:
 }
 
 /*
- * Install the program contained in the specified program into the COL
+ * Install the program contained in the specified string into the COL
  * runtime.
  *
  * XXX: Note that this is asynchronous; should we provide a convenient means
