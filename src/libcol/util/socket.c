@@ -112,5 +112,5 @@ socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    return apr_psprintf(pool, "tcp:%s:%us", ip, addr->port);
+    return apr_psprintf(pool, "tcp:%s:%hu", ip, addr->port);
 }
