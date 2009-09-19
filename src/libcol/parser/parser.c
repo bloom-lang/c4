@@ -60,7 +60,7 @@ parse_str(const char *str, apr_pool_t *pool, ColInstance *col)
 
     parser = parser_make(pool);
     ast = do_parse(parser, str);
-    analyze_ast(ast, parser->pool);
+    analyze_ast(ast, parser->pool, col);
     /* Copy the finished AST to the caller's pool */
     ast = copy_node(ast, pool);
     parser_destroy(parser);

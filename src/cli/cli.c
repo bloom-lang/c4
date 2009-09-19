@@ -10,8 +10,6 @@
 #include "col-api.h"
 
 static void usage(void);
-static void exec_file(apr_int16_t port, const char *srcfile);
-static void do_netbench(const char *srcfile);
 static ColInstance *setup_col(apr_int16_t port, const char *srcfile);
 
 int
@@ -19,7 +17,7 @@ main(int argc, const char *argv[])
 {
     static const apr_getopt_option_t opt_option[] =
         {
-            {"netbench", 'n', false, "run net benchmark"},
+            {"src-string", 's', true, "install source" },
             { "help", 'h', false, "show help" },
             { "port", 'p', true, "port number" },
             { NULL, 0, 0, NULL }
@@ -29,8 +27,9 @@ main(int argc, const char *argv[])
     int optch;
     const char *optarg;
     apr_status_t s;
-    bool netbench = false;
     apr_int64_t port = 0;
+    char *src_string = NULL;
+    ColInstance *c;
 
     col_initialize();
 
@@ -42,10 +41,6 @@ main(int argc, const char *argv[])
     {
         switch (optch)
         {
-            case 'n':
-                netbench = true;
-                break;
-
             case 'h':
                 usage();
                 break;
@@ -54,6 +49,10 @@ main(int argc, const char *argv[])
                 port = apr_atoi64(optarg);
                 if (port < 0 || port > APR_INT16_MAX)
                     usage();
+                break;
+
+            case 's':
+                src_string = apr_pstrdup(pool, optarg);
                 break;
         }
     }
@@ -69,17 +68,14 @@ main(int argc, const char *argv[])
     if (opt->ind + 1 != argc)
         usage();
 
-    if (netbench)
-    {
-        if (port != 0)
-            usage();
+    c = setup_col((apr_int16_t) port, argv[opt->ind]);
+    if (src_string != NULL)
+        col_install_str(c, src_string);
 
-        do_netbench(argv[opt->ind]);
-    }
-    else
-    {
-        exec_file((apr_int16_t) port, argv[opt->ind]);
-    }
+    while (true)
+        sleep(1);
+
+    col_destroy(c);
 
     apr_pool_destroy(pool);
     col_terminate();
@@ -88,37 +84,8 @@ main(int argc, const char *argv[])
 static void
 usage(void)
 {
-    printf("Usage: coverlog [ -h | -p port ] srcfile\n");
+    printf("Usage: coverlog [ -h | -p port | -s srctext ] srcfile\n");
     exit(1);
-}
-
-static void
-exec_file(apr_int16_t port, const char *srcfile)
-{
-    ColInstance *c;
-
-    c = setup_col(port, srcfile);
-
-    while (true)
-        sleep(1);
-
-    col_destroy(c);
-}
-
-#define BENCH_PORT1     10000
-#define BENCH_PORT2     10001
-
-static void
-do_netbench(const char *srcfile)
-{
-    ColInstance *c1;
-    ColInstance *c2;
-
-    c1 = setup_col(BENCH_PORT1, srcfile);
-    c2 = setup_col(BENCH_PORT2, srcfile);
-
-    col_destroy(c1);
-    col_destroy(c2);
 }
 
 static ColInstance *

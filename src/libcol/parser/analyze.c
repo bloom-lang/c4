@@ -9,6 +9,7 @@
 typedef struct AnalyzeState
 {
     apr_pool_t *pool;
+    ColInstance *col;
     AstProgram *program;
     apr_hash_t *define_tbl;
     apr_hash_t *rule_tbl;
@@ -50,13 +51,15 @@ static AstVarExpr *lookup_var(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static bool is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
-static void set_var_type(AstVarExpr *var, AstDefine *table, int colno);
 static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(ColNode *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
 static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
+static bool is_table_defined(const char *tbl_name, AnalyzeState *state);
+static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
+static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -72,9 +75,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 
     printf("DEFINE => %s\n", def->name);
 
-    /* Check for duplicate defines within the current program */
-    if (apr_hash_get(state->define_tbl, def->name,
-                     APR_HASH_KEY_STRING) != NULL)
+    if (is_table_defined(def->name, state))
         ERROR("Table %s already exists", def->name);
 
     apr_hash_set(state->define_tbl, def->name,
@@ -293,9 +294,14 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
 static int
 table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
 {
+    TableDef *tbl_def;
     AstDefine *define;
     int colno;
     ListCell *lc;
+
+    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    if (tbl_def != NULL)
+        return tbl_def->ls_colno;
 
     define = apr_hash_get(state->define_tbl, tbl_name,
                           APR_HASH_KEY_STRING);
@@ -413,13 +419,10 @@ make_anon_var_name(const char *prefix, AnalyzeState *state)
 static void
 analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
 {
-    AstDefine *define;
     int colno;
     ListCell *lc;
 
-    define = apr_hash_get(state->define_tbl, join->ref->name,
-                          APR_HASH_KEY_STRING);
-    if (define == NULL)
+    if (!is_table_defined(join->ref->name, state))
         ERROR("No such table \"%s\"", join->ref->name);
 
     colno = 0;
@@ -478,22 +481,13 @@ done:
         var = (AstVarExpr *) cref->expr;
 
         /* Fill-in variable's type, add to variable table (unless don't care) */
-        set_var_type(var, define, colno);
+        var->type = table_get_col_type(join->ref->name, colno, state);
         if (!is_dont_care_var((ColNode *) var))
             define_var(var, state);
         colno++;
     }
 
     analyze_table_ref(join->ref, state);
-}
-
-static void
-set_var_type(AstVarExpr *var, AstDefine *table, int colno)
-{
-    AstSchemaElt *elt;
-
-    elt = (AstSchemaElt *) list_get(table->schema, colno);
-    var->type = get_type_id(elt->type_name);
 }
 
 static void
@@ -655,25 +649,24 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
 static void
 analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
 {
-    AstDefine *define;
+    int num_cols;
     ListCell *lc;
     int colno;
 
-    /* Check that the specified table name exists */
-    define = apr_hash_get(state->define_tbl, ref->name,
-                          APR_HASH_KEY_STRING);
-    if (define == NULL)
+    /* Check that the referenced table exists */
+    if (!is_table_defined(ref->name, state))
         ERROR("No such table \"%s\"", ref->name);
+
+    num_cols = table_get_num_cols(ref->name, state);
 
     /*
      * Check that the data types of the table reference are compatible with
      * the schema of the table
      */
-    if (list_length(define->schema) != list_length(ref->cols))
+    if (num_cols != list_length(ref->cols))
         ERROR("Reference to table %s has incorrect # of columns. "
               "Expected: %d, encountered %d",
-              ref->name, list_length(define->schema),
-              list_length(ref->cols));
+              ref->name, num_cols, list_length(ref->cols));
 
     colno = 0;
     foreach (lc, ref->cols)
@@ -681,17 +674,15 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
         DataType expr_type;
         DataType schema_type;
-        AstSchemaElt *schema_elt;
 
         analyze_expr(col->expr, false, state);
         expr_type = expr_get_type(col->expr);
-        schema_elt = (AstSchemaElt *) list_get(define->schema, colno);
-        schema_type = get_type_id(schema_elt->type_name);
+        schema_type = table_get_col_type(ref->name, colno, state);
 
         /* XXX: type compatibility check is far too strict */
         if (schema_type != expr_type)
             ERROR("Type mismatch in column list: %s in schema, %s in column list",
-                  schema_elt->type_name, get_type_name(expr_type));
+                  get_type_name(schema_type), get_type_name(expr_type));
 
         colno++;
     }
@@ -703,13 +694,14 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
  * modified.
  */
 void
-analyze_ast(AstProgram *program, apr_pool_t *pool)
+analyze_ast(AstProgram *program, apr_pool_t *pool, ColInstance *col)
 {
     AnalyzeState *state;
     ListCell *lc;
 
     state = apr_palloc(pool, sizeof(*state));
     state->pool = pool;
+    state->col = col;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
@@ -895,6 +887,63 @@ add_qual_list(AstVarExpr *target, List *var_list,
     }
 
     return count;
+}
+
+/*
+ * Check whether a table with the given name exists. We check for both
+ * tables defined by the current program, and previously-defined tables that
+ * already exist in the catalog.
+ */
+static bool
+is_table_defined(const char *tbl_name, AnalyzeState *state)
+{
+    if (apr_hash_get(state->define_tbl, tbl_name,
+                     APR_HASH_KEY_STRING) != NULL)
+        return true;
+
+    /* Check for an already-defined table of the same name */
+    if (cat_get_table(state->col->cat, tbl_name) != NULL)
+        return true;
+
+    return false;
+}
+
+/*
+ * Returns the DataType of column "colno" from the table with the given
+ * name. This is ugly, because the data structure we need to consult depends
+ * on whether the table is already defined in the catalog or not.
+ */
+static DataType
+table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state)
+{
+    AstDefine *define;
+    TableDef *tbl_def;
+
+    define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
+    if (define != NULL)
+    {
+        AstSchemaElt *elt = (AstSchemaElt *) list_get(define->schema, colno);
+        return get_type_id(elt->type_name);
+    }
+
+    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    ASSERT(tbl_def != NULL);
+    return schema_get_type(tbl_def->schema, colno);
+}
+
+static int
+table_get_num_cols(const char *tbl_name, AnalyzeState *state)
+{
+    AstDefine *define;
+    TableDef *tbl_def;
+
+    define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
+    if (define != NULL)
+        return list_length(define->schema);
+
+    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    ASSERT(tbl_def != NULL);
+    return tbl_def->schema->len;
 }
 
 /*
