@@ -112,7 +112,6 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "false"                 { return OL_FALSE; }
 "keys"                  { return KEYS; }
 "notin"                 { return NOTIN; }
-"program"               { return PROGRAM; }
 "true"                  { return OL_TRUE; }
 
 {integer} {

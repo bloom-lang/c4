@@ -5,7 +5,7 @@
 #include "planner/planner.h"
 #include "types/expr.h"
 
-AstProgram *make_program(const char *name, List *defines, List *facts,
+AstProgram *make_program(List *defines, List *facts,
                          List *rules, apr_pool_t *p);
 AstDefine *make_define(const char *name, List *keys, List *schema,
                        apr_pool_t *p);

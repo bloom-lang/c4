@@ -7,7 +7,6 @@
 typedef struct ProgramPlan
 {
     apr_pool_t *pool;
-    char *name;
     List *defines;
     List *facts;
     List *rules;

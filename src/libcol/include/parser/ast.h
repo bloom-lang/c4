@@ -10,7 +10,6 @@ typedef struct AstTableRef AstTableRef;
 typedef struct AstProgram
 {
     ColNode node;
-    char *name;
     List *defines;
     List *facts;
     List *rules;

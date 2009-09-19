@@ -39,7 +39,6 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
 
     pplan = apr_pcalloc(pool, sizeof(*pplan));
     pplan->pool = pool;
-    pplan->name = apr_pstrdup(pool, ast->name);
     /* Remaining fields filled-in by caller */
 
     return pplan;

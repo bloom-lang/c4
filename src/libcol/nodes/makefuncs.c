@@ -4,12 +4,10 @@
 #include "types/schema.h"
 
 AstProgram *
-make_program(const char *name, List *defines, List *facts,
-             List *rules, apr_pool_t *p)
+make_program(List *defines, List *facts, List *rules, apr_pool_t *p)
 {
     AstProgram *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_PROGRAM;
-    result->name = apr_pstrdup(p, name);
     result->defines = list_copy_deep(defines, p);
     result->facts = list_copy_deep(facts, p);
     result->rules = list_copy_deep(rules, p);

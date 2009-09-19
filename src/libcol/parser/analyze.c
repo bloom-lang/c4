@@ -75,8 +75,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     /* Check for duplicate defines within the current program */
     if (apr_hash_get(state->define_tbl, def->name,
                      APR_HASH_KEY_STRING) != NULL)
-        ERROR("Duplicate table name %s in program %s",
-              def->name, state->program->name);
+        ERROR("Table %s already exists", def->name);
 
     apr_hash_set(state->define_tbl, def->name,
                  APR_HASH_KEY_STRING, def);
@@ -717,8 +716,6 @@ analyze_ast(AstProgram *program, apr_pool_t *pool)
     state->var_tbl = apr_hash_make(pool);
     state->eq_tbl = apr_hash_make(pool);
     state->tmp_ruleno = 0;
-
-    printf("Program name: %s\n", program->name);
 
     /* Phase 1: process table definitions */
     foreach (lc, program->defines)

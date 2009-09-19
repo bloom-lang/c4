@@ -30,7 +30,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE PROGRAM DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
+%token KEYS DEFINE DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
        OL_FALSE OL_TRUE
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
@@ -41,7 +41,6 @@ static void split_rule_body(List *body, List **joins,
 %left UMINUS
 
 %type <ptr>     clause define rule table_ref column_ref join_clause
-%type <str>     program_header
 %type <list>    program_body opt_int_list int_list schema_list define_schema
 %type <list>    opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>     rule_body_elem qualifier qual_expr expr const_expr op_expr
@@ -52,16 +51,14 @@ static void split_rule_body(List *body, List **joins,
 %type <hash_v>  opt_hash_variant
 
 %%
-program: program_header program_body {
+program: program_body {
     List *defines;
     List *facts;
     List *rules;
 
-    split_program_clauses($2, &defines, &facts, &rules, context->pool);
-    context->result = make_program($1, defines, facts, rules, context->pool);
+    split_program_clauses($1, &defines, &facts, &rules, context->pool);
+    context->result = make_program(defines, facts, rules, context->pool);
 };
-
-program_header: PROGRAM TBL_IDENT ';' { $$ = $2; };
 
 program_body:
   clause ';' program_body       { $$ = list_prepend($3, $1); }

@@ -5,7 +5,7 @@
 static AstProgram *
 copy_program(AstProgram *in, apr_pool_t *p)
 {
-    return make_program(in->name, in->defines, in->facts, in->rules, p);
+    return make_program(in->defines, in->facts, in->rules, p);
 }
 
 static AstDefine *

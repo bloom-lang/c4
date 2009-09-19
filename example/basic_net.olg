@@ -1,5 +1,3 @@
-program basic_net;
-
 define(foo, keys(0), {@string, string});
 define(bar, keys(0), {@string, string});
 define(baz, keys(0), {@string, string});
