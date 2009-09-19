@@ -56,7 +56,7 @@ static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
 static bool is_dont_care_var(ColNode *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
-static List *get_eq_list(const char *varname, bool make_new, AnalyzeState *state);
+static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -391,10 +391,6 @@ static bool
 is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state)
 {
     List *eq_list;
-
-    /* We don't bother storing X = X in the var equality table */
-    if (strcmp(v1->name, v2->name) == 0)
-        return true;
 
     eq_list = get_eq_list(v1->name, false, state);
     return list_member_str(eq_list, v2->name);
@@ -771,18 +767,18 @@ is_dont_care_var(ColNode *node)
 }
 
 static List *
-get_eq_list(const char *varname, bool make_new, AnalyzeState *state)
+get_eq_list(const char *var_name, bool make_new, AnalyzeState *state)
 {
     List *eq_list;
 
-    eq_list = apr_hash_get(state->eq_tbl, varname, APR_HASH_KEY_STRING);
+    eq_list = apr_hash_get(state->eq_tbl, var_name, APR_HASH_KEY_STRING);
     if (eq_list == NULL)
     {
         if (!make_new)
-            ERROR("Failed to find equality list for var %s", varname);
+            ERROR("Failed to find equality list for variable %s", var_name);
 
         eq_list = list_make(state->pool);
-        apr_hash_set(state->eq_tbl, varname, APR_HASH_KEY_STRING, eq_list);
+        apr_hash_set(state->eq_tbl, var_name, APR_HASH_KEY_STRING, eq_list);
     }
 
     return eq_list;
@@ -826,10 +822,28 @@ is_simple_equality(AstQualifier *qual, AstVarExpr **lhs, AstVarExpr **rhs)
 static void
 make_var_eq_table(AstRule *rule, AnalyzeState *state)
 {
+    apr_hash_index_t *hi;
     ListCell *lc;
 
     ASSERT(apr_hash_count(state->eq_tbl) == 0);
 
+    /*
+     * Add an entry to the variable equality table to record that each
+     * variable is equal to itself.
+     */
+    for (hi = apr_hash_first(state->pool, state->var_tbl);
+         hi != NULL; hi = apr_hash_next(hi))
+    {
+        char *var_name;
+
+        apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
+        add_var_eq(var_name, var_name, state);
+    }
+
+    /*
+     * Add variable equality entries to reflect the explicit simple equality
+     * quals from the rule body.
+     */
     foreach (lc, rule->quals)
     {
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
