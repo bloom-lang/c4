@@ -10,12 +10,15 @@
 
 static void usage(void);
 static void exec_file(apr_int16_t port, const char *srcfile);
+static void do_netbench(const char *srcfile);
+static ColInstance *setup_col(apr_int16_t port, const char *srcfile);
 
 int
 main(int argc, const char *argv[])
 {
     static const apr_getopt_option_t opt_option[] =
         {
+            {"netbench", 'n', false, "run net benchmark"},
             { "help", 'h', false, "show help" },
             { "port", 'p', true, "port number" },
             { NULL, 0, 0, NULL }
@@ -25,6 +28,7 @@ main(int argc, const char *argv[])
     int optch;
     const char *optarg;
     apr_status_t s;
+    bool netbench = false;
     apr_int64_t port = 0;
 
     col_initialize();
@@ -37,6 +41,10 @@ main(int argc, const char *argv[])
     {
         switch (optch)
         {
+            case 'n':
+                netbench = true;
+                break;
+
             case 'h':
                 usage();
                 break;
@@ -60,7 +68,17 @@ main(int argc, const char *argv[])
     if (opt->ind + 1 != argc)
         usage();
 
-    exec_file((apr_int16_t) port, argv[opt->ind]);
+    if (netbench)
+    {
+        if (port != 0)
+            usage();
+
+        do_netbench(argv[opt->ind]);
+    }
+    else
+    {
+        exec_file((apr_int16_t) port, argv[opt->ind]);
+    }
 
     apr_pool_destroy(pool);
     col_terminate();
@@ -77,6 +95,35 @@ static void
 exec_file(apr_int16_t port, const char *srcfile)
 {
     ColInstance *c;
+
+    c = setup_col(port, srcfile);
+
+    while (true)
+        ;
+
+    col_destroy(c);
+}
+
+#define BENCH_PORT1     10000
+#define BENCH_PORT2     10001
+
+static void
+do_netbench(const char *srcfile)
+{
+    ColInstance *c1;
+    ColInstance *c2;
+
+    c1 = setup_col(BENCH_PORT1, srcfile);
+    c2 = setup_col(BENCH_PORT2, srcfile);
+
+    col_destroy(c1);
+    col_destroy(c2);
+}
+
+static ColInstance *
+setup_col(apr_int16_t port, const char *srcfile)
+{
+    ColInstance *c;
     ColStatus s;
 
     c = col_make(port);
@@ -87,8 +134,5 @@ exec_file(apr_int16_t port, const char *srcfile)
     else
         printf("Successfully installed file \"%s\"\n", srcfile);
 
-    while (true)
-        ;
-
-    col_destroy(c);
+    return c;
 }
