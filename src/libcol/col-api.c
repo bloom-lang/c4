@@ -120,6 +120,9 @@ done:
 }
 
 /*
+ * Install the program contained in the specified program into the COL
+ * runtime.
+ *
  * XXX: Note that this is asynchronous; should we provide a convenient means
  * for the caller to wait until the program has been installed?
  */
