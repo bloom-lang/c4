@@ -30,7 +30,7 @@ col_log(ColInstance *col, const char *fmt, ...)
     str = apr_pvsprintf(col->log->tmp_pool, fmt, args);
     va_end(args);
 
-    fprintf(stdout, "LOG: %s\n", str);
+    fprintf(stdout, "LOG (%d): %s\n", col->port, str);
     apr_pool_clear(col->log->tmp_pool);
 }
 
