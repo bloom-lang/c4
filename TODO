@@ -99,3 +99,5 @@ Minor:
 
 * If a fact is defined at node X but has a location specifier for node
   Y, should we send the tuple to node Y, or simply ignore it?
+* Make core dumps more obvious
+  * Print backtrace on core dump
