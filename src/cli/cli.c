@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "col-api.h"
 
@@ -99,7 +100,7 @@ exec_file(apr_int16_t port, const char *srcfile)
     c = setup_col(port, srcfile);
 
     while (true)
-        ;
+        sleep(1);
 
     col_destroy(c);
 }
