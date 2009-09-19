@@ -92,6 +92,7 @@ Broader issues:
 * Change the node system to work with strict aliasing per C99
 * Add a concept of "programs" or "modules"
 * Implement a simple interactive shell
+  * As a first step, read input program from stdin unless terminal
 * Locking / concurrency control
 
 Minor:
