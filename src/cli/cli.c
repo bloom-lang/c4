@@ -54,6 +54,10 @@ main(int argc, const char *argv[])
             case 's':
                 src_string = apr_pstrdup(pool, optarg);
                 break;
+
+            default:
+                printf("Unrecognized option: %c\n", optch);
+                usage();
         }
     }
 
