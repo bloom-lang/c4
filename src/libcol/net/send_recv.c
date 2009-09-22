@@ -94,6 +94,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
         apr_uint32_t tbl_len;
         apr_uint32_t tuple_len;
         Tuple *tuple;
+        TableDef *tbl_def;
 
         /* Length of the table name */
         tbl_len = socket_recv_uint32(rt->sock, &is_eof);
@@ -122,7 +123,8 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
         /* Convert to in-memory tuple format, route tuple */
         tuple = tuple_from_buf(rt->col, rt->buf, rt->tbl_name);
-        router_enqueue_tuple(rt->col->router, tuple, rt->tbl_name);
+        tbl_def = cat_get_table(rt->col->cat, rt->tbl_name);    /* Thread-safety? */
+        router_enqueue_tuple(rt->col->router, tuple, tbl_def);
         tuple_unpin(tuple);
     }
 

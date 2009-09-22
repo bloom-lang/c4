@@ -14,7 +14,7 @@ void router_start(ColRouter *router);
 
 void router_enqueue_program(ColRouter *router, const char *src);
 void router_enqueue_tuple(ColRouter *router, Tuple *tuple,
-                          const char *tbl_name);
+                          TableDef *tbl_def);
 
 /* Internal APIs: XXX: clearer naming */
 void router_install_tuple(ColRouter *router, Tuple *tuple,

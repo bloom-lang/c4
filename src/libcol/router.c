@@ -50,7 +50,7 @@ typedef struct WorkItem
 
     /* WI_TUPLE: */
     Tuple *tuple;
-    char *tbl_name;
+    TableDef *tbl_def;
 
     /* WI_PROGRAM: */
     char *program_src;
@@ -188,15 +188,6 @@ compute_fixpoint(ColRouter *router)
 }
 
 static void
-route_tuple(ColRouter *router, Tuple *tuple, const char *tbl_name)
-{
-    TableDef *tbl_def;
-
-    tbl_def = cat_get_table(router->col->cat, tbl_name);
-    router_install_tuple(router, tuple, tbl_def);
-}
-
-static void
 route_program(ColRouter *router, const char *src)
 {
     ColInstance *col = router->col;
@@ -220,7 +211,6 @@ workitem_destroy(WorkItem *wi)
     {
         case WI_TUPLE:
             tuple_unpin(wi->tuple);
-            ol_free(wi->tbl_name);
             break;
 
         case WI_PROGRAM:
@@ -259,7 +249,7 @@ router_thread_start(apr_thread_t *thread, void *data)
         switch (wi->kind)
         {
             case WI_TUPLE:
-                route_tuple(router, wi->tuple, wi->tbl_name);
+                router_install_tuple(router, wi->tuple, wi->tbl_def);
                 break;
 
             case WI_PROGRAM:
@@ -295,8 +285,7 @@ router_enqueue_program(ColRouter *router, const char *src)
 }
 
 void
-router_enqueue_tuple(ColRouter *router, Tuple *tuple,
-                     const char *tbl_name)
+router_enqueue_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 {
     WorkItem *wi;
 
@@ -311,7 +300,7 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple,
     wi = ol_alloc0(sizeof(*wi));
     wi->kind = WI_TUPLE;
     wi->tuple = tuple;
-    wi->tbl_name = ol_strdup(tbl_name);
+    wi->tbl_def = tbl_def;
 
     router_enqueue(router, wi);
 }
