@@ -9,6 +9,9 @@ LOCALHOST=`hostname`
 SELF1="tcp:$LOCALHOST:$PORT1"
 SELF2="tcp:$LOCALHOST:$PORT2"
 
-$COL -p $PORT1 ./net_loop.olg &
+set -b
 
-$COL -p $PORT2 -s "ping(\"$SELF2\", \"$SELF1\");" ./net_loop.olg
+$COL -p $PORT1 ./net_loop.olg &
+#sleep 10
+
+$COL -p $PORT2 -s "ping(\"$SELF1\", \"$SELF2\", 0);" ./net_loop.olg
