@@ -44,7 +44,7 @@ struct SendThread
 
 typedef struct SendMessage
 {
-    char *tbl_name;
+    TableDef *tbl_def;
     Tuple *tuple;
 } SendMessage;
 
@@ -194,6 +194,7 @@ send_thread_main(apr_thread_t *thread, void *data)
     {
         apr_status_t s;
         SendMessage *msg;
+        char *tbl_name;
         apr_size_t tbl_len;
 
         s = apr_queue_pop(st->queue, (void **) &msg);
@@ -203,13 +204,14 @@ send_thread_main(apr_thread_t *thread, void *data)
         if (s != APR_SUCCESS)
             FAIL_APR(s);
 
+        tbl_name = msg->tbl_def->name;
         printf("Sending tuple => %s, table = %s\n",
-               st->remote_loc, msg->tbl_name);
+               st->remote_loc, tbl_name);
 
         /* Send table name, prefixed with length */
-        tbl_len = strlen(msg->tbl_name);
+        tbl_len = strlen(tbl_name);
         socket_send_uint32(st->sock, tbl_len);
-        socket_send_data(st->sock, msg->tbl_name, tbl_len);
+        socket_send_data(st->sock, tbl_name, tbl_len);
 
         /* Convert in-memory tuple format into network format */
         sbuf_reset(st->buf);
@@ -219,7 +221,6 @@ send_thread_main(apr_thread_t *thread, void *data)
         socket_send_data(st->sock, st->buf->data, st->buf->len);
 
         tuple_unpin(msg->tuple);
-        ol_free(msg->tbl_name);
         ol_free(msg);
     }
 
@@ -230,9 +231,7 @@ send_thread_main(apr_thread_t *thread, void *data)
     return NULL;        /* Return value ignored */
 }
 
-/*
- * XXX: The two malloc()s here are really obnoxious.
- */
+/* XXX: The malloc() here is obnoxious. */
 void
 send_thread_enqueue(SendThread *st, Tuple *tuple, TableDef *tbl_def)
 {
@@ -240,7 +239,7 @@ send_thread_enqueue(SendThread *st, Tuple *tuple, TableDef *tbl_def)
 
     msg = ol_alloc(sizeof(*msg));
     msg->tuple = tuple;
-    msg->tbl_name = ol_strdup(tbl_def->name);
+    msg->tbl_def = tbl_def;
     tuple_pin(msg->tuple);
 
     while (true)
