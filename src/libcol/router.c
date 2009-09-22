@@ -165,9 +165,6 @@ compute_fixpoint(ColRouter *router)
 
         tuple_unpin(ent->tuple);
         router->ntuple_routed++;
-        /* XXX: temporary */
-        if (router->ntuple_routed == 3000000)
-            exit(0);
     }
 
     while (!tuple_buf_is_empty(net_buf))
@@ -184,6 +181,10 @@ compute_fixpoint(ColRouter *router)
     ASSERT(tuple_buf_is_empty(route_buf));
     tuple_buf_reset(route_buf);
     tuple_buf_reset(net_buf);
+
+    /* XXX: temporary */
+    if (router->ntuple_routed >= 3000000)
+        exit(0);
 }
 
 static void
