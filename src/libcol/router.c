@@ -299,8 +299,10 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple,
 {
     WorkItem *wi;
 
+#if 0
     col_log(router->col, "%s: %s",
             __func__, log_tuple(router->col, tuple));
+#endif
 
     /* The tuple is unpinned when the router is finished with it */
     tuple_pin(tuple);
