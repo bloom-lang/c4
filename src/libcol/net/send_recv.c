@@ -205,8 +205,8 @@ send_thread_main(apr_thread_t *thread, void *data)
             FAIL_APR(s);
 
         tbl_name = msg->tbl_def->name;
-        printf("Sending tuple => %s, table = %s\n",
-               st->remote_loc, tbl_name);
+        printf("Sending tuple from %d => %s, table = %s\n",
+               st->col->port, st->remote_loc, tbl_name);
 
         /* Send table name, prefixed with length */
         tbl_len = strlen(tbl_name);
