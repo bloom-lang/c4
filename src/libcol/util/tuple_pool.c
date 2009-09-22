@@ -39,11 +39,14 @@ tuple_pool_loan(TuplePool *tpool)
     {
         result = tpool->free_head;
         tpool->free_head = result->ptr.next_free;
+        tpool->nfree--;
 
         result->ptr.schema = tpool->schema;
         result->refcount = 1;
         return result;
     }
+
+    ASSERT(tpool->free_head == NULL);
 
     if (tpool->nalloc_unused == 0)
     {
