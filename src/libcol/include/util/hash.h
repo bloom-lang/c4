@@ -74,8 +74,8 @@ unsigned int col_hashfunc_default(const char *key, apr_ssize_t *klen);
 /**
  * Create a hash table.
  * @param pool The pool to allocate the hash table out of
- * @return The hash table just created
-  */
+ * @return The hash table just created, or NULL if memory allocation failed
+ */
 col_hash_t *col_hash_make(apr_pool_t *pool);
 
 /**
@@ -83,8 +83,8 @@ col_hash_t *col_hash_make(apr_pool_t *pool);
  * @param pool The pool to allocate the hash table out of
  * @param hash_func A custom hash function
  * @param cmp_func A custom key comparison function
- * @return The hash table just created
-  */
+ * @return The hash table just created, or NULL if memory allocation failed
+ */
 col_hash_t *col_hash_make_custom(apr_pool_t *pool, 
                                  col_hashfunc_t hash_func,
                                  col_keycomp_func_t cmp_func);
@@ -93,7 +93,7 @@ col_hash_t *col_hash_make_custom(apr_pool_t *pool,
  * Make a copy of a hash table
  * @param pool The pool from which to allocate the new hash table
  * @param h The hash table to clone
- * @return The hash table just created
+ * @return The hash table just created, or NULL if memory allocation failed
  * @remark Makes a shallow copy
  */
 col_hash_t *col_hash_copy(apr_pool_t *pool, const col_hash_t *h);
@@ -187,7 +187,8 @@ void col_hash_clear(col_hash_t *ht);
  * @param p The pool to use for the new hash table
  * @param overlay The table to add to the initial table
  * @param base The table that represents the initial values of the new table
- * @return A new hash table containing all of the data from the two passed in
+ * @return A new hash table containing all of the data from the two passed in,
+ *         or NULL if memory allocation failed
  */
 col_hash_t *col_hash_overlay(apr_pool_t *p,
                              const col_hash_t *overlay, 
@@ -205,7 +206,8 @@ col_hash_t *col_hash_overlay(apr_pool_t *p,
  *  make values from h1 override values from h2 (same semantics as
  *  col_hash_overlay())
  * @param data Client data to pass to the merger function
- * @return A new hash table containing all of the data from the two passed in
+ * @return A new hash table containing all of the data from the two passed in,
+ *         or NULL if memory allocation failed.
  */
 col_hash_t *col_hash_merge(apr_pool_t *p,
                            const col_hash_t *h1,

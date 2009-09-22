@@ -90,10 +90,15 @@ static col_hash_entry_t **alloc_array(col_hash_t *ht, unsigned int max)
 
 col_hash_t *col_hash_make(apr_pool_t *pool)
 {
+    apr_pool_t *array_pool;
     col_hash_t *ht;
+
+    if (apr_pool_create(&array_pool, pool) != APR_SUCCESS)
+        return NULL;
+
     ht = apr_palloc(pool, sizeof(col_hash_t));
     ht->pool = pool;
-    apr_pool_create(&ht->array_pool, pool); /* XXX: error checking */
+    ht->array_pool = array_pool;
     ht->free = NULL;
     ht->count = 0;
     ht->max = INITIAL_MAX;
@@ -163,13 +168,16 @@ void col_hash_this(col_hash_index_t *hi,
 
 static void expand_array(col_hash_t *ht)
 {
+    apr_pool_t *new_array_pool;
     apr_pool_t *old_array_pool;
     col_hash_index_t *hi;
     col_hash_entry_t **new_array;
     unsigned int new_max;
 
+    if (apr_pool_create(&new_array_pool, ht->pool) != APR_SUCCESS)
+        return; /* Give up and don't try to expand the array */
     old_array_pool = ht->array_pool;
-    apr_pool_create(&ht->array_pool, ht->pool); /* XXX: error checking */
+    ht->array_pool = new_array_pool;
 
     new_max = ht->max * 2 + 1;
     new_array = alloc_array(ht, new_max);
@@ -294,14 +302,18 @@ static col_hash_entry_t **find_entry(col_hash_t *ht,
 col_hash_t *col_hash_copy(apr_pool_t *pool,
                           const col_hash_t *orig)
 {
+    apr_pool_t *array_pool;
     col_hash_t *ht;
     col_hash_entry_t *new_vals;
     unsigned int i, j;
 
+    if (apr_pool_create(&array_pool, pool) != APR_SUCCESS)
+        return NULL;
+
     ht = apr_palloc(pool, sizeof(col_hash_t) +
                     sizeof(col_hash_entry_t) * orig->count);
     ht->pool = pool;
-    apr_pool_create(&ht->array_pool, ht->pool); /* XXX: error checking */
+    ht->array_pool = array_pool;
     ht->free = NULL;
     ht->count = orig->count;
     ht->max = orig->max;
@@ -410,15 +422,19 @@ col_hash_t *col_hash_merge(apr_pool_t *p,
                                             const void *data),
                            const void *data)
 {
+    apr_pool_t *array_pool;
     col_hash_t *res;
     col_hash_entry_t *new_vals = NULL;
     col_hash_entry_t *iter;
     col_hash_entry_t *ent;
     unsigned int i,j,k;
 
+    if (apr_pool_create(&array_pool, p) != APR_SUCCESS)
+        return NULL;
+
     res = apr_palloc(p, sizeof(col_hash_t));
     res->pool = p;
-    apr_pool_create(&res->array_pool, p); /* XXX: error checking */
+    res->array_pool = array_pool;
     res->free = NULL;
     res->hash_func = base->hash_func;
     res->cmp_func = base->cmp_func;
