@@ -142,6 +142,7 @@ compute_fixpoint(ColRouter *router)
 {
     TupleBuf *route_buf = router->route_buf;
     TupleBuf *net_buf = router->net_buf;
+    bool benchmark_done = false;
 
     /*
      * NB: We route tuples from route_buf in a FIFO manner, but that is not
@@ -165,6 +166,13 @@ compute_fixpoint(ColRouter *router)
 
         tuple_unpin(ent->tuple);
         router->ntuple_routed++;
+
+        /* XXX: temporary */
+        if (router->ntuple_routed >= 3000000)
+        {
+            benchmark_done = true;
+            break;
+        }
     }
 
     while (!tuple_buf_is_empty(net_buf))
@@ -182,9 +190,8 @@ compute_fixpoint(ColRouter *router)
     tuple_buf_reset(route_buf);
     tuple_buf_reset(net_buf);
 
-    /* XXX: temporary */
-    if (router->ntuple_routed >= 3000000)
-        exit(0);
+    if (benchmark_done)
+        exit(1);
 }
 
 static void
