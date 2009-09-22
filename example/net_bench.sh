@@ -5,7 +5,7 @@ COL=$HOME/build-col/src/cli/coverlog
 PORT1=11000
 PORT2=11001
 
-LOCALHOST="W88256X9YJX.local"
+LOCALHOST=`hostname`
 SELF1="tcp:$LOCALHOST:$PORT1"
 SELF2="tcp:$LOCALHOST:$PORT2"
 
