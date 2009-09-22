@@ -1,6 +1,8 @@
 #ifndef TUPLE_POOL_H
 #define TUPLE_POOL_H
 
+#include <apr_thread_mutex.h>
+
 struct Schema;
 struct Tuple;
 
@@ -19,6 +21,7 @@ struct Tuple;
 typedef struct TuplePool
 {
     apr_pool_t *pool;
+    apr_thread_mutex_t *lock;
     struct Schema *schema;
     struct Tuple *free_head;
     apr_size_t tuple_size;
