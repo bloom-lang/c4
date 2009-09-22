@@ -10,6 +10,11 @@ typedef struct ColCatalog ColCatalog;
 struct ColTable;
 struct OpChainList;
 
+/*
+ * A TableDef is a container for metadata about a COL table. Because this
+ * struct is shared among threads, fields of the structure should not be
+ * modified.
+ */
 typedef struct TableDef
 {
     apr_pool_t *pool;
