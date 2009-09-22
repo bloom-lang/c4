@@ -29,9 +29,10 @@ typedef struct TableDef
     struct ColTable *table;
 
     /*
-     * We keep a direct pointer to router's OpChainList for this delta
-     * table. This is mildly gross, but useful for perf: it means we can
-     * skip a hash table lookup for each derived tuple that is routed.
+     * We keep a direct pointer to the router's list of op chains that have
+     * this table as their delta table. This is mildly gross from a layering
+     * POV, but useful for perf: it means we can skip a hash table lookup
+     * for each derived tuple that is routed.
      */
     struct OpChainList *op_chain_list;
 } TableDef;
