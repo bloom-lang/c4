@@ -156,14 +156,14 @@ tuple_to_buf(Tuple *tuple, StrBuf *buf)
 }
 
 Tuple *
-tuple_from_buf(ColInstance *col, StrBuf *buf, const char *tbl_name)
+tuple_from_buf(ColInstance *col, StrBuf *buf, TableDef *tbl_def)
 {
     Schema *schema;
     Tuple *result;
     apr_size_t buf_pos;
     int i;
 
-    schema = cat_get_schema(col->cat, tbl_name);
+    schema = tbl_def->schema;
     result = tuple_make_empty(schema);
     buf_pos = 0;
 

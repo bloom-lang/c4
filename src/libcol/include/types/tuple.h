@@ -58,6 +58,6 @@ bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col);
 
 char *tuple_to_str(Tuple *tuple, apr_pool_t *pool);
 void tuple_to_buf(Tuple *tuple, StrBuf *buf);
-Tuple *tuple_from_buf(ColInstance *col, StrBuf *buf, const char *tbl_name);
+Tuple *tuple_from_buf(ColInstance *col, StrBuf *buf, TableDef *tbl_def);
 
 #endif  /* TUPLE_H */
