@@ -12,6 +12,10 @@ typedef struct Schema
     DataType *types;
     datum_hash_func *hash_funcs;
     datum_eq_func *eq_funcs;
+    datum_bin_in_func *bin_in_funcs;
+    datum_text_in_func *text_in_funcs;
+    datum_bin_out_func *bin_out_funcs;
+    datum_text_out_func *text_out_funcs;
     /* Used to manage tuple allocations */
     TuplePool *tuple_pool;
 } Schema;

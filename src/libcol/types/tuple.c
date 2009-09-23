@@ -37,10 +37,7 @@ tuple_make_from_strings(Schema *s, char **values)
 
     for (i = 0; i < s->len; i++)
     {
-        DataType type;
-
-        type = schema_get_type(s, i);
-        tuple_get_val(t, i) = datum_from_str(type, values[i]);
+        tuple_get_val(t, i) = (s->text_in_funcs[i])(values[i]);
     }
 
     return t;
@@ -128,13 +125,10 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
     buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
     {
-        DataType type;
-
         if (i != 0)
             sbuf_append_char(buf, ',');
 
-        type = schema_get_type(schema, i);
-        datum_to_str(tuple_get_val(tuple, i), type, buf);
+        (schema->text_out_funcs[i])(tuple_get_val(tuple, i), buf);
     }
 
     sbuf_append_char(buf, '\0');
@@ -150,8 +144,7 @@ tuple_to_buf(Tuple *tuple, StrBuf *buf)
     schema = tuple_get_schema(tuple);
     for (i = 0; i < schema->len; i++)
     {
-        DataType type = schema_get_type(schema, i);
-        datum_to_buf(tuple_get_val(tuple, i), type, buf);
+        (schema->bin_out_funcs[i])(tuple_get_val(tuple, i), buf);
     }
 }
 
@@ -160,19 +153,14 @@ tuple_from_buf(ColInstance *col, StrBuf *buf, TableDef *tbl_def)
 {
     Schema *schema;
     Tuple *result;
-    apr_size_t buf_pos;
     int i;
 
     schema = tbl_def->schema;
     result = tuple_make_empty(schema);
-    buf_pos = 0;
 
     for (i = 0; i < schema->len; i++)
     {
-        DataType type;
-
-        type = schema_get_type(schema, i);
-        tuple_get_val(result, i) = datum_from_buf(type, buf);
+        tuple_get_val(result, i) = (schema->bin_in_funcs[i])(buf);
     }
 
     return result;

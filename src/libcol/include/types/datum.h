@@ -41,6 +41,10 @@ typedef union Datum
 
 typedef bool (*datum_eq_func)(Datum d1, Datum d2);
 typedef apr_uint32_t (*datum_hash_func)(Datum d);
+typedef Datum (*datum_bin_in_func)(StrBuf *buf);
+typedef Datum (*datum_text_in_func)(const char *str);
+typedef void (*datum_bin_out_func)(Datum d, StrBuf *buf);
+typedef void (*datum_text_out_func)(Datum d, StrBuf *buf);
 
 bool bool_equal(Datum d1, Datum d2);
 bool char_equal(Datum d1, Datum d2);
@@ -58,6 +62,42 @@ apr_uint32_t int4_hash(Datum d);
 apr_uint32_t int8_hash(Datum d);
 apr_uint32_t string_hash(Datum d);
 
+/* Binary input functions */
+Datum bool_from_buf(StrBuf *buf);
+Datum char_from_buf(StrBuf *buf);
+Datum double_from_buf(StrBuf *buf);
+Datum int2_from_buf(StrBuf *buf);
+Datum int4_from_buf(StrBuf *buf);
+Datum int8_from_buf(StrBuf *buf);
+Datum string_from_buf(StrBuf *buf);
+
+/* Binary output functions */
+void bool_to_buf(Datum d, StrBuf *buf);
+void char_to_buf(Datum d, StrBuf *buf);
+void double_to_buf(Datum d, StrBuf *buf);
+void int2_to_buf(Datum d, StrBuf *buf);
+void int4_to_buf(Datum d, StrBuf *buf);
+void int8_to_buf(Datum d, StrBuf *buf);
+void string_to_buf(Datum d, StrBuf *buf);
+
+/* Text input functions */
+Datum bool_from_str(const char *str);
+Datum char_from_str(const char *str);
+Datum double_from_str(const char *str);
+Datum int2_from_str(const char *str);
+Datum int4_from_str(const char *str);
+Datum int8_from_str(const char *str);
+Datum string_from_str(const char *str);
+
+/* Text output functions */
+void bool_to_str(Datum d, StrBuf *buf);
+void char_to_str(Datum d, StrBuf *buf);
+void double_to_str(Datum d, StrBuf *buf);
+void int2_to_str(Datum d, StrBuf *buf);
+void int4_to_str(Datum d, StrBuf *buf);
+void int8_to_str(Datum d, StrBuf *buf);
+void string_to_str(Datum d, StrBuf *buf);
+
 bool datum_equal(Datum d1, Datum d2, DataType type);
 int datum_cmp(Datum d1, Datum d2, DataType type);
 apr_uint32_t datum_hash(Datum d1, DataType type);
@@ -65,10 +105,7 @@ Datum datum_copy(Datum d, DataType type);
 void datum_free(Datum d, DataType type);
 void pool_track_datum(apr_pool_t *pool, Datum datum, DataType type);
 
-Datum datum_from_str(DataType type, const char *str);
 void datum_to_str(Datum d, DataType type, StrBuf *buf);
-
-Datum datum_from_buf(DataType type, StrBuf *buf);
-void datum_to_buf(Datum d, DataType type, StrBuf *buf);
+Datum datum_from_str(DataType type, const char *str);
 
 #endif  /* DATUM_H */

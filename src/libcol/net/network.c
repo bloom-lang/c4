@@ -185,7 +185,7 @@ get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
      * string. This is hacky.
      */
     sbuf_reset(net->tmp_buf);
-    datum_to_str(loc_spec, TYPE_STRING, net->tmp_buf);
+    string_to_str(loc_spec, net->tmp_buf);
     sbuf_append_char(net->tmp_buf, '\0');
     tmp_loc_str = net->tmp_buf->data;
 

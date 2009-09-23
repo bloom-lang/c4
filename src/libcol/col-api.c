@@ -33,7 +33,7 @@ get_local_addr(int port, apr_pool_t *pool)
 
     snprintf(addr, sizeof(addr), "tcp:%s:%d", buf, port);
     printf("Local address = %s\n", addr);
-    return datum_from_str(TYPE_STRING, addr);
+    return string_from_str(addr);
 }
 
 ColInstance *

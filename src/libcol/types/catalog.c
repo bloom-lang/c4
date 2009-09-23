@@ -256,3 +256,143 @@ type_get_eq_func(DataType type)
             ERROR("Unexpected data type: %uc", type);
     }
 }
+
+datum_bin_in_func
+type_get_binary_in_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_from_buf;
+
+        case TYPE_CHAR:
+            return char_from_buf;
+
+        case TYPE_DOUBLE:
+            return double_from_buf;
+
+        case TYPE_INT2:
+            return int2_from_buf;
+
+        case TYPE_INT4:
+            return int4_from_buf;
+
+        case TYPE_INT8:
+            return int8_from_buf;
+
+        case TYPE_STRING:
+            return string_from_buf;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
+datum_text_in_func
+type_get_text_in_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_from_str;
+
+        case TYPE_CHAR:
+            return char_from_str;
+
+        case TYPE_DOUBLE:
+            return double_from_str;
+
+        case TYPE_INT2:
+            return int2_from_str;
+
+        case TYPE_INT4:
+            return int4_from_str;
+
+        case TYPE_INT8:
+            return int8_from_str;
+
+        case TYPE_STRING:
+            return string_from_str;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
+/*
+ * Returns a function pointer that converts a datum from the in-memory
+ * format into the binary (network) format.
+ */
+datum_bin_out_func
+type_get_binary_out_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_to_buf;
+
+        case TYPE_CHAR:
+            return char_to_buf;
+
+        case TYPE_DOUBLE:
+            return double_to_buf;
+
+        case TYPE_INT2:
+            return int2_to_buf;
+
+        case TYPE_INT4:
+            return int4_to_buf;
+
+        case TYPE_INT8:
+            return int8_to_buf;
+
+        case TYPE_STRING:
+            return string_to_buf;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
+datum_text_out_func
+type_get_text_out_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_to_str;
+
+        case TYPE_CHAR:
+            return char_to_str;
+
+        case TYPE_DOUBLE:
+            return double_to_str;
+
+        case TYPE_INT2:
+            return int2_to_str;
+
+        case TYPE_INT4:
+            return int4_to_str;
+
+        case TYPE_INT8:
+            return int8_to_str;
+
+        case TYPE_STRING:
+            return string_to_str;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}

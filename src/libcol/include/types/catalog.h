@@ -51,7 +51,12 @@ bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);
 DataType get_type_id(const char *type_name);
 char *get_type_name(DataType type_id);
+
 datum_hash_func type_get_hash_func(DataType type);
 datum_eq_func type_get_eq_func(DataType type);
+datum_bin_in_func type_get_binary_in_func(DataType type);
+datum_text_in_func type_get_text_in_func(DataType type);
+datum_bin_out_func type_get_binary_out_func(DataType type);
+datum_text_out_func type_get_text_out_func(DataType type);
 
 #endif  /* CATALOG_H */

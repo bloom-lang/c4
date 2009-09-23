@@ -99,10 +99,18 @@ void lookup_type_funcs(Schema *s, apr_pool_t *pool)
 
     s->hash_funcs = apr_palloc(pool, s->len * sizeof(datum_hash_func));
     s->eq_funcs = apr_palloc(pool, s->len * sizeof(datum_eq_func));
+    s->bin_in_funcs = apr_palloc(pool, s->len * sizeof(datum_bin_in_func));
+    s->text_in_funcs = apr_palloc(pool, s->len * sizeof(datum_text_in_func));
+    s->bin_out_funcs = apr_palloc(pool, s->len * sizeof(datum_bin_out_func));
+    s->text_out_funcs = apr_palloc(pool, s->len * sizeof(datum_text_out_func));
 
     for (i = 0; i < s->len; i++)
     {
         s->hash_funcs[i] = type_get_hash_func(s->types[i]);
         s->eq_funcs[i] = type_get_eq_func(s->types[i]);
+        s->bin_in_funcs[i] = type_get_binary_in_func(s->types[i]);
+        s->text_in_funcs[i] = type_get_text_in_func(s->types[i]);
+        s->bin_out_funcs[i] = type_get_binary_out_func(s->types[i]);
+        s->text_out_funcs[i] = type_get_text_out_func(s->types[i]);
     }
 }

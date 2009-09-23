@@ -4,9 +4,6 @@
 #include "col-internal.h"
 #include "types/datum.h"
 
-static Datum int8_from_buf(StrBuf *buf);
-static void int8_to_buf(apr_int64_t i, StrBuf *buf);
-
 bool
 bool_equal(Datum d1, Datum d2)
 {
@@ -55,6 +52,7 @@ string_equal(Datum d1, Datum d2)
     return (memcmp(s1->data, s2->data, s1->len) == 0);
 }
 
+/* XXX: get rid of this */
 bool
 datum_equal(Datum d1, Datum d2, DataType type)
 {
@@ -156,6 +154,7 @@ string_cmp(ColString *s1, ColString *s2)
     ERROR("%s: Not implemented yet", __func__);
 }
 
+/* XXX: get rid of this */
 int
 datum_cmp(Datum d1, Datum d2, DataType type)
 {
@@ -248,6 +247,7 @@ string_hash(Datum d)
     return apr_hashfunc_default(d.s->data, &len);
 }
 
+/* XXX: get rid of this */
 apr_uint32_t
 datum_hash(Datum d, DataType type)
 {
@@ -337,7 +337,7 @@ pool_track_datum(apr_pool_t *pool, Datum datum, DataType type)
                                   apr_pool_cleanup_null);
 }
 
-static Datum
+Datum
 bool_from_str(const char *str)
 {
     Datum result;
@@ -352,7 +352,7 @@ bool_from_str(const char *str)
     return result;
 }
 
-static Datum
+Datum
 char_from_str(const char *str)
 {
     Datum result;
@@ -366,7 +366,7 @@ char_from_str(const char *str)
     return result;
 }
 
-static Datum
+Datum
 double_from_str(const char *str)
 {
     Datum result;
@@ -397,7 +397,7 @@ parse_int64(const char *str, apr_int64_t max, apr_int64_t min)
     return result;
 }
 
-static Datum
+Datum
 int2_from_str(const char *str)
 {
     Datum result;
@@ -408,7 +408,7 @@ int2_from_str(const char *str)
     return result;
 }
 
-static Datum
+Datum
 int4_from_str(const char *str)
 {
     Datum result;
@@ -419,7 +419,7 @@ int4_from_str(const char *str)
     return result;
 }
 
-static Datum
+Datum
 int8_from_str(const char *str)
 {
     Datum result;
@@ -440,7 +440,7 @@ make_string(apr_size_t slen)
 }
 
 /* FIXME */
-static Datum
+Datum
 string_from_str(const char *str)
 {
     apr_size_t slen;
@@ -452,124 +452,50 @@ string_from_str(const char *str)
     return result;
 }
 
-Datum
-datum_from_str(DataType type, const char *str)
+void
+bool_to_str(Datum d, StrBuf *buf)
 {
-    switch (type)
-    {
-        case TYPE_BOOL:
-            return bool_from_str(str);
-
-        case TYPE_CHAR:
-            return char_from_str(str);
-
-        case TYPE_DOUBLE:
-            return double_from_str(str);
-
-        case TYPE_INT2:
-            return int2_from_str(str);
-
-        case TYPE_INT4:
-            return int4_from_str(str);
-
-        case TYPE_INT8:
-            return int8_from_str(str);
-
-        case TYPE_STRING:
-            return string_from_str(str);
-
-        case TYPE_INVALID:
-            ERROR("Invalid data type: TYPE_INVALID");
-
-        default:
-            ERROR("Unexpected data type: %uc", type);
-    }
-}
-
-static void
-bool_to_str(bool b, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%s", (b == true) ? "true" : "false");
-}
-
-static void
-char_to_str(unsigned char c, StrBuf *buf)
-{
-    sbuf_append_char(buf, c);
-}
-
-static void
-double_to_str(double d, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%f", d);
-}
-
-static void
-int2_to_str(apr_int16_t i, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%hd", i);
-}
-
-static void
-int4_to_str(apr_int32_t i, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%d", i);
-}
-
-static void
-int8_to_str(apr_int64_t i, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%" APR_INT64_T_FMT, i);
-}
-
-static void
-string_to_str(ColString *s, StrBuf *buf)
-{
-    sbuf_append_data(buf, s->data, s->len);
+    sbuf_appendf(buf, "%s", (d.b == true) ? "true" : "false");
 }
 
 void
-datum_to_str(Datum d, DataType type, StrBuf *buf)
+char_to_str(Datum d, StrBuf *buf)
 {
-    switch (type)
-    {
-        case TYPE_BOOL:
-            bool_to_str(d.b, buf);
-            break;
-
-        case TYPE_CHAR:
-            char_to_str(d.c, buf);
-            break;
-
-        case TYPE_DOUBLE:
-            double_to_str(d.d8, buf);
-            break;
-
-        case TYPE_INT2:
-            int2_to_str(d.i2, buf);
-            break;
-
-        case TYPE_INT4:
-            int4_to_str(d.i4, buf);
-            break;
-
-        case TYPE_INT8:
-            int8_to_str(d.i8, buf);
-            break;
-
-        case TYPE_STRING:
-            string_to_str(d.s, buf);
-            break;
-
-        case TYPE_INVALID:
-            ERROR("Invalid data type: TYPE_INVALID");
-
-        default:
-            ERROR("Unexpected data type: %uc", type);
-    }
+    sbuf_append_char(buf, d.c);
 }
 
-static Datum
+void
+double_to_str(Datum d, StrBuf *buf)
+{
+    sbuf_appendf(buf, "%f", d.d8);
+}
+
+void
+int2_to_str(Datum d, StrBuf *buf)
+{
+    sbuf_appendf(buf, "%hd", d.i2);
+}
+
+void
+int4_to_str(Datum d, StrBuf *buf)
+{
+    sbuf_appendf(buf, "%d", d.i4);
+}
+
+void
+int8_to_str(Datum d, StrBuf *buf)
+{
+    sbuf_appendf(buf, "%" APR_INT64_T_FMT, d.i8);
+}
+
+void
+string_to_str(Datum d, StrBuf *buf)
+{
+    ColString *s = d.s;
+    sbuf_append_data(buf, s->data, s->len);
+}
+
+Datum
 bool_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -579,7 +505,7 @@ bool_from_buf(StrBuf *buf)
     return result;
 }
 
-static Datum
+Datum
 char_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -588,7 +514,7 @@ char_from_buf(StrBuf *buf)
     return result;
 }
 
-static Datum
+Datum
 double_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -598,7 +524,7 @@ double_from_buf(StrBuf *buf)
     return result;
 }
 
-static Datum
+Datum
 int2_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -607,7 +533,7 @@ int2_from_buf(StrBuf *buf)
     return result;
 }
 
-static Datum
+Datum
 int4_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -616,7 +542,7 @@ int4_from_buf(StrBuf *buf)
     return result;
 }
 
-static Datum
+Datum
 int8_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -633,7 +559,7 @@ int8_from_buf(StrBuf *buf)
 }
 
 /* FIXME */
-static Datum
+Datum
 string_from_buf(StrBuf *buf)
 {
     Datum result;
@@ -645,55 +571,17 @@ string_from_buf(StrBuf *buf)
     return result;
 }
 
-/*
- * Convert a datum from the binary (network) format to the in-memory
- * format. The buffer has length "len", and we should begin reading from it
- * at "*pos"; on return, this function updates "*pos" to reflect the number
- * of bytes in the buffer that have been consumed.
- */
-Datum
-datum_from_buf(DataType type, StrBuf *buf)
+void
+bool_to_buf(Datum d, StrBuf *buf)
 {
-    switch (type)
-    {
-        case TYPE_BOOL:
-            return bool_from_buf(buf);
-
-        case TYPE_CHAR:
-            return char_from_buf(buf);
-
-        case TYPE_DOUBLE:
-            return double_from_buf(buf);
-
-        case TYPE_INT2:
-            return int2_from_buf(buf);
-
-        case TYPE_INT4:
-            return int4_from_buf(buf);
-
-        case TYPE_INT8:
-            return int8_from_buf(buf);
-
-        case TYPE_STRING:
-            return string_from_buf(buf);
-
-        case TYPE_INVALID:
-            ERROR("Invalid data type: TYPE_INVALID");
-
-        default:
-            ERROR("Unexpected data type: %uc", type);
-    }
-}
-
-static void
-bool_to_buf(bool b, StrBuf *buf)
-{
+    bool b = d.b;
     sbuf_append_data(buf, (char *) &b, sizeof(b));
 }
 
-static void
-char_to_buf(unsigned char c, StrBuf *buf)
+void
+char_to_buf(Datum d, StrBuf *buf)
 {
+    unsigned char c = d.c;
     sbuf_append_data(buf, (char *) &c, sizeof(c));
 }
 
@@ -701,40 +589,34 @@ char_to_buf(unsigned char c, StrBuf *buf)
  * We assume that double should be byte-swapped in the same way as int8, per
  * Postgres. Apparently not perfect, but fairly portable.
  */
-static void
-double_to_buf(double d, StrBuf *buf)
+void
+double_to_buf(Datum d, StrBuf *buf)
 {
-    union
-    {
-        double d;
-        apr_int64_t i;
-    } swap;
-
-    swap.d = d;
-    int8_to_buf(swap.i, buf);
+    int8_to_buf(d, buf);
 }
 
-static void
-int2_to_buf(apr_int16_t i, StrBuf *buf)
+void
+int2_to_buf(Datum d, StrBuf *buf)
 {
     apr_uint16_t n16;
 
-    n16 = htons((apr_uint16_t) i);
+    n16 = htons((apr_uint16_t) d.i2);
     sbuf_append_data(buf, (char *) &n16, sizeof(n16));
 }
 
-static void
-int4_to_buf(apr_int32_t i, StrBuf *buf)
+void
+int4_to_buf(Datum d, StrBuf *buf)
 {
     apr_uint32_t n32;
 
-    n32 = htonl((apr_uint32_t) i);
+    n32 = htonl((apr_uint32_t) d.i4);
     sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 }
 
-static void
-int8_to_buf(apr_int64_t i, StrBuf *buf)
+void
+int8_to_buf(Datum d, StrBuf *buf)
 {
+    apr_int64_t i = d.i8;
     apr_uint32_t n32;
 
     /* Send high-order half first */
@@ -747,9 +629,10 @@ int8_to_buf(apr_int64_t i, StrBuf *buf)
     sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 }
 
-static void
-string_to_buf(ColString *s, StrBuf *buf)
+void
+string_to_buf(Datum d, StrBuf *buf)
 {
+    ColString *s = d.s;
     apr_uint32_t net_len;
 
     net_len = htonl(s->len);
@@ -757,48 +640,20 @@ string_to_buf(ColString *s, StrBuf *buf)
     sbuf_append_data(buf, s->data, s->len);
 }
 
-/*
- * Convert a datum from the in-memory format into the binary (network)
- * format. The resulting data is written to the current position in the
- * specified buffer.
- */
 void
-datum_to_buf(Datum d, DataType type, StrBuf *buf)
+datum_to_str(Datum d, DataType type, StrBuf *buf)
 {
-    switch (type)
-    {
-        case TYPE_BOOL:
-            bool_to_buf(d.b, buf);
-            break;
+    datum_text_out_func out_func;
 
-        case TYPE_CHAR:
-            char_to_buf(d.c, buf);
-            break;
+    out_func = type_get_text_out_func(type);
+    out_func(d, buf);
+}
 
-        case TYPE_DOUBLE:
-            double_to_buf(d.d8, buf);
-            break;
+Datum
+datum_from_str(DataType type, const char *str)
+{
+    datum_text_in_func in_func;
 
-        case TYPE_INT2:
-            int2_to_buf(d.i2, buf);
-            break;
-
-        case TYPE_INT4:
-            int4_to_buf(d.i4, buf);
-            break;
-
-        case TYPE_INT8:
-            int8_to_buf(d.i8, buf);
-            break;
-
-        case TYPE_STRING:
-            string_to_buf(d.s, buf);
-            break;
-
-        case TYPE_INVALID:
-            ERROR("Invalid data type: TYPE_INVALID");
-
-        default:
-            ERROR("Unexpected data type: %uc", type);
-    }
+    in_func = type_get_text_in_func(type);
+    return in_func(str);
 }
