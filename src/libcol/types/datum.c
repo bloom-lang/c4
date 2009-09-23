@@ -247,41 +247,6 @@ string_hash(Datum d)
     return apr_hashfunc_default(d.s->data, &len);
 }
 
-/* XXX: get rid of this */
-apr_uint32_t
-datum_hash(Datum d, DataType type)
-{
-    switch (type)
-    {
-        case TYPE_BOOL:
-            return bool_hash(d);
-
-        case TYPE_CHAR:
-            return char_hash(d);
-
-        case TYPE_DOUBLE:
-            return double_hash(d);
-
-        case TYPE_INT2:
-            return int2_hash(d);
-
-        case TYPE_INT4:
-            return int4_hash(d);
-
-        case TYPE_INT8:
-            return int8_hash(d);
-
-        case TYPE_STRING:
-            return string_hash(d);
-
-        case TYPE_INVALID:
-            ERROR("Invalid data type: TYPE_INVALID");
-
-        default:
-            ERROR("Unexpected data type: %uc", type);
-    }
-}
-
 static void
 string_pin(ColString *s)
 {
