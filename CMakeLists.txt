@@ -12,7 +12,7 @@ find_package(Apu REQUIRED)
 find_package(BerkeleyDB)
 find_package(Bison REQUIRED)
 find_package(Flex REQUIRED)
-find_package(Sqlite3 REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 include_directories(${APR_INCLUDES} ${APU_INCLUDES} ${SQLITE3_INCLUDE_DIR})
 
