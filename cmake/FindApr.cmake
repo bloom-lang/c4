@@ -40,10 +40,10 @@ macro(_apr_invoke _varname _regexp)
     endif(_apr_failed)
 endmacro(_apr_invoke)
 
-_apr_invoke(APR_INCLUDES  "(^| )-I" --includes)
 _apr_invoke(APR_CFLAGS     ""        --cppflags --cflags)
-_apr_invoke(APR_EXTRALIBS "(^| )-l" --libs)
+_apr_invoke(APR_INCLUDES  "(^| )-I" --includes)
 _apr_invoke(APR_LIBS      ""        --link-ld)
+_apr_invoke(APR_EXTRALIBS "(^| )-l" --libs)
 
 INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(APR DEFAULT_MSG APR_INCLUDES APR_EXTRALIBS APR_LIBS APR_CFLAGS)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(APR DEFAULT_MSG APR_CFLAGS APR_INCLUDES APR_LIBS APR_EXTRALIBS)
