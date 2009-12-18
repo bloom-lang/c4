@@ -10,6 +10,8 @@ set(libcol_SRCS ${libcol_SRCS} ${FLEX_Lexer_OUTPUTS} ${BISON_Parser_OUTPUTS})
 
 add_library(col ${libcol_SRCS})
 target_link_libraries(col sqlite3)
+target_link_libraries(col ${APR_LIBS} ${APR_EXTRALIBS} ${APU_LIBS} ${APU_EXTRALIBS})
+
 if(APU_LDFLAGS)
     set_target_properties(col PROPERTIES LINK_FLAGS ${APU_LDFLAGS})
 endif(APU_LDFLAGS)
