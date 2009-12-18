@@ -2,6 +2,7 @@
 # variables:
 #   BERKELEY_DB_INCLUDE_DIR
 #   BERKELEY_DB_FOUND
+#   BERKELEY_DB_LIBRARIES
 
 find_path(BERKELEY_DB_INCLUDE_DIR db.h
     /opt/local/include/db47
