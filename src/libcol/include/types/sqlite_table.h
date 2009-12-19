@@ -1,13 +1,15 @@
-/*
- *  sqlite_table.h
- *  Col
- *
- *  Created by Joe Hellerstein on 10/27/09.
- *  Copyright 2009 UC Berkeley. All rights reserved.
- *
- */
-
 #ifndef SQLITE_TABLE_H
 #define SQLITE_TABLE_H
+
+#include "types/table.h"
+
+struct ColSQLiteTable
+{
+    sqlite3_stmt *insert_stmt;
+    sqlite3_stmt *scan_stmt;
+};
+
+ColSQLiteTable *sqlite_table_make(ColTable *ctbl);
+bool sqlite_table_insert(ColTable *ctbl, Tuple *t);
 
 #endif  /* SQLITE_TABLE_H */

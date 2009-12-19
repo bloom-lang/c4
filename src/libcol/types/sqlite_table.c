@@ -2,8 +2,6 @@
 #include "operator/scan.h"
 #include "operator/scancursor.h"
 #include "types/sqlite_table.h"
-#include "types/table.h"
-#include "types/tuple.h"
 
 static apr_status_t sqlite_table_cleanup(void *data);
 
