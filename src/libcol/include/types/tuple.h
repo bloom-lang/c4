@@ -57,6 +57,7 @@ apr_uint32_t tuple_hash(Tuple *t);
 bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col);
 
 char *tuple_to_str(Tuple *tuple, apr_pool_t *pool);
+char *tuple_to_sql_insert_str(Tuple *tuple, apr_pool_t *pool);
 void tuple_to_buf(Tuple *tuple, StrBuf *buf);
 Tuple *tuple_from_buf(ColInstance *col, StrBuf *buf, TableDef *tbl_def);
 

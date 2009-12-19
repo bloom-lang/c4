@@ -1,24 +1,25 @@
 #include "col-internal.h"
+#include "types/datum.h"
 #include "operator/scan.h"
+#include "operator/scancursor.h"
 
 static void
 scan_invoke(Operator *op, Tuple *t)
 {
     ScanOperator *scan_op = (ScanOperator *) op;
+    ColTable *ctbl = scan_op->table;
     ExprEvalContext *exec_cxt;
-    col_hash_index_t *hi;
+    Tuple *scan_tuple;
+    ScanCursor cur;
 
     exec_cxt = scan_op->op.exec_cxt;
     exec_cxt->inner = t;
 
-    for (hi = col_hash_first(NULL, scan_op->table->tuples);
-         hi != NULL; hi = col_hash_next(hi))
+    for (scan_tuple = table_scan_first(ctbl, &cur);
+         scan_tuple != NULL;
+         scan_tuple = table_scan_next(ctbl, &cur))
     {
-        Tuple *scan_tuple;
-
-        col_hash_this(hi, (const void **) &scan_tuple, NULL, NULL);
         exec_cxt->outer = scan_tuple;
-
         if (eval_qual_set(scan_op->nquals, scan_op->qual_ary))
         {
             Tuple *join_tuple;

@@ -135,6 +135,38 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
     return buf->data;
 }
 
+/*
+ * XXX: Note that we return a malloc'd string, with a cleanup function
+ * registered in the given context. This might get expensive if used
+ * frequently...
+ */
+char *
+tuple_to_sql_insert_str(Tuple *tuple, apr_pool_t *pool)
+{
+    Schema *schema;
+    StrBuf *buf;
+    int i;
+	
+    schema = tuple_get_schema(tuple);
+    buf = sbuf_make(pool);
+    for (i = 0; i < schema->len; i++)
+    {
+        if (i != 0)
+            sbuf_append_char(buf, ',');
+		if (schema->types[i] == TYPE_STRING)
+			sbuf_append_char(buf, '\'');
+		
+        (schema->text_out_funcs[i])(tuple_get_val(tuple, i), buf);
+
+		if (schema->types[i] == TYPE_STRING)
+			sbuf_append_char(buf, '\'');
+    }
+	
+    sbuf_append_char(buf, '\0');
+    return buf->data;
+}
+
+
 void
 tuple_to_buf(Tuple *tuple, StrBuf *buf)
 {

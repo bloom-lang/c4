@@ -5,6 +5,8 @@
 #include "router.h"
 #include "types/catalog.h"
 
+static apr_status_t col_cleanup(void *data);
+
 void
 col_initialize(void)
 {
@@ -36,12 +38,56 @@ get_local_addr(int port, apr_pool_t *pool)
     return string_from_str(addr);
 }
 
+static char *
+get_user_home_dir(apr_pool_t *pool)
+{
+    apr_status_t s;
+    apr_uid_t uid;
+    apr_gid_t gid;
+    char *user_name;
+    char *home_dir;
+
+    s = apr_uid_current(&uid, &gid, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_uid_name_get(&user_name, uid, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_uid_homepath_get(&home_dir, user_name, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    return home_dir;
+}
+
+static char *
+get_col_base_dir(int port, apr_pool_t *pool)
+{
+    char *home_dir;
+    char *base_dir;
+    apr_status_t s;
+
+    home_dir = get_user_home_dir(pool);
+    base_dir = apr_psprintf(pool, "%s/col_home/tcp_%d",
+                            home_dir, port);
+    s = apr_dir_make_recursive(base_dir, APR_FPROT_OS_DEFAULT, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    printf("col: Using base_dir = %s\n", base_dir);
+    return base_dir;
+}
+
 ColInstance *
 col_make(int port)
 {
     apr_status_t s;
     apr_pool_t *pool;
     ColInstance *col;
+    char *db_fname;
+    int res;
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
@@ -55,14 +101,32 @@ col_make(int port)
     col->net = network_make(col, port);
     col->port = network_get_port(col->net);
     col->local_addr = get_local_addr(col->port, col->pool);
+    col->base_dir = get_col_base_dir(col->port, col->pool);
+
+    db_fname = apr_pstrcat(pool, col->base_dir, "/", "sqlite.db");
+    if ((res = sqlite3_open(db_fname, &col->sql_db)) != 0)
+        ERROR("sqlite3_open failed: %d", res);
+
+    apr_pool_cleanup_register(pool, col, col_cleanup, apr_pool_cleanup_null);
+
     return col;
+}
+
+static apr_status_t
+col_cleanup(void *data)
+{
+    ColInstance *col = (ColInstance *) data;
+
+    network_destroy(col->net);
+    router_destroy(col->router);
+    (void) sqlite3_close(col->sql_db);
+
+    return APR_SUCCESS;
 }
 
 ColStatus
 col_destroy(ColInstance *col)
 {
-    network_destroy(col->net);
-    router_destroy(col->router);
     apr_pool_destroy(col->pool);
 
     return COL_OK;

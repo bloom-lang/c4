@@ -114,3 +114,21 @@ void lookup_type_funcs(Schema *s, apr_pool_t *pool)
         s->text_out_funcs[i] = type_get_text_out_func(s->types[i]);
     }
 }
+
+char *
+schema_to_sql_param_str(Schema *schema, apr_pool_t *pool)
+{
+    StrBuf *buf;
+    int i;
+	
+    buf = sbuf_make(pool);
+    for (i = 0; i < schema->len; i++)
+    {
+        if (i != 0)
+            sbuf_append_char(buf, ',');
+        sbuf_append_char(buf, '?');
+    }
+	
+    sbuf_append_char(buf, '\0');
+    return buf->data;
+}

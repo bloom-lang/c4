@@ -1,4 +1,7 @@
 #include "col-internal.h"
+#include "operator/scan.h"
+#include "operator/scancursor.h"
+#include "types/sqlite_table.h"
 #include "types/table.h"
 #include "types/tuple.h"
 
@@ -7,7 +10,7 @@ static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 static unsigned int table_hash_tuple(const char *key, apr_ssize_t *klen);
 
 ColTable *
-table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
+table_make(TableDef *def, ColInstance *col, apr_pool_t *pool, bool sql)
 {
     ColTable *tbl;
 
@@ -15,9 +18,13 @@ table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
     tbl->pool = pool;
     tbl->col = col;
     tbl->def = def;
-    tbl->tuples = col_hash_make_custom(pool,
-                                       table_hash_tuple,
-                                       table_cmp_tuple);
+
+	if (sql)
+		tbl->sql_table = sqlite_table_make(tbl);
+	else
+		tbl->tuples = col_hash_make_custom(pool,
+										   table_hash_tuple,
+										   table_cmp_tuple);
 
     apr_pool_cleanup_register(pool, tbl, table_cleanup,
                               apr_pool_cleanup_null);
@@ -78,9 +85,49 @@ bool
 table_insert(ColTable *tbl, Tuple *t)
 {
     Tuple *val;
+	bool notdup;
 
-    val = col_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
-    tuple_pin(val);
+	if (tbl->sql_table)
+	    notdup = sqlite_table_insert(tbl->def->table, t);
+    else
+    {
+		val = col_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
+		tuple_pin(val);
+		notdup = (bool) (t == val);
+	}
 
-    return (bool) (t == val);
+    return notdup;
+}
+
+Tuple *
+table_scan_first(ColTable *tbl, ScanCursor *cur)
+{
+	Tuple *ret_tuple;
+
+	cur->hi = NULL;
+	cur->sqlite_stmt = NULL;
+	if (tbl->sql_table)
+		return sqlite_table_scan_first(tbl, cur);
+	else
+    {
+		cur->hi = col_hash_first(NULL, tbl->tuples);
+		col_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
+		return ret_tuple;
+	}
+}
+
+Tuple *
+table_scan_next(ColTable *tbl, ScanCursor *cur)
+{
+	Tuple *ret_tuple;
+
+	if (tbl->sql_table)
+		return sqlite_table_scan_next(tbl, cur);
+	else {
+		cur->hi = col_hash_next(cur->hi);
+		if (cur->hi == NULL)
+			return NULL;
+		col_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
+		return ret_tuple;
+	}
 }

@@ -21,6 +21,18 @@ apr_error(apr_status_t s, const char *file, int line_num)
 }
 
 void
+sqlite_error(ColInstance *col, const char *file, int line_num)
+{
+    const char *errmsg;
+
+    errmsg = sqlite3_errmsg(col->sql_db);
+    fprintf(stderr, "SQLITE ERROR: \"%s\" (code = %d), at %s:%d\n",
+            errmsg, sqlite3_errcode(col->sql_db), file, line_num);
+    print_backtrace();
+    exit(1);
+}
+
+void
 simple_error(const char *file, int line_num)
 {
     fprintf(stderr, "FATAL ERROR at %s:%d\n", file, line_num);

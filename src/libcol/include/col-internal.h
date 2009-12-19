@@ -12,6 +12,7 @@
 #include <apr_general.h>
 #include <apr_pools.h>
 #include <apr_strings.h>
+#include <sqlite3.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +32,8 @@ struct ColInstance
     ColLogger *log;
     int port;
     Datum local_addr;
+    char *base_dir;
+    sqlite3 *sql_db;
 };
 
 /* Utility macros */

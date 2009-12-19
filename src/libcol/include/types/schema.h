@@ -27,6 +27,7 @@ Schema *schema_make_from_ast(List *ast_schema, apr_pool_t *pool);
 Schema *schema_make_from_exprs(int len, struct ExprState **expr_ary, apr_pool_t *pool);
 bool schema_equal(Schema *s1, Schema *s2);
 apr_size_t schema_get_tuple_size(Schema *schema);
+char *schema_to_sql_param_str(Schema *schema, apr_pool_t *pool);
 
 static inline DataType
 schema_get_type(Schema *s, int idx)
