@@ -123,7 +123,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
 
         /* Convert to in-memory tuple format, route tuple */
         tbl_def = cat_get_table(rt->col->cat, rt->tbl_name);    /* Thread-safety? */
-        tuple = tuple_from_buf(rt->col, rt->buf, tbl_def);
+        tuple = tuple_from_buf(rt->buf, tbl_def);
         router_enqueue_tuple(rt->col->router, tuple, tbl_def);
         tuple_unpin(tuple);
     }

@@ -181,7 +181,7 @@ tuple_to_buf(Tuple *tuple, StrBuf *buf)
 }
 
 Tuple *
-tuple_from_buf(ColInstance *col, StrBuf *buf, TableDef *tbl_def)
+tuple_from_buf(StrBuf *buf, TableDef *tbl_def)
 {
     Schema *schema;
     Tuple *result;
