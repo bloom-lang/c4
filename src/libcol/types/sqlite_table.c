@@ -134,7 +134,6 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
 	ColSQLiteTable *sql_table = ctbl->sql_table;
 	DataType *types = ctbl->def->schema->types;
 	int i, res;
-	StrBuf *buf;
 
 	if (sql_table->insert_stmt == NULL)
     {
@@ -157,42 +156,33 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
 	else
 		sqlite3_reset(sql_table->insert_stmt);
 
-	buf = sbuf_make(ctbl->pool);
-	tuple_to_buf(t, buf);
 	for (i = 0; i < ctbl->def->schema->len; i++)
     {
-		/* XXX: get rid of this */
-		Datum d;
+		Datum val = tuple_get_val(t, i);
+
 		switch (types[i])
 		{
 			case TYPE_BOOL:
-				d = bool_from_buf(buf);
-				sqlite3_bind_int(sql_table->insert_stmt, i+1, d.b);
+				sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.b);
 				break;
 			case TYPE_CHAR:
-				d = char_from_buf(buf);
-				sqlite3_bind_int(sql_table->insert_stmt, i+1, d.c);
+				sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.c);
 				break;
 			case TYPE_INT2:
-				d = int2_from_buf(buf);
-				sqlite3_bind_int(sql_table->insert_stmt, i+1, d.i2);
+				sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.i2);
 				break;
 			case TYPE_INT4:
-				d = int4_from_buf(buf);
-				sqlite3_bind_int(sql_table->insert_stmt, i+1, d.i4);
+				sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.i4);
 				break;
 			case TYPE_INT8:
-				d = int8_from_buf(buf);
-				sqlite3_bind_int64(sql_table->insert_stmt, i+1, d.i8);
+				sqlite3_bind_int64(sql_table->insert_stmt, i + 1, val.i8);
 				break;
 			case TYPE_DOUBLE:
-				d = double_from_buf(buf);
-				sqlite3_bind_double(sql_table->insert_stmt, i+1, d.d8);
+				sqlite3_bind_double(sql_table->insert_stmt, i + 1, val.d8);
 				break;
 			case TYPE_STRING:
-				d = string_from_buf(buf);
-				sqlite3_bind_text(sql_table->insert_stmt, i+1, d.s->data,
-                                  d.s->len, SQLITE_STATIC);
+				sqlite3_bind_text(sql_table->insert_stmt, i + 1, val.s->data,
+                                  val.s->len, SQLITE_STATIC);
 				break;
 
 			case TYPE_INVALID:
