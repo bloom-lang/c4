@@ -64,7 +64,8 @@ Data types:
 Tables:
 
 * Invent a concept of "table IDs", and use them instead of table names
-* Support for persistent tables, likely using BDB
+* Support for BDB persistent tables
+  * Can we store in-memory Tuple/Datum format directly to BDB?
 * Support a more generic table interface
 * Consider adding a "regexp" table type: given a string input, parses
   into tuple format by applying a regular expression
