@@ -1,6 +1,7 @@
 #ifndef CATALOG_H
 #define CATALOG_H
 
+#include "parser/ast.h"
 #include "types/datum.h"
 #include "types/schema.h"
 #include "util/list.h"
@@ -19,6 +20,7 @@ typedef struct TableDef
 {
     apr_pool_t *pool;
     char *name;
+    AstStorageKind storage;
     Schema *schema;
     List *key_list;
 
@@ -39,7 +41,7 @@ typedef struct TableDef
 
 ColCatalog *cat_make(ColInstance *col);
 
-void cat_define_table(ColCatalog *cat, const char *name,
+void cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
                       List *schema, List *key_list);
 void cat_delete_table(ColCatalog *cat, const char *name);
 TableDef *cat_get_table(ColCatalog *cat, const char *name);

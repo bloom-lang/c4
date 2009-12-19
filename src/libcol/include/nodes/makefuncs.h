@@ -7,8 +7,8 @@
 
 AstProgram *make_program(List *defines, List *facts,
                          List *rules, apr_pool_t *p);
-AstDefine *make_define(const char *name, List *keys, List *schema,
-                       apr_pool_t *p);
+AstDefine *make_define(const char *name, AstStorageKind storage,
+                       List *keys, List *schema, apr_pool_t *p);
 AstSchemaElt *make_schema_elt(const char *type_name, bool is_loc_spec,
                               apr_pool_t *p);
 AstRule *make_rule(const char *name, bool is_delete, bool is_network,

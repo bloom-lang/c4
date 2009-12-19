@@ -15,10 +15,17 @@ typedef struct AstProgram
     List *rules;
 } AstProgram;
 
+typedef enum AstStorageKind
+{
+    AST_STORAGE_MEMORY,
+    AST_STORAGE_SQLITE
+} AstStorageKind;
+
 typedef struct AstDefine
 {
     ColNode node;
     char *name;
+    AstStorageKind storage;
     List *keys;
     List *schema;
 } AstDefine;

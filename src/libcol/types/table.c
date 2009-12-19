@@ -10,7 +10,7 @@ static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 static unsigned int table_hash_tuple(const char *key, apr_ssize_t *klen);
 
 ColTable *
-table_make(TableDef *def, ColInstance *col, apr_pool_t *pool, bool sql)
+table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
 {
     ColTable *tbl;
 
@@ -19,7 +19,7 @@ table_make(TableDef *def, ColInstance *col, apr_pool_t *pool, bool sql)
     tbl->col = col;
     tbl->def = def;
 
-	if (sql)
+	if (def->storage == AST_STORAGE_SQLITE)
 		tbl->sql_table = sqlite_table_make(tbl);
 	else
 		tbl->tuples = col_hash_make_custom(pool,

@@ -22,6 +22,7 @@ static void split_rule_body(List *body, List **joins,
     void           *ptr;
     bool            boolean;
     AstHashVariant  hash_v;
+    AstStorageKind  store_kind;
 }
 
 %start program
@@ -30,7 +31,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
+%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
        OL_FALSE OL_TRUE
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
@@ -40,15 +41,16 @@ static void split_rule_body(List *body, List **joins,
 %left '*' '/' '%'
 %left UMINUS
 
-%type <ptr>     clause define rule table_ref column_ref join_clause
-%type <list>    program_body opt_int_list int_list schema_list define_schema
-%type <list>    opt_keys column_ref_list opt_rule_body rule_body
-%type <ptr>     rule_body_elem qualifier qual_expr expr const_expr op_expr
-%type <ptr>     var_expr column_ref_expr rule_prefix schema_elt
-%type <str>     bool_const
-%type <ival>    iconst_ival
-%type <boolean> opt_not opt_delete
-%type <hash_v>  opt_hash_variant
+%type <ptr>        clause define rule table_ref column_ref join_clause
+%type <list>       program_body opt_int_list int_list schema_list define_schema
+%type <list>       opt_keys column_ref_list opt_rule_body rule_body
+%type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
+%type <ptr>        var_expr column_ref_expr rule_prefix schema_elt
+%type <str>        bool_const
+%type <ival>       iconst_ival
+%type <boolean>    opt_not opt_delete
+%type <hash_v>     opt_hash_variant
+%type <store_kind> opt_storage
 
 %%
 program: program_body {
@@ -70,8 +72,8 @@ clause:
 | rule          { $$ = $1; }
 ;
 
-define: DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
-    $$ = make_define($3, $5, $6, context->pool);
+define: DEFINE '(' TBL_IDENT ',' opt_storage opt_keys define_schema ')' {
+    $$ = make_define($3, $5, $6, $7, context->pool);
 };
 
 /*
@@ -81,6 +83,12 @@ define: DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
 opt_keys:
   KEYS '(' opt_int_list ')' ',' { $$ = $3; }
 | /* EMPTY */ { $$ = NULL; }
+;
+
+opt_storage:
+  MEMORY ','    { return AST_STORAGE_MEMORY; }
+| SQLITE ','    { return AST_STORAGE_SQLITE; }
+| /* EMPTY */   { return AST_STORAGE_MEMORY; }
 ;
 
 define_schema: '{' schema_list '}' { $$ = $2; };

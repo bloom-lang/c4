@@ -11,7 +11,7 @@ copy_program(AstProgram *in, apr_pool_t *p)
 static AstDefine *
 copy_define(AstDefine *in, apr_pool_t *p)
 {
-    return make_define(in->name, in->keys, in->schema, p);
+    return make_define(in->name, in->storage, in->keys, in->schema, p);
 }
 
 static AstSchemaElt *

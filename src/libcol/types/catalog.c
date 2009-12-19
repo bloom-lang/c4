@@ -55,7 +55,7 @@ find_loc_spec_colno(List *schema)
 }
 
 void
-cat_define_table(ColCatalog *cat, const char *name,
+cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
                  List *schema, List *key_list)
 {
     apr_pool_t *tbl_pool;
@@ -68,10 +68,11 @@ cat_define_table(ColCatalog *cat, const char *name,
     tbl_def = apr_pcalloc(tbl_pool, sizeof(*tbl_def));
     tbl_def->pool = tbl_pool;
     tbl_def->name = apr_pstrdup(tbl_pool, name);
+    tbl_def->storage = storage;
     tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
     tbl_def->ls_colno = find_loc_spec_colno(schema);
-    tbl_def->table = table_make(tbl_def, cat->col, tbl_pool, true);
+    tbl_def->table = table_make(tbl_def, cat->col, tbl_pool);
     tbl_def->op_chain_list = router_get_opchain_list(cat->col->router,
                                                      tbl_def->name);
 

@@ -16,7 +16,7 @@ typedef struct ColTable
     ColSQLiteTable *sql_table;
 } ColTable;
 
-ColTable *table_make(TableDef *def, ColInstance *col, apr_pool_t *pool, bool sql);
+ColTable *table_make(TableDef *def, ColInstance *col, apr_pool_t *pool);
 bool table_insert(ColTable *tbl, Tuple *t);
 
 #endif  /* TABLE_H */

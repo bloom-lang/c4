@@ -111,7 +111,9 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "delete"                { return DELETE; }
 "false"                 { return OL_FALSE; }
 "keys"                  { return KEYS; }
+"memory"                { return MEMORY; }
 "notin"                 { return NOTIN; }
+"sqlite"                { return SQLITE; }
 "true"                  { return OL_TRUE; }
 
 {integer} {
