@@ -33,10 +33,7 @@ struct ColInstance
     int port;
     Datum local_addr;
     char *base_dir;
-
-    /* SQLite state */
-    sqlite3 *sql_db;
-    bool xact_in_progress;
+    struct SQLiteState *sql;
 };
 
 /* Utility macros */

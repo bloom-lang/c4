@@ -1,6 +1,7 @@
 #include "col-internal.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"
+#include "storage/sqlite.h"
 #include "storage/sqlite_table.h"
 
 static apr_status_t sqlite_table_cleanup(void *data);
@@ -63,7 +64,7 @@ sqlite_table_make(ColTable *ctbl)
     sbuf_append_char(stmt, '\0');
     /* printf(stmt); */
 
-    if ((res = sqlite3_prepare_v2(ctbl->col->sql_db,
+    if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
                                   stmt->data,
                                   -1,
                                   &create_stmt,  /* OUT: Statement handle */
@@ -91,7 +92,7 @@ sqlite_table_cleanup(void *data)
     int res;
 
     stmt_len = snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
-    if ((res = sqlite3_prepare_v2(ctbl->col->sql_db,
+    if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
                                   stmt, stmt_len,
                                   &delete_stmt,  /* OUT: Statement handle */
                                   NULL)))
@@ -146,14 +147,14 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
         stmt_len = snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
                             ctbl->def->name, param_str);
 
-        if ((res = sqlite3_prepare_v2(ctbl->col->sql_db,
+        if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
                                       stmt, stmt_len,
                                       &sql_table->insert_stmt,
                                       NULL)))
             ERROR("SQLite prepare failure %d: %s", res, stmt);
     }
     else
-        sqlite3_reset(sql_table->insert_stmt);
+        (void) sqlite3_reset(sql_table->insert_stmt);
 
     for (i = 0; i < ctbl->def->schema->len; i++)
     {
@@ -211,18 +212,20 @@ sqlite_table_scan_first(ColTable *ctbl, ScanCursor *cur)
     {
         char stmt[1024];
         int stmt_len;
+        int res;
 
         /* XXX: escape table name? */
         stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
                             ctbl->def->name);
 
-        sqlite3_prepare_v2(ctbl->col->sql_db,
-                           stmt, stmt_len,
-                           &cur->sqlite_stmt, /* OUT: Statement handle */
-                           NULL);
+        if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
+                                      stmt, stmt_len,
+                                      &cur->sqlite_stmt,
+                                      NULL)))
+            ERROR("SQLite prepare failure %d: %s", res, stmt);
     }
     else
-        sqlite3_reset(cur->sqlite_stmt);
+        (void) sqlite3_reset(cur->sqlite_stmt);
 
     return sqlite_table_scan_next(ctbl, cur);
 }

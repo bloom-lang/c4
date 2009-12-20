@@ -3,6 +3,7 @@
 #include "col-internal.h"
 #include "net/network.h"
 #include "router.h"
+#include "storage/sqlite.h"
 #include "types/catalog.h"
 
 static apr_status_t col_cleanup(void *data);
@@ -86,8 +87,6 @@ col_make(int port)
     apr_status_t s;
     apr_pool_t *pool;
     ColInstance *col;
-    char *db_fname;
-    int res;
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
@@ -102,11 +101,7 @@ col_make(int port)
     col->port = network_get_port(col->net);
     col->local_addr = get_local_addr(col->port, col->pool);
     col->base_dir = get_col_base_dir(col->port, col->pool);
-    col->xact_in_progress = false;
-
-    db_fname = apr_pstrcat(pool, col->base_dir, "/", "sqlite.db");
-    if ((res = sqlite3_open(db_fname, &col->sql_db)) != 0)
-        ERROR("sqlite3_open failed: %d", res);
+    col->sql = sqlite_init(col);
 
     apr_pool_cleanup_register(pool, col, col_cleanup, apr_pool_cleanup_null);
 
@@ -120,7 +115,6 @@ col_cleanup(void *data)
 
     network_destroy(col->net);
     router_destroy(col->router);
-    (void) sqlite3_close(col->sql_db);
 
     return APR_SUCCESS;
 }
