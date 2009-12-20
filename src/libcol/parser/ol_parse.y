@@ -22,7 +22,6 @@ static void split_rule_body(List *body, List **joins,
     void           *ptr;
     bool            boolean;
     AstHashVariant  hash_v;
-    AstStorageKind  store_kind;
 }
 
 %start program
@@ -50,7 +49,6 @@ static void split_rule_body(List *body, List **joins,
 %type <ival>       iconst_ival
 %type <boolean>    opt_not opt_delete
 %type <hash_v>     opt_hash_variant
-%type <store_kind> storage_kind
 
 %%
 program: program_body {
@@ -80,8 +78,11 @@ define:
   DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
     $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
 }
-| DEFINE '(' TBL_IDENT ',' storage_kind ',' opt_keys define_schema ')' {
-    $$ = make_define($3, $5, $7, $8, context->pool);
+| DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
+}
+| DEFINE '(' TBL_IDENT ',' SQLITE ',' opt_keys define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
 }
 ;
 
@@ -92,11 +93,6 @@ define:
 opt_keys:
   KEYS '(' opt_int_list ')' ',' { $$ = $3; }
 | /* EMPTY */ { $$ = NULL; }
-;
-
-storage_kind:
-  MEMORY        { return AST_STORAGE_MEMORY; }
-| SQLITE        { return AST_STORAGE_SQLITE; }
 ;
 
 define_schema: '{' schema_list '}' { $$ = $2; };
