@@ -11,5 +11,6 @@ typedef struct SQLiteState
 SQLiteState *sqlite_init(ColInstance *col);
 void sqlite_begin_xact(SQLiteState *sql);
 void sqlite_commit_xact(SQLiteState *sql);
+void sqlite_exec_sql(SQLiteState *sql, const char *stmt);
 
 #endif  /* COL_SQLITE_H */

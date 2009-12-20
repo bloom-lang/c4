@@ -11,9 +11,7 @@ sqlite_table_make(ColTable *ctbl)
 {
     StrBuf *stmt;
     StrBuf *pkeys;
-    sqlite3_stmt *create_stmt;
     int i;
-    int res;
 
     ctbl->sql_table = apr_pcalloc(ctbl->pool, sizeof(*ctbl->sql_table));
     apr_pool_cleanup_register(ctbl->pool, ctbl->sql_table,
@@ -62,19 +60,8 @@ sqlite_table_make(ColTable *ctbl)
     sbuf_append_char(pkeys, '\0');
     sbuf_appendf(stmt, ", PRIMARY KEY (%s));", pkeys->data);
     sbuf_append_char(stmt, '\0');
-    /* printf(stmt); */
 
-    if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
-                                  stmt->data,
-                                  -1,
-                                  &create_stmt,  /* OUT: Statement handle */
-                                  NULL)))
-        ERROR("SQLite prepare failure %d: %s", res, stmt->data);
-
-    if (sqlite3_step(create_stmt) != SQLITE_DONE)
-        ERROR("SQLite create table failure: %s", stmt->data);
-    if (sqlite3_finalize(create_stmt) != SQLITE_OK)
-        FAIL_SQLITE(ctbl->col);
+    sqlite_exec_sql(ctbl->col->sql, stmt->data);
 
     return ctbl->sql_table;
 }
@@ -87,22 +74,9 @@ sqlite_table_cleanup(void *data)
 {
     ColTable *ctbl = (ColTable *) data;
     char stmt[1024];
-    int stmt_len;
-    sqlite3_stmt *delete_stmt;
-    int res;
 
-    stmt_len = snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
-    if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
-                                  stmt, stmt_len,
-                                  &delete_stmt,  /* OUT: Statement handle */
-                                  NULL)))
-        ERROR("SQLite prepare failure %d: %s", res, stmt);
-
-    if (sqlite3_step(delete_stmt) != SQLITE_DONE)
-        ERROR("SQLite drop table failure: %s", stmt);
-
-    if (sqlite3_finalize(delete_stmt) != SQLITE_OK)
-        FAIL_SQLITE(ctbl->col);
+    snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
+    sqlite_exec_sql(ctbl->col->sql, stmt);
 
     if (ctbl->sql_table->insert_stmt != NULL)
     {

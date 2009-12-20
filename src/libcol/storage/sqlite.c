@@ -54,3 +54,10 @@ sqlite_commit_xact(SQLiteState *sql)
 
     sql->xact_in_progress = false;
 }
+
+void
+sqlite_exec_sql(SQLiteState *sql, const char *stmt)
+{
+    if (sqlite3_exec(sql->db, stmt, NULL, NULL, NULL) != SQLITE_OK)
+        FAIL_SQLITE(sql->col);
+}
