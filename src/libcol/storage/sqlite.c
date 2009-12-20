@@ -43,6 +43,7 @@ sqlite_begin_xact(SQLiteState *sql)
     if (sql->xact_in_progress)
         FAIL();
 
+    sqlite_exec_sql(sql, "BEGIN;");
     sql->xact_in_progress = true;
 }
 
@@ -52,6 +53,7 @@ sqlite_commit_xact(SQLiteState *sql)
     if (!sql->xact_in_progress)
         FAIL();
 
+    sqlite_exec_sql(sql, "COMMIT;");
     sql->xact_in_progress = false;
 }
 
