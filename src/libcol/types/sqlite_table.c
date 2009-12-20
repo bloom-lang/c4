@@ -88,13 +88,13 @@ sqlite_table_cleanup(void *data)
 {
     ColTable *ctbl = (ColTable *) data;
     char stmt[1024];
+    int stmt_len;
     sqlite3_stmt *delete_stmt;
     int res;
 
-    snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
+    stmt_len = snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
     if ((res = sqlite3_prepare_v2(ctbl->col->sql_db,
-                                  stmt,
-                                  -1,
+                                  stmt, stmt_len,
                                   &delete_stmt,  /* OUT: Statement handle */
                                   NULL)))
         ERROR("SQLite prepare failure %d: %s", res, stmt);
