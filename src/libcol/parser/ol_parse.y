@@ -82,7 +82,7 @@ define:
     $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
 }
 | DEFINE '(' TBL_IDENT ',' SQLITE ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
+    $$ = make_define($3, AST_STORAGE_SQLITE, $7, $8, context->pool);
 }
 ;
 
