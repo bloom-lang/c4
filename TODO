@@ -61,7 +61,7 @@ Data types:
 * Optimize the TuplePool implementation: remove mutex, optimize
   thread-local tuple allocations, etc.
 
-Tables:
+Tables and storage:
 
 * Invent a concept of "table IDs", and use them instead of table names
 * Support for BDB persistent tables
@@ -71,6 +71,7 @@ Tables:
   into tuple format by applying a regular expression
 * Optimize the hash table implementation
 * Consider using Judy trees/arrays instead of hash tables
+* Support for secondary indexes, index scans on PK
 
 Build system:
 
