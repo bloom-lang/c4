@@ -102,6 +102,7 @@ col_make(int port)
     col->port = network_get_port(col->net);
     col->local_addr = get_local_addr(col->port, col->pool);
     col->base_dir = get_col_base_dir(col->port, col->pool);
+    col->xact_in_progress = false;
 
     db_fname = apr_pstrcat(pool, col->base_dir, "/", "sqlite.db");
     if ((res = sqlite3_open(db_fname, &col->sql_db)) != 0)

@@ -175,6 +175,9 @@ compute_fixpoint(ColRouter *router)
         }
     }
 
+    /* If we modified persistent storage, commit to disk */
+
+    /* Enqueue any outbound network messages */
     while (!tuple_buf_is_empty(net_buf))
     {
         TupleBufEntry *ent;

@@ -15,8 +15,8 @@ sqlite_table_make(ColTable *ctbl)
     int res;
 
     ctbl->sql_table = apr_pcalloc(ctbl->pool, sizeof(*ctbl->sql_table));
-    apr_pool_cleanup_register(ctbl->pool, ctbl->sql_table, sqlite_table_cleanup,
-                              apr_pool_cleanup_null);
+    apr_pool_cleanup_register(ctbl->pool, ctbl->sql_table,
+                              sqlite_table_cleanup, apr_pool_cleanup_null);
 
     stmt = sbuf_make(ctbl->pool);
     pkeys = sbuf_make(ctbl->pool);
