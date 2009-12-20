@@ -137,18 +137,20 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
 
 	if (sql_table->insert_stmt == NULL)
     {
-		/* time to prepare an insert statement! */
-		/* first create an INSERT statement, UTF-8 encoded */
+		/* Prepare an insert statement */
+        char *param_str;
 		char stmt[1024];
+        int stmt_len;
+
+        /* XXX: memory leak */
+        param_str = schema_to_sql_param_str(tuple_get_schema(t), ctbl->pool);
 
         /* XXX: need to escape SQL string */
-		snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
-                 ctbl->def->name,
-                 schema_to_sql_param_str(tuple_get_schema(t), ctbl->pool));
+		stmt_len = snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
+                            ctbl->def->name, param_str);
 
 		if ((res = sqlite3_prepare_v2(ctbl->col->sql_db,
-                                      stmt,
-                                      strlen(stmt),
+                                      stmt, stmt_len,
                                       &sql_table->insert_stmt,
                                       NULL)))
 			ERROR("SQLite prepare failure %d: %s", res, stmt);
@@ -211,16 +213,16 @@ sqlite_table_scan_first(ColTable *ctbl, ScanCursor *cur)
 	if (cur->sqlite_stmt == NULL)
     {
 		char stmt[1024];
-		const char *tail;
+        int stmt_len;
 
-		snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;", ctbl->def->name);
+        /* XXX: escape table name? */
+		stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
+                            ctbl->def->name);
 
 		sqlite3_prepare_v2(ctbl->col->sql_db,
-						   stmt,
-						   strlen(stmt),
-						   &(cur->sqlite_stmt), /* OUT: Statement handle */
-						   &tail      /* OUT: Pointer to unused portion of zSql */
-						   );
+						   stmt, stmt_len,
+						   &cur->sqlite_stmt, /* OUT: Statement handle */
+                           NULL);
 	}
 	else
         sqlite3_reset(cur->sqlite_stmt);
