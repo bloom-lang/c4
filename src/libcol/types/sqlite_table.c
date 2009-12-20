@@ -70,11 +70,9 @@ sqlite_table_make(ColTable *ctbl)
                                   NULL)))
         ERROR("SQLite prepare failure %d: %s", res, stmt->data);
 
-    res = sqlite3_step(create_stmt);
-    if (res != SQLITE_DONE)
+    if (sqlite3_step(create_stmt) != SQLITE_DONE)
         ERROR("SQLite create table failure: %s", stmt->data);
-    res = sqlite3_finalize(create_stmt);
-    if (res != SQLITE_OK)
+    if (sqlite3_finalize(create_stmt) != SQLITE_OK)
         FAIL_SQLITE(ctbl->col);
 
     return ctbl->sql_table;
@@ -99,8 +97,7 @@ sqlite_table_cleanup(void *data)
                                   NULL)))
         ERROR("SQLite prepare failure %d: %s", res, stmt);
 
-    res = sqlite3_step(delete_stmt);
-    if (res != SQLITE_DONE)
+    if (sqlite3_step(delete_stmt) != SQLITE_DONE)
         ERROR("SQLite drop table failure: %s", stmt);
 
     if (sqlite3_finalize(delete_stmt) != SQLITE_OK)
