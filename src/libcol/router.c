@@ -9,6 +9,7 @@
 #include "planner/installer.h"
 #include "planner/planner.h"
 #include "router.h"
+#include "storage/sqlite.h"
 #include "storage/table.h"
 #include "types/catalog.h"
 #include "util/list.h"
@@ -176,6 +177,8 @@ compute_fixpoint(ColRouter *router)
     }
 
     /* If we modified persistent storage, commit to disk */
+    if (router->col->sql->xact_in_progress)
+        sqlite_commit_xact(router->col->sql);
 
     /* Enqueue any outbound network messages */
     while (!tuple_buf_is_empty(net_buf))

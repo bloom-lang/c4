@@ -128,6 +128,7 @@ bool
 sqlite_table_insert(ColTable *ctbl, Tuple *t)
 {
     /* take prepared SQL statement, use Schema to walk the tuple for insert constants. */
+    SQLiteState *sql = ctbl->col->sql;
     ColSQLiteTable *sql_table = ctbl->sql_table;
     DataType *types = ctbl->def->schema->types;
     int i;
@@ -147,7 +148,7 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
         stmt_len = snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
                             ctbl->def->name, param_str);
 
-        if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
+        if ((res = sqlite3_prepare_v2(sql->db,
                                       stmt, stmt_len,
                                       &sql_table->insert_stmt,
                                       NULL)))
@@ -191,6 +192,10 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
                 ERROR("Unexpected data type: %uc", types[i]);
         }
     }
+
+    /* If we're not inside an xact block, start one */
+    if (!sql->xact_in_progress)
+        sqlite_begin_xact(sql);
 
     do {
         res = sqlite3_step(sql_table->insert_stmt);

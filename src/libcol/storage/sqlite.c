@@ -40,11 +40,17 @@ sqlite_cleanup(void *data)
 void
 sqlite_begin_xact(SQLiteState *sql)
 {
-    ;
+    if (sql->xact_in_progress)
+        FAIL();
+
+    sql->xact_in_progress = true;
 }
 
 void
 sqlite_commit_xact(SQLiteState *sql)
 {
-    ;
+    if (!sql->xact_in_progress)
+        FAIL();
+
+    sql->xact_in_progress = false;
 }
