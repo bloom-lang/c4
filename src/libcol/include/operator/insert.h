@@ -3,7 +3,7 @@
 
 #include "operator/operator.h"
 #include "planner/planner.h"
-#include "types/table.h"
+#include "storage/table.h"
 
 typedef struct InsertOperator
 {

@@ -9,8 +9,8 @@
 #include "planner/installer.h"
 #include "planner/planner.h"
 #include "router.h"
+#include "storage/table.h"
 #include "types/catalog.h"
-#include "types/table.h"
 #include "util/list.h"
 #include "util/tuple_buf.h"
 

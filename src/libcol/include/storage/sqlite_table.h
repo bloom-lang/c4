@@ -1,7 +1,7 @@
 #ifndef SQLITE_TABLE_H
 #define SQLITE_TABLE_H
 
-#include "types/table.h"
+#include "storage/table.h"
 
 struct ColSQLiteTable
 {

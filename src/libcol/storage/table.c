@@ -1,8 +1,8 @@
 #include "col-internal.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"
-#include "types/sqlite_table.h"
-#include "types/table.h"
+#include "storage/sqlite_table.h"
+#include "storage/table.h"
 #include "types/tuple.h"
 
 static apr_status_t table_cleanup(void *data);

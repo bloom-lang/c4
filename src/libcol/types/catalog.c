@@ -4,7 +4,7 @@
 #include "parser/ast.h"
 #include "router.h"
 #include "types/catalog.h"
-#include "types/table.h"
+#include "storage/table.h"
 
 struct ColCatalog
 {
