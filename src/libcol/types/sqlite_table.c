@@ -24,7 +24,6 @@ sqlite_table_make(ColTable *ctbl)
     sbuf_appendf(stmt, "CREATE TABLE %s (", ctbl->def->name);
     for (i = 0; i < ctbl->def->schema->len; i++)
     {
-        /* XXX: get rid of this */
         if (i != 0)
         {
             sbuf_append_char(stmt, ',');
@@ -133,7 +132,8 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
     /* take prepared SQL statement, use Schema to walk the tuple for insert constants. */
     ColSQLiteTable *sql_table = ctbl->sql_table;
     DataType *types = ctbl->def->schema->types;
-    int i, res;
+    int i;
+    int res;
 
     if (sql_table->insert_stmt == NULL)
     {
