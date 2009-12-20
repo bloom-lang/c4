@@ -50,7 +50,7 @@ static void split_rule_body(List *body, List **joins,
 %type <ival>       iconst_ival
 %type <boolean>    opt_not opt_delete
 %type <hash_v>     opt_hash_variant
-%type <store_kind> opt_storage
+%type <store_kind> storage_kind
 
 %%
 program: program_body {
@@ -72,9 +72,18 @@ clause:
 | rule          { $$ = $1; }
 ;
 
-define: DEFINE '(' TBL_IDENT ',' opt_storage opt_keys define_schema ')' {
-    $$ = make_define($3, $5, $6, $7, context->pool);
-};
+/*
+ * XXX: We need to write this in a non-obvious way because bison gets
+ * confused by adjacent optional productions. Is there a better fix?
+ */
+define:
+  DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
+}
+| DEFINE '(' TBL_IDENT ',' storage_kind ',' opt_keys define_schema ')' {
+    $$ = make_define($3, $5, $7, $8, context->pool);
+}
+;
 
 /*
  * Note that we currently equate an empty key list with an absent key list;
@@ -85,10 +94,9 @@ opt_keys:
 | /* EMPTY */ { $$ = NULL; }
 ;
 
-opt_storage:
-  MEMORY ','    { return AST_STORAGE_MEMORY; }
-| SQLITE ','    { return AST_STORAGE_SQLITE; }
-| /* EMPTY */   { return AST_STORAGE_MEMORY; }
+storage_kind:
+  MEMORY        { return AST_STORAGE_MEMORY; }
+| SQLITE        { return AST_STORAGE_SQLITE; }
 ;
 
 define_schema: '{' schema_list '}' { $$ = $2; };
