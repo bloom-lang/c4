@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"
 #include "storage/sqlite_table.h"
@@ -9,20 +9,20 @@ static apr_status_t table_cleanup(void *data);
 static int table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 static unsigned int table_hash_tuple(const char *key, apr_ssize_t *klen);
 
-ColTable *
-table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
+C4Table *
+table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
 {
-    ColTable *tbl;
+    C4Table *tbl;
 
     tbl = apr_pcalloc(pool, sizeof(*tbl));
     tbl->pool = pool;
-    tbl->col = col;
+    tbl->c4 = c4;
     tbl->def = def;
 
 	if (def->storage == AST_STORAGE_SQLITE)
 		tbl->sql_table = sqlite_table_make(tbl);
 	else
-		tbl->tuples = col_hash_make_custom(pool,
+		tbl->tuples = c4_hash_make_custom(pool,
 										   table_hash_tuple,
 										   table_cmp_tuple);
 
@@ -38,15 +38,15 @@ table_make(TableDef *def, ColInstance *col, apr_pool_t *pool)
 static apr_status_t
 table_cleanup(void *data)
 {
-    ColTable *tbl = (ColTable *) data;
-    col_hash_index_t *hi;
+    C4Table *tbl = (C4Table *) data;
+    c4_hash_index_t *hi;
 
-    for (hi = col_hash_first(tbl->pool, tbl->tuples);
-         hi != NULL; hi = col_hash_next(hi))
+    for (hi = c4_hash_first(tbl->pool, tbl->tuples);
+         hi != NULL; hi = c4_hash_next(hi))
     {
         Tuple *t;
 
-        col_hash_this(hi, (const void **) &t, NULL, NULL);
+        c4_hash_this(hi, (const void **) &t, NULL, NULL);
         tuple_unpin(t);
     }
 
@@ -82,7 +82,7 @@ table_hash_tuple(const char *key, apr_ssize_t *klen)
  * contained by this table.
  */
 bool
-table_insert(ColTable *tbl, Tuple *t)
+table_insert(C4Table *tbl, Tuple *t)
 {
     Tuple *val;
 	bool notdup;
@@ -91,7 +91,7 @@ table_insert(ColTable *tbl, Tuple *t)
 	    notdup = sqlite_table_insert(tbl->def->table, t);
     else
     {
-		val = col_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
+		val = c4_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
 		tuple_pin(val);
 		notdup = (bool) (t == val);
 	}
@@ -100,7 +100,7 @@ table_insert(ColTable *tbl, Tuple *t)
 }
 
 Tuple *
-table_scan_first(ColTable *tbl, ScanCursor *cur)
+table_scan_first(C4Table *tbl, ScanCursor *cur)
 {
 	Tuple *ret_tuple;
 
@@ -110,24 +110,24 @@ table_scan_first(ColTable *tbl, ScanCursor *cur)
 		return sqlite_table_scan_first(tbl, cur);
 	else
     {
-		cur->hi = col_hash_first(NULL, tbl->tuples);
-		col_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
+		cur->hi = c4_hash_first(NULL, tbl->tuples);
+		c4_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
 		return ret_tuple;
 	}
 }
 
 Tuple *
-table_scan_next(ColTable *tbl, ScanCursor *cur)
+table_scan_next(C4Table *tbl, ScanCursor *cur)
 {
 	Tuple *ret_tuple;
 
 	if (tbl->sql_table)
 		return sqlite_table_scan_next(tbl, cur);
 	else {
-		cur->hi = col_hash_next(cur->hi);
+		cur->hi = c4_hash_next(cur->hi);
 		if (cur->hi == NULL)
 			return NULL;
-		col_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
+		c4_hash_this(cur->hi, (const void **) &ret_tuple, NULL, NULL);
 		return ret_tuple;
 	}
 }

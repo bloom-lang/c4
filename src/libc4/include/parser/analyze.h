@@ -4,7 +4,7 @@
 #include "parser/ast.h"
 #include "types/schema.h"
 
-void analyze_ast(AstProgram *program, apr_pool_t *pool, ColInstance *col);
-DataType expr_get_type(ColNode *node);
+void analyze_ast(AstProgram *program, apr_pool_t *pool, C4Instance *c4);
+DataType expr_get_type(C4Node *node);
 
 #endif  /* ANALYZE_H */

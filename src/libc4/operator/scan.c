@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "types/datum.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"

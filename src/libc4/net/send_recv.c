@@ -3,7 +3,7 @@
 #include <arpa/inet.h>
 #include <limits.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "router.h"
 #include "net/network.h"
 #include "net/send_recv.h"
@@ -15,7 +15,7 @@
 
 struct RecvThread
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *pool;
     char *remote_loc;
 
@@ -29,7 +29,7 @@ struct RecvThread
 
 struct SendThread
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *pool;
     char *remote_loc;
 
@@ -54,12 +54,12 @@ static void create_send_socket(SendThread *st);
 static void parse_loc_spec(const char *loc_spec, char *host, int *port_p);
 
 RecvThread *
-recv_thread_make(ColInstance *col, apr_socket_t *sock, apr_pool_t *pool)
+recv_thread_make(C4Instance *c4, apr_socket_t *sock, apr_pool_t *pool)
 {
     RecvThread *rt;
 
     rt = apr_pcalloc(pool, sizeof(*rt));
-    rt->col = col;
+    rt->c4 = c4;
     rt->pool = pool;
     rt->sock = sock;
     rt->remote_loc = socket_get_remote_loc(sock, pool);
@@ -122,14 +122,14 @@ recv_thread_main(apr_thread_t *thread, void *data)
             break;
 
         /* Convert to in-memory tuple format, route tuple */
-        tbl_def = cat_get_table(rt->col->cat, rt->tbl_name);    /* Thread-safety? */
+        tbl_def = cat_get_table(rt->c4->cat, rt->tbl_name);    /* Thread-safety? */
         tuple = tuple_from_buf(rt->buf, tbl_def);
-        router_enqueue_tuple(rt->col->router, tuple, tbl_def);
+        router_enqueue_tuple(rt->c4->router, tuple, tbl_def);
         tuple_unpin(tuple);
     }
 
     /* We got EOF from the client socket, so cleanup and exit thread */
-    network_cleanup_rt(rt->col->net, rt);
+    network_cleanup_rt(rt->c4->net, rt);
     apr_pool_destroy(rt->pool);
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */
@@ -146,13 +146,13 @@ recv_thread_get_loc(RecvThread *rt)
  * function is invoked by the router thread and hence shouldn't block.
  */
 SendThread *
-send_thread_make(ColInstance *col, const char *remote_loc, apr_pool_t *pool)
+send_thread_make(C4Instance *c4, const char *remote_loc, apr_pool_t *pool)
 {
     apr_status_t s;
     SendThread *st;
 
     st = apr_pcalloc(pool, sizeof(*st));
-    st->col = col;
+    st->c4 = c4;
     st->pool = pool;
     st->remote_loc = apr_pstrdup(pool, remote_loc);
     st->buf = sbuf_make(st->pool);
@@ -209,7 +209,7 @@ send_thread_main(apr_thread_t *thread, void *data)
         tbl_name = msg->tbl_def->name;
 #if 0
         printf("Sending tuple from %d => %s, table = %s\n",
-               st->col->port, st->remote_loc, tbl_name);
+               st->c4->port, st->remote_loc, tbl_name);
 #endif
 
         /* Send table name, prefixed with length */
@@ -229,7 +229,7 @@ send_thread_main(apr_thread_t *thread, void *data)
     }
 
     /* XXX: TODO */
-    network_cleanup_st(st->col->net, st);
+    network_cleanup_st(st->c4->net, st);
     apr_pool_destroy(st->pool);
     apr_thread_exit(thread, APR_SUCCESS);
     return NULL;        /* Return value ignored */

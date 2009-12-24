@@ -1,29 +1,29 @@
 #include <apr_hash.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "parser/ast.h"
 #include "router.h"
 #include "types/catalog.h"
 #include "storage/table.h"
 
-struct ColCatalog
+struct C4Catalog
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *pool;
 
     /* A map from table names => TableDef */
     apr_hash_t *tbl_def_tbl;
 };
 
-ColCatalog *
-cat_make(ColInstance *col)
+C4Catalog *
+cat_make(C4Instance *c4)
 {
     apr_pool_t *pool;
-    ColCatalog *cat;
+    C4Catalog *cat;
 
-    pool = make_subpool(col->pool);
+    pool = make_subpool(c4->pool);
     cat = apr_pcalloc(pool, sizeof(*cat));
-    cat->col = col;
+    cat->c4 = c4;
     cat->pool = pool;
     cat->tbl_def_tbl = apr_hash_make(cat->pool);
 
@@ -55,7 +55,7 @@ find_loc_spec_colno(List *schema)
 }
 
 void
-cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
+cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
                  List *schema, List *key_list)
 {
     apr_pool_t *tbl_pool;
@@ -72,8 +72,8 @@ cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
     tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
     tbl_def->ls_colno = find_loc_spec_colno(schema);
-    tbl_def->table = table_make(tbl_def, cat->col, tbl_pool);
-    tbl_def->op_chain_list = router_get_opchain_list(cat->col->router,
+    tbl_def->table = table_make(tbl_def, cat->c4, tbl_pool);
+    tbl_def->op_chain_list = router_get_opchain_list(cat->c4->router,
                                                      tbl_def->name);
 
     apr_hash_set(cat->tbl_def_tbl, tbl_def->name,
@@ -81,7 +81,7 @@ cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
 }
 
 void
-cat_delete_table(ColCatalog *cat, const char *name)
+cat_delete_table(C4Catalog *cat, const char *name)
 {
     TableDef *tbl_def;
 
@@ -94,20 +94,20 @@ cat_delete_table(ColCatalog *cat, const char *name)
 }
 
 TableDef *
-cat_get_table(ColCatalog *cat, const char *name)
+cat_get_table(C4Catalog *cat, const char *name)
 {
     return (TableDef *) apr_hash_get(cat->tbl_def_tbl, name,
                                      APR_HASH_KEY_STRING);
 }
 
-ColTable *
-cat_get_table_impl(ColCatalog *cat, const char *name)
+C4Table *
+cat_get_table_impl(C4Catalog *cat, const char *name)
 {
     return (cat_get_table(cat, name))->table;
 }
 
 Schema *
-cat_get_schema(ColCatalog *cat, const char *name)
+cat_get_schema(C4Catalog *cat, const char *name)
 {
     TableDef *tbl_def;
 

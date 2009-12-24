@@ -3,12 +3,12 @@
 
 #include "types/tuple.h"
 
-typedef struct ColLogger ColLogger;
+typedef struct C4Logger C4Logger;
 
-ColLogger *logger_make(ColInstance *col);
-void col_log(ColInstance *col, const char *fmt, ...)
+C4Logger *logger_make(C4Instance *c4);
+void c4_log(C4Instance *c4, const char *fmt, ...)
     __attribute__((format(printf, 2, 3)));
-char *log_tuple(ColInstance *col, Tuple *tuple);
-char *log_datum(ColInstance *col, Datum datum, DataType type);
+char *log_tuple(C4Instance *c4, Tuple *tuple);
+char *log_datum(C4Instance *c4, Datum datum, DataType type);
 
 #endif  /* LOGGER_H */

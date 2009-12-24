@@ -1,13 +1,13 @@
 %{
 /* XXX: should be a pure-parser */
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/makefuncs.h"
 /* XXX: see note about #include order in parser.c */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
 #include "util/list.h"
 
-int yyerror(ColParser *context, void *scanner, const char *message);
+int yyerror(C4Parser *context, void *scanner, const char *message);
 static void split_program_clauses(List *clauses, List **defines, List **facts,
                                   List **rules, apr_pool_t *pool);
 static void split_rule_body(List *body, List **joins,
@@ -26,7 +26,7 @@ static void split_rule_body(List *body, List **joins,
 
 %start program
 %error-verbose
-%parse-param { ColParser *context }
+%parse-param { C4Parser *context }
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
@@ -263,7 +263,7 @@ column_ref_expr:
 %%
 
 int
-yyerror(ColParser *context, void *scanner, const char *message)
+yyerror(C4Parser *context, void *scanner, const char *message)
 {
     printf("Parse error: %s\n", message);
     return 0;   /* return value ignored */
@@ -281,7 +281,7 @@ split_program_clauses(List *clauses, List **defines,
 
     foreach (lc, clauses)
     {
-        ColNode *node = (ColNode *) lc_ptr(lc);
+        C4Node *node = (C4Node *) lc_ptr(lc);
 
         switch (node->kind)
         {
@@ -319,7 +319,7 @@ split_rule_body(List *body, List **joins, List **quals, apr_pool_t *pool)
 
     foreach (lc, body)
     {
-        ColNode *node = (ColNode *) lc_ptr(lc);
+        C4Node *node = (C4Node *) lc_ptr(lc);
 
         switch (node->kind)
         {

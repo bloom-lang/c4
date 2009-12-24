@@ -1,12 +1,12 @@
-#ifndef COL_INTERNAL_H
-#define COL_INTERNAL_H
+#ifndef C4_INTERNAL_H
+#define C4_INTERNAL_H
 
 /* Enable assertions? */
 #if 0
 #define ASSERT_ENABLED
 #endif
 
-#include "col-api.h"
+#include "c4-api.h"
 
 /* Commonly-used external headers */
 #include <apr_general.h>
@@ -23,13 +23,13 @@
 #include "util/logger.h"
 #include "util/mem.h"
 
-struct ColInstance
+struct C4Instance
 {
     apr_pool_t *pool;
-    struct ColCatalog *cat;
-    struct ColRouter *router;
-    struct ColNetwork *net;
-    ColLogger *log;
+    struct C4Catalog *cat;
+    struct C4Router *router;
+    struct C4Network *net;
+    C4Logger *log;
     int port;
     Datum local_addr;
     char *base_dir;

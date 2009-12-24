@@ -24,7 +24,7 @@
  *    Push q down Chain until the first place in the Chain where all the
  *    tables referenced in q have been joined against
  */
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/copyfuncs.h"
 #include "nodes/makefuncs.h"
 #include "parser/parser.h"
@@ -45,14 +45,14 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
 }
 
 static PlannerState *
-planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, ColInstance *col)
+planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, C4Instance *c4)
 {
     PlannerState *state;
     apr_pool_t *tmp_pool;
 
     tmp_pool = make_subpool(plan_pool);
     state = apr_pcalloc(tmp_pool, sizeof(*state));
-    state->col = col;
+    state->c4 = c4;
     state->plan_pool = plan_pool;
     state->tmp_pool = tmp_pool;
     state->plan = program_plan_make(ast, plan_pool);
@@ -115,7 +115,7 @@ join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
 }
 
 static bool
-get_var_callback(ColNode *n, void *data)
+get_var_callback(C4Node *n, void *data)
 {
     List *var_list = (List *) data;
 
@@ -126,7 +126,7 @@ get_var_callback(ColNode *n, void *data)
 }
 
 static List *
-expr_get_vars(ColNode *expr, apr_pool_t *pool)
+expr_get_vars(C4Node *expr, apr_pool_t *pool)
 {
     List *var_list;
 
@@ -336,13 +336,13 @@ plan_rule(AstRule *rule, PlannerState *state)
 }
 
 ProgramPlan *
-plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col)
+plan_program(AstProgram *ast, apr_pool_t *pool, C4Instance *c4)
 {
     PlannerState *state;
     ProgramPlan *pplan;
     ListCell *lc;
 
-    state = planner_state_make(ast, pool, col);
+    state = planner_state_make(ast, pool, c4);
     pplan = state->plan;
 
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
@@ -375,7 +375,7 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
     sbuf_append(sbuf, "  QUALS (Ast): [");
     foreach (lc, plan->quals)
     {
-        ColNode *node = (ColNode *) lc_ptr(lc);
+        C4Node *node = (C4Node *) lc_ptr(lc);
 
         sbuf_append(sbuf, node_get_kind_str(node));
         if (lc != list_tail(plan->quals))

@@ -1,6 +1,6 @@
 #include <apr_hash.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/makefuncs.h"
 #include "parser/analyze.h"
 #include "parser/walker.h"
@@ -9,7 +9,7 @@
 typedef struct AnalyzeState
 {
     apr_pool_t *pool;
-    ColInstance *col;
+    C4Instance *c4;
     AstProgram *program;
     apr_hash_t *define_tbl;
     apr_hash_t *rule_tbl;
@@ -31,7 +31,7 @@ static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
 static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
-static void analyze_expr(ColNode *node, bool inside_qual, AnalyzeState *state);
+static void analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state);
 static void analyze_op_expr(AstOpExpr *op_expr, bool inside_qual,
                             AnalyzeState *state);
 static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
@@ -51,9 +51,9 @@ static AstVarExpr *lookup_var(const char *name, AnalyzeState *state);
 static void define_var(AstVarExpr *var, AnalyzeState *state);
 static bool is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
-static void add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
+static void add_qual(char *lhs_name, C4Node *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
-static bool is_dont_care_var(ColNode *node);
+static bool is_dont_care_var(C4Node *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
 static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
@@ -240,7 +240,7 @@ typedef struct
 } UnusedVarContext;
 
 static bool
-unused_var_walker(ColNode *n, void *data)
+unused_var_walker(C4Node *n, void *data)
 {
     UnusedVarContext *cxt = (UnusedVarContext *) data;
 
@@ -269,11 +269,11 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
 
     cxt.var_seen = apr_hash_make(state->pool);
 
-    expr_tree_walker((ColNode *) rule->head, unused_var_walker, &cxt);
+    expr_tree_walker((C4Node *) rule->head, unused_var_walker, &cxt);
 
     foreach (lc, rule->quals)
     {
-        ColNode *qual = (ColNode *) lc_ptr(lc);
+        C4Node *qual = (C4Node *) lc_ptr(lc);
 
         expr_tree_walker(qual, unused_var_walker, &cxt);
     }
@@ -299,7 +299,7 @@ table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
     int colno;
     ListCell *lc;
 
-    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    tbl_def = cat_get_table(state->c4->cat, tbl_name);
     if (tbl_def != NULL)
         return tbl_def->ls_colno;
 
@@ -386,7 +386,7 @@ lookup_var(const char *name, AnalyzeState *state)
 static void
 define_var(AstVarExpr *var, AnalyzeState *state)
 {
-    ASSERT(!is_dont_care_var((ColNode *) var));
+    ASSERT(!is_dont_care_var((C4Node *) var));
     ASSERT(!is_var_defined(var->name, state));
     apr_hash_set(state->var_tbl, var->name,
                  APR_HASH_KEY_STRING, var);
@@ -438,13 +438,13 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
          */
         if (cref->expr->kind == AST_CONST_EXPR)
         {
-            ColNode *const_expr = cref->expr;
+            C4Node *const_expr = cref->expr;
             char *var_name;
 
             var_name = make_anon_var_name("Const", state);
             /* Type will be filled-in shortly */
             var = make_ast_var_expr(var_name, TYPE_INVALID, state->pool);
-            cref->expr = (ColNode *) var;
+            cref->expr = (C4Node *) var;
 
             add_qual(var_name, const_expr, AST_OP_EQ, rule, state);
         }
@@ -467,7 +467,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
                 char *old_name = var->name;
 
                 var->name = make_anon_var_name(var->name, state);
-                add_qual(old_name, (ColNode *) var,
+                add_qual(old_name, (C4Node *) var,
                          AST_OP_EQ, rule, state);
             }
         }
@@ -482,7 +482,7 @@ done:
 
         /* Fill-in variable's type, add to variable table (unless don't care) */
         var->type = table_get_col_type(join->ref->name, colno, state);
-        if (!is_dont_care_var((ColNode *) var))
+        if (!is_dont_care_var((C4Node *) var))
             define_var(var, state);
         colno++;
     }
@@ -491,7 +491,7 @@ done:
 }
 
 static void
-add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
+add_qual(char *lhs_name, C4Node *rhs, AstOperKind op_kind,
          AstRule *rule, AnalyzeState *state)
 {
     AstVarExpr *lhs;
@@ -499,9 +499,9 @@ add_qual(char *lhs_name, ColNode *rhs, AstOperKind op_kind,
     AstQualifier *qual;
 
     lhs = make_ast_var_expr(lhs_name, TYPE_INVALID, state->pool);
-    op_expr = make_ast_op_expr((ColNode *) lhs, rhs,
+    op_expr = make_ast_op_expr((C4Node *) lhs, rhs,
                                op_kind, state->pool);
-    qual = make_qualifier((ColNode *) op_expr, state->pool);
+    qual = make_qualifier((C4Node *) op_expr, state->pool);
 
     list_append(rule->quals, qual);
 }
@@ -520,7 +520,7 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 }
 
 static void
-analyze_expr(ColNode *node, bool inside_qual, AnalyzeState *state)
+analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state)
 {
     switch (node->kind)
     {
@@ -586,7 +586,7 @@ analyze_op_expr(AstOpExpr *op_expr, bool inside_qual, AnalyzeState *state)
 static void
 analyze_var_expr(AstVarExpr *var_expr, bool inside_qual, AnalyzeState *state)
 {
-    if (is_dont_care_var((ColNode *) var_expr))
+    if (is_dont_care_var((C4Node *) var_expr))
     {
         if (inside_qual)
             ERROR("Don't care variables (\"_\") cannot be "
@@ -694,14 +694,14 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
  * modified.
  */
 void
-analyze_ast(AstProgram *program, apr_pool_t *pool, ColInstance *col)
+analyze_ast(AstProgram *program, apr_pool_t *pool, C4Instance *c4)
 {
     AnalyzeState *state;
     ListCell *lc;
 
     state = apr_palloc(pool, sizeof(*state));
     state->pool = pool;
-    state->col = col;
+    state->c4 = c4;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
@@ -744,7 +744,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, ColInstance *col)
 }
 
 static bool
-is_dont_care_var(ColNode *node)
+is_dont_care_var(C4Node *node)
 {
     AstVarExpr *var;
 
@@ -872,11 +872,11 @@ add_qual_list(AstVarExpr *target, List *var_list,
             AstQualifier *qual;
 
             rhs = lookup_var(var, state);
-            op_expr = make_ast_op_expr((ColNode *) target,
-                                       (ColNode *) rhs,
+            op_expr = make_ast_op_expr((C4Node *) target,
+                                       (C4Node *) rhs,
                                        AST_OP_EQ,
                                        state->pool);
-            qual = make_qualifier((ColNode *) op_expr, state->pool);
+            qual = make_qualifier((C4Node *) op_expr, state->pool);
             list_append(rule->quals, qual);
 
             add_var_eq(var, target->name, state);
@@ -902,7 +902,7 @@ is_table_defined(const char *tbl_name, AnalyzeState *state)
         return true;
 
     /* Check for an already-defined table of the same name */
-    if (cat_get_table(state->col->cat, tbl_name) != NULL)
+    if (cat_get_table(state->c4->cat, tbl_name) != NULL)
         return true;
 
     return false;
@@ -926,7 +926,7 @@ table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state)
         return get_type_id(elt->type_name);
     }
 
-    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    tbl_def = cat_get_table(state->c4->cat, tbl_name);
     ASSERT(tbl_def != NULL);
     return schema_get_type(tbl_def->schema, colno);
 }
@@ -941,7 +941,7 @@ table_get_num_cols(const char *tbl_name, AnalyzeState *state)
     if (define != NULL)
         return list_length(define->schema);
 
-    tbl_def = cat_get_table(state->col->cat, tbl_name);
+    tbl_def = cat_get_table(state->c4->cat, tbl_name);
     ASSERT(tbl_def != NULL);
     return tbl_def->schema->len;
 }
@@ -988,7 +988,7 @@ top:
 }
 
 DataType
-expr_get_type(ColNode *node)
+expr_get_type(C4Node *node)
 {
     switch (node->kind)
     {

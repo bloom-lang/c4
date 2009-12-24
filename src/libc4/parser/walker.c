@@ -1,8 +1,8 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "parser/walker.h"
 
 bool
-expr_tree_walker(ColNode *node, expr_callback fn, void *data)
+expr_tree_walker(C4Node *node, expr_callback fn, void *data)
 {
     if (!node)
         return true;
@@ -41,7 +41,7 @@ expr_tree_walker(ColNode *node, expr_callback fn, void *data)
 
                 foreach (lc, tbl_ref->cols)
                 {
-                    ColNode *col_expr = (ColNode *) lc_ptr(lc);
+                    C4Node *col_expr = (C4Node *) lc_ptr(lc);
 
                     if (expr_tree_walker(col_expr, fn, data) == false)
                         return false;

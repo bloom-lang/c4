@@ -1,52 +1,52 @@
 #include <stdarg.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 
-struct ColLogger
+struct C4Logger
 {
-    ColInstance *col;
-    /* This is reset on each call to col_log() */
+    C4Instance *c4;
+    /* This is reset on each call to c4_log() */
     apr_pool_t *tmp_pool;
 };
 
-ColLogger *
-logger_make(ColInstance *col)
+C4Logger *
+logger_make(C4Instance *c4)
 {
-    ColLogger *logger;
+    C4Logger *logger;
 
-    logger = apr_pcalloc(col->pool, sizeof(*logger));
-    logger->tmp_pool = make_subpool(col->pool);
+    logger = apr_pcalloc(c4->pool, sizeof(*logger));
+    logger->tmp_pool = make_subpool(c4->pool);
 
     return logger;
 }
 
 void
-col_log(ColInstance *col, const char *fmt, ...)
+c4_log(C4Instance *c4, const char *fmt, ...)
 {
     va_list args;
     char *str;
 
     va_start(args, fmt);
-    str = apr_pvsprintf(col->log->tmp_pool, fmt, args);
+    str = apr_pvsprintf(c4->log->tmp_pool, fmt, args);
     va_end(args);
 
-    fprintf(stdout, "LOG (%d): %s\n", col->port, str);
-    apr_pool_clear(col->log->tmp_pool);
+    fprintf(stdout, "LOG (%d): %s\n", c4->port, str);
+    apr_pool_clear(c4->log->tmp_pool);
 }
 
 char *
-log_tuple(ColInstance *col, Tuple *tuple)
+log_tuple(C4Instance *c4, Tuple *tuple)
 {
-    char *tuple_str = tuple_to_str(tuple, col->log->tmp_pool);
-    return apr_pstrcat(col->log->tmp_pool, "{", tuple_str, "}", NULL);
+    char *tuple_str = tuple_to_str(tuple, c4->log->tmp_pool);
+    return apr_pstrcat(c4->log->tmp_pool, "{", tuple_str, "}", NULL);
 }
 
 char *
-log_datum(ColInstance *col, Datum datum, DataType type)
+log_datum(C4Instance *c4, Datum datum, DataType type)
 {
     StrBuf *sbuf;
 
-    sbuf = sbuf_make(col->log->tmp_pool);
+    sbuf = sbuf_make(c4->log->tmp_pool);
     datum_to_str(datum, type, sbuf);
     sbuf_append_char(sbuf, '\0');
     return sbuf->data;

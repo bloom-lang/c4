@@ -1,15 +1,15 @@
 #include <apr_file_io.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "net/network.h"
 #include "router.h"
 #include "storage/sqlite.h"
 #include "types/catalog.h"
 
-static apr_status_t col_cleanup(void *data);
+static apr_status_t c4_cleanup(void *data);
 
 void
-col_initialize(void)
+c4_initialize(void)
 {
     apr_status_t s = apr_initialize();
     if (s != APR_SUCCESS)
@@ -17,7 +17,7 @@ col_initialize(void)
 }
 
 void
-col_terminate(void)
+c4_terminate(void)
 {
     apr_terminate();
 }
@@ -64,77 +64,77 @@ get_user_home_dir(apr_pool_t *pool)
 }
 
 static char *
-get_col_base_dir(int port, apr_pool_t *pool)
+get_c4_base_dir(int port, apr_pool_t *pool)
 {
     char *home_dir;
     char *base_dir;
     apr_status_t s;
 
     home_dir = get_user_home_dir(pool);
-    base_dir = apr_psprintf(pool, "%s/col_home/tcp_%d",
+    base_dir = apr_psprintf(pool, "%s/c4_home/tcp_%d",
                             home_dir, port);
     s = apr_dir_make_recursive(base_dir, APR_FPROT_OS_DEFAULT, pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    printf("col: Using base_dir = %s\n", base_dir);
+    printf("c4: Using base_dir = %s\n", base_dir);
     return base_dir;
 }
 
-ColInstance *
-col_make(int port)
+C4Instance *
+c4_make(int port)
 {
     apr_status_t s;
     apr_pool_t *pool;
-    ColInstance *col;
+    C4Instance *c4;
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    col = apr_pcalloc(pool, sizeof(*col));
-    col->pool = pool;
-    col->log = logger_make(col);
-    col->cat = cat_make(col);
-    col->router = router_make(col);
-    col->net = network_make(col, port);
-    col->port = network_get_port(col->net);
-    col->local_addr = get_local_addr(col->port, col->pool);
-    col->base_dir = get_col_base_dir(col->port, col->pool);
-    col->sql = sqlite_init(col);
+    c4 = apr_pcalloc(pool, sizeof(*c4));
+    c4->pool = pool;
+    c4->log = logger_make(c4);
+    c4->cat = cat_make(c4);
+    c4->router = router_make(c4);
+    c4->net = network_make(c4, port);
+    c4->port = network_get_port(c4->net);
+    c4->local_addr = get_local_addr(c4->port, c4->pool);
+    c4->base_dir = get_c4_base_dir(c4->port, c4->pool);
+    c4->sql = sqlite_init(c4);
 
-    apr_pool_cleanup_register(pool, col, col_cleanup, apr_pool_cleanup_null);
+    apr_pool_cleanup_register(pool, c4, c4_cleanup, apr_pool_cleanup_null);
 
-    return col;
+    return c4;
 }
 
 static apr_status_t
-col_cleanup(void *data)
+c4_cleanup(void *data)
 {
-    ColInstance *col = (ColInstance *) data;
+    C4Instance *c4 = (C4Instance *) data;
 
-    network_destroy(col->net);
-    router_destroy(col->router);
+    network_destroy(c4->net);
+    router_destroy(c4->router);
 
     return APR_SUCCESS;
 }
 
-ColStatus
-col_destroy(ColInstance *col)
+C4Status
+c4_destroy(C4Instance *c4)
 {
-    apr_pool_destroy(col->pool);
+    apr_pool_destroy(c4->pool);
 
-    return COL_OK;
+    return C4_OK;
 }
 
 /*
  * Read the file at the specified filesystem path into memory, parse it, and
- * then install the resulting program into the specified COL runtime. XXX:
+ * then install the resulting program into the specified C4 runtime. XXX:
  * We assume that the file is small enough that it can be slurped into a
  * single memory buffer without too much pain.
  */
-ColStatus
-col_install_file(ColInstance *col, const char *path)
+C4Status
+c4_install_file(C4Instance *c4, const char *path)
 {
     apr_status_t s;
     apr_file_t *file;
@@ -142,14 +142,14 @@ col_install_file(ColInstance *col, const char *path)
     apr_finfo_t finfo;
     char *buf;
     apr_size_t file_size;
-    ColStatus result;
+    C4Status result;
 
-    file_pool = make_subpool(col->pool);
+    file_pool = make_subpool(c4->pool);
     s = apr_file_open(&file, path, APR_READ | APR_BUFFERED,
                       APR_OS_DEFAULT, file_pool);
     if (s != APR_SUCCESS)
     {
-        result = COL_ERROR;
+        result = C4_ERROR;
         goto done;
     }
 
@@ -171,7 +171,7 @@ col_install_file(ColInstance *col, const char *path)
         FAIL();
 
     buf[file_size] = '\0';
-    result = col_install_str(col, buf);
+    result = c4_install_str(c4, buf);
 
 done:
     apr_pool_destroy(file_pool);
@@ -179,25 +179,25 @@ done:
 }
 
 /*
- * Install the program contained in the specified string into the COL
+ * Install the program contained in the specified string into the C4
  * runtime.
  *
  * XXX: Note that this is asynchronous; should we provide a convenient means
  * for the caller to wait until the program has been installed?
  */
-ColStatus
-col_install_str(ColInstance *col, const char *str)
+C4Status
+c4_install_str(C4Instance *c4, const char *str)
 {
-    router_enqueue_program(col->router, str);
+    router_enqueue_program(c4->router, str);
 
-    return COL_OK;
+    return C4_OK;
 }
 
-ColStatus
-col_start(ColInstance *col)
+C4Status
+c4_start(C4Instance *c4)
 {
-    router_start(col->router);
-    network_start(col->net);
+    router_start(c4->router);
+    network_start(c4->net);
 
-    return COL_OK;
+    return C4_OK;
 }

@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/copyfuncs.h"
 #include "operator/filter.h"
 #include "operator/insert.h"
@@ -9,7 +9,7 @@
 
 typedef struct InstallState
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *tmp_pool;
 } InstallState;
 
@@ -22,7 +22,7 @@ plan_install_defines(ProgramPlan *plan, InstallState *istate)
     {
         AstDefine *def = (AstDefine *) lc_ptr(lc);
 
-        cat_define_table(istate->col->cat, def->name, def->storage,
+        cat_define_table(istate->c4->cat, def->name, def->storage,
                          def->schema, def->keys);
     }
 }
@@ -37,7 +37,7 @@ print_op_chain(OpChainPlan *chain_plan)
 
     foreach (lc, chain)
     {
-        ColNode *node = (ColNode *) lc_ptr(lc);
+        C4Node *node = (C4Node *) lc_ptr(lc);
 
         printf("%s", node_get_kind_str(node));
         if (lc != list_tail(chain))
@@ -58,12 +58,12 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
     print_op_chain(chain_plan);
 
-    chain_pool = make_subpool(istate->col->pool);
+    chain_pool = make_subpool(istate->c4->pool);
 
     op_chain = apr_pcalloc(chain_pool, sizeof(*op_chain));
     op_chain->pool = chain_pool;
-    op_chain->col = istate->col;
-    op_chain->delta_tbl = cat_get_table(op_chain->col->cat,
+    op_chain->c4 = istate->c4;
+    op_chain->delta_tbl = cat_get_table(op_chain->c4->cat,
                                         chain_plan->delta_tbl->ref->name);
     op_chain->head = copy_node(chain_plan->head, chain_pool);
     op_chain->length = list_length(chain_plan->chain);
@@ -111,7 +111,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     }
     op_chain->chain_start = prev_op;
 
-    router_add_op_chain(istate->col->router, op_chain);
+    router_add_op_chain(istate->c4->router, op_chain);
     printf("================\n");
 }
 
@@ -168,31 +168,31 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
         TableDef *tbl_def;
         Tuple *t;
 
-        tbl_def = cat_get_table(istate->col->cat, fact->head->name);
+        tbl_def = cat_get_table(istate->c4->cat, fact->head->name);
         t = fact_make_tuple(fact, tbl_def, istate);
-        router_install_tuple(istate->col->router, t, tbl_def);
+        router_install_tuple(istate->c4->router, t, tbl_def);
         tuple_unpin(t);
     }
 }
 
 static InstallState *
-istate_make(apr_pool_t *pool, ColInstance *col)
+istate_make(apr_pool_t *pool, C4Instance *c4)
 {
     InstallState *istate;
 
     istate = apr_pcalloc(pool, sizeof(*istate));
     istate->tmp_pool = pool;
-    istate->col = col;
+    istate->c4 = c4;
 
     return istate;
 }
 
 void
-install_plan(ProgramPlan *plan, apr_pool_t *pool, ColInstance *col)
+install_plan(ProgramPlan *plan, apr_pool_t *pool, C4Instance *c4)
 {
     InstallState *istate;
 
-    istate = istate_make(pool, col);
+    istate = istate_make(pool, c4);
     plan_install_defines(plan, istate);
     plan_install_rules(plan, istate);
     plan_install_facts(plan, istate);

@@ -1,36 +1,36 @@
-#ifndef COL_API_H
-#define COL_API_H
+#ifndef C4_API_H
+#define C4_API_H
 
 /*
- * An opaque type that holds the state associated with a single instance of
- * the COL runtime.
+ * An opaque type that holds the state associated with a single
+ * instance of the C4 runtime.
  */
-typedef struct ColInstance ColInstance;
+typedef struct C4Instance C4Instance;
 
 /*
- * The return status of a COL API call. COL_OK is "success"; any other value
- * means that a failure occurred.
+ * The return status of a C4 API call. C4_OK is "success"; any other
+ * value means that a failure occurred.
  */
-typedef enum ColStatus
+typedef enum C4Status
 {
-    COL_OK = 0,
-    COL_ERROR
-} ColStatus;
+    C4_OK = 0,
+    C4_ERROR
+} C4Status;
 
 /*
- * Initialize and terminate COL for the current process. Must be the first
- * and last API functions called, respectively.
+ * Initialize and terminate C4 for the current process. Must be the
+ * first and last API functions called, respectively.
  */
-void col_initialize(void);
-void col_terminate(void);
+void c4_initialize(void);
+void c4_terminate(void);
 
-/* Create and destroy individual instances of COL. */
-ColInstance *col_make(int port);
-ColStatus col_destroy(ColInstance *col);
+/* Create and destroy individual instances of C4. */
+C4Instance *c4_make(int port);
+C4Status c4_destroy(C4Instance *c4);
 
-ColStatus col_install_file(ColInstance *col, const char *path);
-ColStatus col_install_str(ColInstance *col, const char *str);
+C4Status c4_install_file(C4Instance *c4, const char *path);
+C4Status c4_install_str(C4Instance *c4, const char *str);
 
-ColStatus col_start(ColInstance *col);
+C4Status c4_start(C4Instance *c4);
 
-#endif  /* COL_API_H */
+#endif  /* C4_API_H */

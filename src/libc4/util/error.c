@@ -6,7 +6,7 @@
 
 #include <stdarg.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "storage/sqlite.h"
 
 static void print_backtrace(void);
@@ -23,13 +23,13 @@ apr_error(apr_status_t s, const char *file, int line_num)
 }
 
 void
-sqlite_error(ColInstance *col, const char *file, int line_num)
+sqlite_error(C4Instance *c4, const char *file, int line_num)
 {
     const char *errmsg;
 
-    errmsg = sqlite3_errmsg(col->sql->db);
+    errmsg = sqlite3_errmsg(c4->sql->db);
     fprintf(stderr, "SQLITE ERROR: \"%s\" (code = %d), at %s:%d\n",
-            errmsg, sqlite3_errcode(col->sql->db), file, line_num);
+            errmsg, sqlite3_errcode(c4->sql->db), file, line_num);
     print_backtrace();
     exit(1);
 }

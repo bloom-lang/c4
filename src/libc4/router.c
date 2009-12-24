@@ -2,7 +2,7 @@
 #include <apr_queue.h>
 #include <apr_thread_proc.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "net/network.h"
 #include "operator/operator.h"
 #include "parser/parser.h"
@@ -15,9 +15,9 @@
 #include "util/list.h"
 #include "util/tuple_buf.h"
 
-struct ColRouter
+struct C4Router
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *pool;
 
     /* Map from table name => OpChainList */
@@ -58,19 +58,19 @@ typedef struct WorkItem
 } WorkItem;
 
 static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
-static void router_enqueue(ColRouter *router, WorkItem *wi);
-static void compute_fixpoint(ColRouter *router);
+static void router_enqueue(C4Router *router, WorkItem *wi);
+static void compute_fixpoint(C4Router *router);
 
-ColRouter *
-router_make(ColInstance *col)
+C4Router *
+router_make(C4Instance *c4)
 {
     apr_status_t s;
     apr_pool_t *pool;
-    ColRouter *router;
+    C4Router *router;
 
-    pool = make_subpool(col->pool);
+    pool = make_subpool(c4->pool);
     router = apr_pcalloc(pool, sizeof(*router));
-    router->col = col;
+    router->c4 = c4;
     router->pool = pool;
     router->op_chain_tbl = apr_hash_make(pool);
     router->route_buf = tuple_buf_make(4096, pool);
@@ -85,7 +85,7 @@ router_make(ColInstance *col)
 }
 
 void
-router_destroy(ColRouter *router)
+router_destroy(C4Router *router)
 {
     apr_status_t s;
 
@@ -97,7 +97,7 @@ router_destroy(ColRouter *router)
 }
 
 void
-router_start(ColRouter *router)
+router_start(C4Router *router)
 {
     apr_status_t s;
 
@@ -119,13 +119,13 @@ router_start(ColRouter *router)
  * operator chains).
  */
 void
-router_install_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
 #if 0
-    col_log(router->col, "%s: %s (=> %s)",
-            __func__, log_tuple(router->col, tuple), tbl_def->name);
+    c4_log(router->c4, "%s: %s (=> %s)",
+           __func__, log_tuple(router->c4, tuple), tbl_def->name);
 #endif
-    if (tuple_is_remote(tuple, tbl_def, router->col))
+    if (tuple_is_remote(tuple, tbl_def, router->c4))
     {
         router_enqueue_net(router, tuple, tbl_def);
         return;
@@ -139,15 +139,15 @@ router_install_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
 }
 
 static void
-compute_fixpoint(ColRouter *router)
+compute_fixpoint(C4Router *router)
 {
     TupleBuf *route_buf = router->route_buf;
     TupleBuf *net_buf = router->net_buf;
     bool benchmark_done = false;
 
     /*
-     * NB: We route tuples from route_buf in a FIFO manner, but that is not
-     * necessarily the only choice.
+     * NB: We route tuples from route_buf in a FIFO manner, but that
+     * is not necessarily the only choice.
      */
     while (!tuple_buf_is_empty(route_buf))
     {
@@ -177,8 +177,8 @@ compute_fixpoint(ColRouter *router)
     }
 
     /* If we modified persistent storage, commit to disk */
-    if (router->col->sql->xact_in_progress)
-        sqlite_commit_xact(router->col->sql);
+    if (router->c4->sql->xact_in_progress)
+        sqlite_commit_xact(router->c4->sql);
 
     /* Enqueue any outbound network messages */
     while (!tuple_buf_is_empty(net_buf))
@@ -188,7 +188,7 @@ compute_fixpoint(ColRouter *router)
         ent = &net_buf->entries[net_buf->start];
         net_buf->start++;
 
-        network_send(router->col->net, ent->tuple, ent->tbl_def);
+        network_send(router->c4->net, ent->tuple, ent->tbl_def);
         tuple_unpin(ent->tuple);
     }
 
@@ -201,18 +201,18 @@ compute_fixpoint(ColRouter *router)
 }
 
 static void
-route_program(ColRouter *router, const char *src)
+route_program(C4Router *router, const char *src)
 {
-    ColInstance *col = router->col;
+    C4Instance *c4 = router->c4;
     apr_pool_t *program_pool;
     AstProgram *ast;
     ProgramPlan *plan;
 
-    program_pool = make_subpool(col->pool);
+    program_pool = make_subpool(c4->pool);
 
-    ast = parse_str(src, program_pool, col);
-    plan = plan_program(ast, program_pool, col);
-    install_plan(plan, program_pool, col);
+    ast = parse_str(src, program_pool, c4);
+    plan = plan_program(ast, program_pool, c4);
+    install_plan(plan, program_pool, c4);
 
     apr_pool_destroy(program_pool);
 }
@@ -243,7 +243,7 @@ workitem_destroy(WorkItem *wi)
 static void * APR_THREAD_FUNC
 router_thread_start(apr_thread_t *thread, void *data)
 {
-    ColRouter *router = (ColRouter *) data;
+    C4Router *router = (C4Router *) data;
 
     while (true)
     {
@@ -286,7 +286,7 @@ router_thread_start(apr_thread_t *thread, void *data)
 }
 
 void
-router_enqueue_program(ColRouter *router, const char *src)
+router_enqueue_program(C4Router *router, const char *src)
 {
     WorkItem *wi;
 
@@ -298,13 +298,13 @@ router_enqueue_program(ColRouter *router, const char *src)
 }
 
 void
-router_enqueue_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+router_enqueue_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
     WorkItem *wi;
 
 #if 0
-    col_log(router->col, "%s: %s",
-            __func__, log_tuple(router->col, tuple));
+    c4_log(router->c4, "%s: %s",
+           __func__, log_tuple(router->c4, tuple));
 #endif
 
     /* The tuple is unpinned when the router is finished with it */
@@ -325,7 +325,7 @@ router_enqueue_tuple(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
  * had a chance to catchup.
  */
 static void
-router_enqueue(ColRouter *router, WorkItem *wi)
+router_enqueue(C4Router *router, WorkItem *wi)
 {
     while (true)
     {
@@ -345,7 +345,7 @@ router_enqueue(ColRouter *router, WorkItem *wi)
  * OpChainList doesn't exist yet, it is created on the fly.
  */
 OpChainList *
-router_get_opchain_list(ColRouter *router, const char *tbl_name)
+router_get_opchain_list(C4Router *router, const char *tbl_name)
 {
     OpChainList *result;
 
@@ -362,7 +362,7 @@ router_get_opchain_list(ColRouter *router, const char *tbl_name)
 }
 
 void
-router_add_op_chain(ColRouter *router, OpChain *op_chain)
+router_add_op_chain(C4Router *router, OpChain *op_chain)
 {
     OpChainList *opc_list;
 
@@ -372,12 +372,12 @@ router_add_op_chain(ColRouter *router, OpChain *op_chain)
 }
 
 /*
- * COL-internal: enqueue a new tuple to be routed within the CURRENT
+ * C4-internal: enqueue a new tuple to be routed within the CURRENT
  * fixpoint. Because we don't insert into the router's work queue, this
  * should typically be invoked by the router thread itself.
  */
 void
-router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+router_enqueue_internal(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
     tuple_buf_push(router->route_buf, tuple, tbl_def);
 }
@@ -387,7 +387,7 @@ router_enqueue_internal(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
  * fixpoint.
  */
 void
-router_enqueue_net(ColRouter *router, Tuple *tuple, TableDef *tbl_def)
+router_enqueue_net(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
     ASSERT(tbl_def->ls_colno != -1);
 

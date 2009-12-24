@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"
 #include "storage/sqlite.h"
@@ -6,8 +6,8 @@
 
 static apr_status_t sqlite_table_cleanup(void *data);
 
-ColSQLiteTable *
-sqlite_table_make(ColTable *ctbl)
+C4SQLiteTable *
+sqlite_table_make(C4Table *ctbl)
 {
     StrBuf *stmt;
     StrBuf *pkeys;
@@ -61,7 +61,7 @@ sqlite_table_make(ColTable *ctbl)
     sbuf_appendf(stmt, ", PRIMARY KEY (%s));", pkeys->data);
     sbuf_append_char(stmt, '\0');
 
-    sqlite_exec_sql(ctbl->col->sql, stmt->data);
+    sqlite_exec_sql(ctbl->c4->sql, stmt->data);
 
     return ctbl->sql_table;
 }
@@ -72,22 +72,22 @@ sqlite_table_make(ColTable *ctbl)
 static apr_status_t
 sqlite_table_cleanup(void *data)
 {
-    ColTable *ctbl = (ColTable *) data;
+    C4Table *ctbl = (C4Table *) data;
     char stmt[1024];
 
     snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
-    sqlite_exec_sql(ctbl->col->sql, stmt);
+    sqlite_exec_sql(ctbl->c4->sql, stmt);
 
     if (ctbl->sql_table->insert_stmt != NULL)
     {
         if (sqlite3_finalize(ctbl->sql_table->insert_stmt) != SQLITE_OK)
-            FAIL_SQLITE(ctbl->col);
+            FAIL_SQLITE(ctbl->c4);
     }
 
     if (ctbl->sql_table->scan_stmt != NULL)
     {
         if (sqlite3_finalize(ctbl->sql_table->scan_stmt) != SQLITE_OK)
-            FAIL_SQLITE(ctbl->col);
+            FAIL_SQLITE(ctbl->c4);
     }
 
     return APR_SUCCESS;
@@ -99,11 +99,11 @@ sqlite_table_cleanup(void *data)
  * contained by this table.
  */
 bool
-sqlite_table_insert(ColTable *ctbl, Tuple *t)
+sqlite_table_insert(C4Table *ctbl, Tuple *t)
 {
     /* take prepared SQL statement, use Schema to walk the tuple for insert constants. */
-    SQLiteState *sql = ctbl->col->sql;
-    ColSQLiteTable *sql_table = ctbl->sql_table;
+    SQLiteState *sql = ctbl->c4->sql;
+    C4SQLiteTable *sql_table = ctbl->sql_table;
     DataType *types = ctbl->def->schema->types;
     int i;
     int res;
@@ -179,13 +179,13 @@ sqlite_table_insert(ColTable *ctbl, Tuple *t)
     if (res == SQLITE_CONSTRAINT)
         return false;
     if (res != SQLITE_DONE)
-        FAIL_SQLITE(ctbl->col);
+        FAIL_SQLITE(ctbl->c4);
 
     return true;        /* Not a duplicate */
 }
 
 Tuple *
-sqlite_table_scan_first(ColTable *ctbl, ScanCursor *cur)
+sqlite_table_scan_first(C4Table *ctbl, ScanCursor *cur)
 {
     if (cur->sqlite_stmt == NULL)
     {
@@ -197,7 +197,7 @@ sqlite_table_scan_first(ColTable *ctbl, ScanCursor *cur)
         stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
                             ctbl->def->name);
 
-        if ((res = sqlite3_prepare_v2(ctbl->col->sql->db,
+        if ((res = sqlite3_prepare_v2(ctbl->c4->sql->db,
                                       stmt, stmt_len,
                                       &cur->sqlite_stmt,
                                       NULL)))
@@ -210,7 +210,7 @@ sqlite_table_scan_first(ColTable *ctbl, ScanCursor *cur)
 }
 
 Tuple *
-sqlite_table_scan_next(ColTable *ctbl, ScanCursor *cur)
+sqlite_table_scan_next(C4Table *ctbl, ScanCursor *cur)
 {
     Schema *schema = ctbl->def->schema;
     Tuple *tuple;
@@ -221,7 +221,7 @@ sqlite_table_scan_next(ColTable *ctbl, ScanCursor *cur)
     if (res == SQLITE_DONE)
         return NULL;
     if (res != SQLITE_ROW)
-        FAIL_SQLITE(ctbl->col);
+        FAIL_SQLITE(ctbl->c4);
 
     tuple = tuple_make_empty(schema);
 

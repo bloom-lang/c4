@@ -1,7 +1,7 @@
 #ifndef NODES_H
 #define NODES_H
 
-typedef enum ColNodeKind
+typedef enum C4NodeKind
 {
     /* AST nodes */
     AST_PROGRAM,
@@ -31,13 +31,13 @@ typedef enum ColNodeKind
     EXPR_OP,
     EXPR_VAR,
     EXPR_CONST
-} ColNodeKind;
+} C4NodeKind;
 
-typedef struct ColNode
+typedef struct C4Node
 {
-    ColNodeKind kind;
-} ColNode;
+    C4NodeKind kind;
+} C4Node;
 
-char *node_get_kind_str(ColNode *node);
+char *node_get_kind_str(C4Node *node);
 
 #endif  /* NODES_H */

@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "types/expr.h"
 
 static Datum

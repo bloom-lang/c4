@@ -1,6 +1,6 @@
 #include <apr_atomic.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "types/catalog.h"
 #include "types/tuple.h"
 #include "util/socket.h"
@@ -199,7 +199,7 @@ tuple_from_buf(StrBuf *buf, TableDef *tbl_def)
 }
 
 bool
-tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col)
+tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Instance *c4)
 {
     Datum tuple_addr;
 
@@ -207,5 +207,5 @@ tuple_is_remote(Tuple *tuple, TableDef *tbl_def, ColInstance *col)
         return false;
 
     tuple_addr = tuple_get_val(tuple, tbl_def->ls_colno);
-    return (string_equal(col->local_addr, tuple_addr) == false);
+    return (string_equal(c4->local_addr, tuple_addr) == false);
 }

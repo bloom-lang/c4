@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/makefuncs.h"
 #include "parser/analyze.h"
 #include "parser/walker.h"
@@ -11,7 +11,7 @@ eval_const_expr(AstConstExpr *ast_const, PlannerState *state)
     DataType const_type;
     Datum result;
 
-    const_type = expr_get_type((ColNode *) ast_const);
+    const_type = expr_get_type((C4Node *) ast_const);
     result = datum_from_str(const_type, ast_const->value);
     pool_track_datum(state->plan_pool, result, const_type);
     return result;
@@ -69,7 +69,7 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
  * associated with a given variable name.
  */
 static ExprNode *
-make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
+make_eval_expr(C4Node *ast_expr, AstJoinClause *outer_rel,
                OpChainPlan *chain_plan, PlannerState *state)
 {
     ExprNode *result;
@@ -85,7 +85,7 @@ make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
                 const_val = eval_const_expr(ast_const, state);
                 expr_const = apr_pcalloc(state->plan_pool, sizeof(*expr_const));
                 expr_const->expr.node.kind = EXPR_CONST;
-                expr_const->expr.type = expr_get_type((ColNode *) ast_const);
+                expr_const->expr.type = expr_get_type((C4Node *) ast_const);
                 expr_const->value = const_val;
                 result = (ExprNode *) expr_const;
             }
@@ -98,7 +98,7 @@ make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
 
                 expr_op = apr_pcalloc(state->plan_pool, sizeof(*expr_op));
                 expr_op->expr.node.kind = EXPR_OP;
-                expr_op->expr.type = expr_get_type((ColNode *) ast_op);
+                expr_op->expr.type = expr_get_type((C4Node *) ast_op);
                 expr_op->op_kind = ast_op->op_kind;
                 expr_op->lhs = make_eval_expr(ast_op->lhs, outer_rel, chain_plan, state);
                 if (ast_op->rhs)
@@ -138,7 +138,7 @@ make_eval_expr(ColNode *ast_expr, AstJoinClause *outer_rel,
                 if (var_idx == -1)
                     ERROR("Failed to find variable %s", ast_var->name);
 
-                expr_type = expr_get_type((ColNode *) ast_var);
+                expr_type = expr_get_type((C4Node *) ast_var);
                 result = (ExprNode *) make_expr_var(expr_type,
                                                     var_idx, is_outer,
                                                     ast_var->name,
@@ -162,7 +162,7 @@ typedef struct ProjListContext
 } ProjListContext;
 
 static bool
-make_proj_list_walker(ColNode *n, void *data)
+make_proj_list_walker(C4Node *n, void *data)
 {
     if (n->kind == AST_VAR_EXPR)
     {
@@ -189,7 +189,7 @@ make_proj_list_walker(ColNode *n, void *data)
             {
                 ExprVar *expr_var;
 
-                expr_var = make_expr_var(expr_get_type((ColNode *) var),
+                expr_var = make_expr_var(expr_get_type((C4Node *) var),
                                          var_idx, is_outer, var->name,
                                          cxt->state->plan_pool);
                 list_append(cxt->wip_plist, expr_var);
@@ -284,7 +284,7 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
          */
         foreach (lc2, plan->quals)
         {
-            ColNode *qual = (ColNode *) lc_ptr(lc2);
+            C4Node *qual = (C4Node *) lc_ptr(lc2);
 
             expr_tree_walker(qual, make_proj_list_walker, &cxt);
         }
@@ -293,7 +293,7 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
         {
             InsertPlan *iplan = (InsertPlan *) plan;
 
-            expr_tree_walker((ColNode *) iplan->head,
+            expr_tree_walker((C4Node *) iplan->head,
                              make_proj_list_walker, &cxt);
         }
     }

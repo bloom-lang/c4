@@ -27,7 +27,7 @@ typedef struct OpChainPlan
 
 typedef struct PlanNode
 {
-    ColNode node;
+    C4Node node;
     /* AST representation of quals: list of AstQualifier */
     List *quals;
     /* Runtime representation of quals */
@@ -55,7 +55,7 @@ typedef struct ScanPlan
     AstJoinClause *scan_rel;
 } ScanPlan;
 
-ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, ColInstance *col);
+ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, C4Instance *c4);
 void print_plan_info(PlanNode *plan, apr_pool_t *p);
 
 #endif  /* PLANNER_H */

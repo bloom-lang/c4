@@ -6,13 +6,13 @@
 #include "types/schema.h"
 #include "util/list.h"
 
-typedef struct ColCatalog ColCatalog;
+typedef struct C4Catalog C4Catalog;
 
-struct ColTable;
+struct C4Table;
 struct OpChainList;
 
 /*
- * A TableDef is a container for metadata about a COL table. Because this
+ * A TableDef is a container for metadata about a C4 table. Because this
  * struct is shared among threads, fields of the structure should not be
  * modified.
  */
@@ -28,7 +28,7 @@ typedef struct TableDef
     int ls_colno;
 
     /* Table implementation */
-    struct ColTable *table;
+    struct C4Table *table;
 
     /*
      * We keep a direct pointer to the router's list of op chains that have
@@ -39,15 +39,15 @@ typedef struct TableDef
     struct OpChainList *op_chain_list;
 } TableDef;
 
-ColCatalog *cat_make(ColInstance *col);
+C4Catalog *cat_make(C4Instance *c4);
 
-void cat_define_table(ColCatalog *cat, const char *name, AstStorageKind storage,
+void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
                       List *schema, List *key_list);
-void cat_delete_table(ColCatalog *cat, const char *name);
-TableDef *cat_get_table(ColCatalog *cat, const char *name);
-struct ColTable *cat_get_table_impl(ColCatalog *cat, const char *name);
+void cat_delete_table(C4Catalog *cat, const char *name);
+TableDef *cat_get_table(C4Catalog *cat, const char *name);
+struct C4Table *cat_get_table_impl(C4Catalog *cat, const char *name);
 
-Schema *cat_get_schema(ColCatalog *cat, const char *name);
+Schema *cat_get_schema(C4Catalog *cat, const char *name);
 
 bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);

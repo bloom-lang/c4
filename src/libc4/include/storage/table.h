@@ -5,18 +5,18 @@
 #include "types/tuple.h"
 #include "util/hash.h"
 
-typedef struct ColSQLiteTable ColSQLiteTable;
+typedef struct C4SQLiteTable C4SQLiteTable;
 
-typedef struct ColTable
+typedef struct C4Table
 {
     apr_pool_t *pool;
-    ColInstance *col;
+    C4Instance *c4;
     TableDef *def;
-    col_hash_t *tuples;
-    ColSQLiteTable *sql_table;
-} ColTable;
+    c4_hash_t *tuples;
+    C4SQLiteTable *sql_table;
+} C4Table;
 
-ColTable *table_make(TableDef *def, ColInstance *col, apr_pool_t *pool);
-bool table_insert(ColTable *tbl, Tuple *t);
+C4Table *table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool);
+bool table_insert(C4Table *tbl, Tuple *t);
 
 #endif  /* TABLE_H */

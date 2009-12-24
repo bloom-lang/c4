@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "col-api.h"
+#include "c4-api.h"
 
 static void usage(void);
-static ColInstance *setup_col(apr_int16_t port, const char *srcfile);
+static C4Instance *setup_c4(apr_int16_t port, const char *srcfile);
 
 int
 main(int argc, const char *argv[])
@@ -29,9 +29,9 @@ main(int argc, const char *argv[])
     apr_status_t s;
     apr_int64_t port = 0;
     char *src_string = NULL;
-    ColInstance *c;
+    C4Instance *c;
 
-    col_initialize();
+    c4_initialize();
 
     (void) apr_pool_create(&pool, NULL);
     (void) apr_getopt_init(&opt, pool, argc, argv);
@@ -72,17 +72,17 @@ main(int argc, const char *argv[])
     if (opt->ind + 1 != argc)
         usage();
 
-    c = setup_col((apr_int16_t) port, argv[opt->ind]);
+    c = setup_c4((apr_int16_t) port, argv[opt->ind]);
     if (src_string != NULL)
-        col_install_str(c, src_string);
+        c4_install_str(c, src_string);
 
     while (true)
         sleep(1);
 
-    col_destroy(c);
+    c4_destroy(c);
 
     apr_pool_destroy(pool);
-    col_terminate();
+    c4_terminate();
 }
 
 static void
@@ -92,15 +92,15 @@ usage(void)
     exit(1);
 }
 
-static ColInstance *
-setup_col(apr_int16_t port, const char *srcfile)
+static C4Instance *
+setup_c4(apr_int16_t port, const char *srcfile)
 {
-    ColInstance *c;
-    ColStatus s;
+    C4Instance *c;
+    C4Status s;
 
-    c = col_make(port);
-    col_start(c);
-    s = col_install_file(c, srcfile);
+    c = c4_make(port);
+    c4_start(c);
+    s = c4_install_file(c, srcfile);
     if (s)
         printf("Failed to install file \"%s\": %d\n", srcfile, (int) s);
     else

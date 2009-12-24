@@ -1,19 +1,19 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 
 #include "nodes/copyfuncs.h"
 #include "parser/analyze.h"
 /*
- * XXX: we need to include the definition of ColParser before we can include
+ * XXX: we need to include the definition of C4Parser before we can include
  * ol_scan.h, because Flex is broken.
  */
 #include "parser/parser-internal.h"
 #include "ol_scan.h"
 
-static ColParser *
+static C4Parser *
 parser_make(apr_pool_t *pool)
 {
     apr_pool_t *parse_pool;
-    ColParser *parser;
+    C4Parser *parser;
 
     parse_pool = make_subpool(pool);
     parser = apr_pcalloc(parse_pool, sizeof(*parser));
@@ -23,7 +23,7 @@ parser_make(apr_pool_t *pool)
 }
 
 static AstProgram *
-do_parse(ColParser *parser, const char *str)
+do_parse(C4Parser *parser, const char *str)
 {
     apr_size_t slen;
     char *scan_buf;
@@ -47,20 +47,20 @@ do_parse(ColParser *parser, const char *str)
 }
 
 static void
-parser_destroy(ColParser *parser)
+parser_destroy(C4Parser *parser)
 {
     apr_pool_destroy(parser->pool);
 }
 
 AstProgram *
-parse_str(const char *str, apr_pool_t *pool, ColInstance *col)
+parse_str(const char *str, apr_pool_t *pool, C4Instance *c4)
 {
-    ColParser *parser;
+    C4Parser *parser;
     AstProgram *ast;
 
     parser = parser_make(pool);
     ast = do_parse(parser, str);
-    analyze_ast(ast, parser->pool, col);
+    analyze_ast(ast, parser->pool, c4);
     /* Copy the finished AST to the caller's pool */
     ast = copy_node(ast, pool);
     parser_destroy(parser);

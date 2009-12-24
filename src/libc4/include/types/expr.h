@@ -26,7 +26,7 @@ struct ExprState
 
 struct ExprNode
 {
-    ColNode node;
+    C4Node node;
     DataType type;
 };
 

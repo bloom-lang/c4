@@ -9,7 +9,7 @@ typedef struct AstTableRef AstTableRef;
 
 typedef struct AstProgram
 {
-    ColNode node;
+    C4Node node;
     List *defines;
     List *facts;
     List *rules;
@@ -23,7 +23,7 @@ typedef enum AstStorageKind
 
 typedef struct AstDefine
 {
-    ColNode node;
+    C4Node node;
     char *name;
     AstStorageKind storage;
     List *keys;
@@ -32,20 +32,20 @@ typedef struct AstDefine
 
 typedef struct AstSchemaElt
 {
-    ColNode node;
+    C4Node node;
     char *type_name;
     bool is_loc_spec;
 } AstSchemaElt;
 
 typedef struct AstFact
 {
-    ColNode node;
+    C4Node node;
     AstTableRef *head;
 } AstFact;
 
 typedef struct AstRule
 {
-    ColNode node;
+    C4Node node;
     char *name;
     AstTableRef *head;
     /* The rule body, divided by node kind */
@@ -65,7 +65,7 @@ typedef enum AstHashVariant
 
 struct AstTableRef
 {
-    ColNode node;
+    C4Node node;
     /* The name of the referenced relation */
     char *name;
     /* The list of AstColumnRef that are bound to the table's columns */
@@ -75,13 +75,13 @@ struct AstTableRef
 /* XXX: get rid of this? */
 typedef struct AstColumnRef
 {
-    ColNode node;
-    ColNode *expr;
+    C4Node node;
+    C4Node *expr;
 } AstColumnRef;
 
 typedef struct AstJoinClause
 {
-    ColNode node;
+    C4Node node;
     AstTableRef *ref;
     bool not;
     AstHashVariant hash_variant;
@@ -90,8 +90,8 @@ typedef struct AstJoinClause
 /* XXX: get rid of this? */
 typedef struct AstQualifier
 {
-    ColNode node;
-    ColNode *expr;
+    C4Node node;
+    C4Node *expr;
 } AstQualifier;
 
 typedef enum AstOperKind
@@ -112,15 +112,15 @@ typedef enum AstOperKind
 
 typedef struct AstOpExpr
 {
-    ColNode node;
-    ColNode *lhs;
-    ColNode *rhs;
+    C4Node node;
+    C4Node *lhs;
+    C4Node *rhs;
     AstOperKind op_kind;
 } AstOpExpr;
 
 typedef struct AstVarExpr
 {
-    ColNode node;
+    C4Node node;
     char *name;
     /* Filled-in by the analysis phase */
     DataType type;
@@ -137,7 +137,7 @@ typedef enum AstConstKind
 
 typedef struct AstConstExpr
 {
-    ColNode node;
+    C4Node node;
     AstConstKind const_kind;
     char *value;
 } AstConstExpr;

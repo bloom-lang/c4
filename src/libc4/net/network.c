@@ -2,13 +2,13 @@
 #include <apr_network_io.h>
 #include <apr_thread_proc.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "net/network.h"
 #include "net/send_recv.h"
 
-struct ColNetwork
+struct C4Network
 {
-    ColInstance *col;
+    C4Instance *c4;
     apr_pool_t *pool;
 
     /* Thread info for server socket thread */
@@ -30,24 +30,24 @@ struct ColNetwork
 };
 
 static void * APR_THREAD_FUNC network_thread_main(apr_thread_t *thread, void *data);
-static void new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool);
-static SendThread *get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def);
+static void new_recv_thread(C4Network *net, apr_socket_t *sock, apr_pool_t *recv_pool);
+static SendThread *get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_def);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
  * port to listen on; 0 means to use an ephemeral port.
  */
-ColNetwork *
-network_make(ColInstance *col, int port)
+C4Network *
+network_make(C4Instance *c4, int port)
 {
     apr_status_t s;
     apr_pool_t *pool;
-    ColNetwork *net;
+    C4Network *net;
     apr_sockaddr_t *addr;
 
-    pool = make_subpool(col->pool);
+    pool = make_subpool(c4->pool);
     net = apr_pcalloc(pool, sizeof(*net));
-    net->col = col;
+    net->c4 = c4;
     net->pool = pool;
     net->recv_tbl = apr_hash_make(net->pool);
     net->send_tbl = apr_hash_make(net->pool);
@@ -78,13 +78,13 @@ network_make(ColInstance *col, int port)
 }
 
 void
-network_destroy(ColNetwork *net)
+network_destroy(C4Network *net)
 {
     apr_pool_destroy(net->pool);
 }
 
 void
-network_start(ColNetwork *net)
+network_start(C4Network *net)
 {
     apr_status_t s;
 
@@ -99,20 +99,20 @@ network_start(ColNetwork *net)
 }
 
 int
-network_get_port(ColNetwork *net)
+network_get_port(C4Network *net)
 {
     return net->local_addr->port;
 }
 
 void
-network_cleanup_rt(ColNetwork *net, RecvThread *rt)
+network_cleanup_rt(C4Network *net, RecvThread *rt)
 {
     apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
                  APR_HASH_KEY_STRING, NULL);
 }
 
 void
-network_cleanup_st(ColNetwork *net, SendThread *st)
+network_cleanup_st(C4Network *net, SendThread *st)
 {
     apr_hash_set(net->send_tbl, send_thread_get_loc(st),
                  APR_HASH_KEY_STRING, NULL);
@@ -121,7 +121,7 @@ network_cleanup_st(ColNetwork *net, SendThread *st)
 static void * APR_THREAD_FUNC
 network_thread_main(apr_thread_t *thread, void *data)
 {
-    ColNetwork *net = (ColNetwork *) data;
+    C4Network *net = (C4Network *) data;
     apr_status_t s;
 
     s = apr_socket_listen(net->sock, SOMAXCONN);
@@ -152,18 +152,18 @@ network_thread_main(apr_thread_t *thread, void *data)
 
 /* XXX: check if there's an existing recv thread at socket loc? */
 static void
-new_recv_thread(ColNetwork *net, apr_socket_t *sock, apr_pool_t *recv_pool)
+new_recv_thread(C4Network *net, apr_socket_t *sock, apr_pool_t *recv_pool)
 {
     RecvThread *rt;
 
-    rt = recv_thread_make(net->col, sock, recv_pool);
+    rt = recv_thread_make(net->c4, sock, recv_pool);
     apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
                  APR_HASH_KEY_STRING, rt);
     recv_thread_start(rt);
 }
 
 void
-network_send(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
+network_send(C4Network *net, Tuple *tuple, TableDef *tbl_def)
 {
     SendThread *st;
 
@@ -173,7 +173,7 @@ network_send(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
 }
 
 static SendThread *
-get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
+get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_def)
 {
     SendThread *st;
     Datum loc_spec;
@@ -192,7 +192,7 @@ get_send_thread(ColNetwork *net, Tuple *tuple, TableDef *tbl_def)
     st = apr_hash_get(net->send_tbl, tmp_loc_str, APR_HASH_KEY_STRING);
     if (st == NULL)
     {
-        st = send_thread_make(net->col, tmp_loc_str,
+        st = send_thread_make(net->c4, tmp_loc_str,
                               make_subpool(net->pool));
         apr_hash_set(net->send_tbl, send_thread_get_loc(st),
                      APR_HASH_KEY_STRING, st);

@@ -1,11 +1,11 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "operator/insert.h"
 #include "router.h"
 
 static void
 insert_invoke(Operator *op, Tuple *t)
 {
-    ColInstance *col = op->chain->col;
+    C4Instance *c4 = op->chain->c4;
     InsertOperator *insert_op = (InsertOperator *) op;
     ExprEvalContext *exec_cxt;
     Tuple *proj_tuple;
@@ -14,7 +14,7 @@ insert_invoke(Operator *op, Tuple *t)
     exec_cxt->inner = t;
 
     proj_tuple = operator_do_project(op);
-    router_install_tuple(col->router, proj_tuple, insert_op->tbl_def);
+    router_install_tuple(c4->router, proj_tuple, insert_op->tbl_def);
     tuple_unpin(proj_tuple);
 }
 
@@ -39,7 +39,7 @@ insert_op_make(InsertPlan *plan, OpChain *chain)
                                                  insert_invoke,
                                                  insert_destroy);
 
-    insert_op->tbl_def = cat_get_table(chain->col->cat, plan->head->name);
+    insert_op->tbl_def = cat_get_table(chain->c4->cat, plan->head->name);
 
     return insert_op;
 }

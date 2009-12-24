@@ -1,8 +1,8 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/nodes.h"
 
 char *
-node_get_kind_str(ColNode *node)
+node_get_kind_str(C4Node *node)
 {
     switch (node->kind)
     {

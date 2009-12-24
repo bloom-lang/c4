@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/copyfuncs.h"
 #include "nodes/makefuncs.h"
 
@@ -116,7 +116,7 @@ copy_expr_const(ExprConst *in, apr_pool_t *p)
 void *
 copy_node(void *ptr, apr_pool_t *pool)
 {
-    ColNode *n = (ColNode *) ptr;
+    C4Node *n = (C4Node *) ptr;
 
     if (n == NULL)
         return NULL;

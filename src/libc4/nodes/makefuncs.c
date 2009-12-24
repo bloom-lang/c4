@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/copyfuncs.h"
 #include "nodes/makefuncs.h"
 #include "types/schema.h"
@@ -77,7 +77,7 @@ make_table_ref(const char *name, List *cols, apr_pool_t *p)
 }
 
 AstColumnRef *
-make_column_ref(ColNode *expr, apr_pool_t *p)
+make_column_ref(C4Node *expr, apr_pool_t *p)
 {
     AstColumnRef *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_COLUMN_REF;
@@ -98,7 +98,7 @@ make_join_clause(AstTableRef *ref, bool not, AstHashVariant hash_v,
 }
 
 AstQualifier *
-make_qualifier(ColNode *expr, apr_pool_t *p)
+make_qualifier(C4Node *expr, apr_pool_t *p)
 {
     AstQualifier *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_QUALIFIER;
@@ -107,7 +107,7 @@ make_qualifier(ColNode *expr, apr_pool_t *p)
 }
 
 AstOpExpr *
-make_ast_op_expr(ColNode *lhs, ColNode *rhs, AstOperKind op_kind, apr_pool_t *p)
+make_ast_op_expr(C4Node *lhs, C4Node *rhs, AstOperKind op_kind, apr_pool_t *p)
 {
     AstOpExpr *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_OP_EXPR;

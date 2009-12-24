@@ -1,7 +1,7 @@
 #include <apr_atomic.h>
 #include <apr_hash.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "types/datum.h"
 
 bool
@@ -43,8 +43,8 @@ int8_equal(Datum d1, Datum d2)
 bool
 string_equal(Datum d1, Datum d2)
 {
-    ColString *s1 = d1.s;
-    ColString *s2 = d2.s;
+    C4String *s1 = d1.s;
+    C4String *s2 = d2.s;
 
     if (s1->len != s2->len)
         return false;
@@ -149,7 +149,7 @@ int8_cmp(apr_int64_t i1, apr_int64_t i2)
 }
 
 static int
-string_cmp(ColString *s1, ColString *s2)
+string_cmp(C4String *s1, C4String *s2)
 {
     ERROR("%s: Not implemented yet", __func__);
 }
@@ -248,13 +248,13 @@ string_hash(Datum d)
 }
 
 static void
-string_pin(ColString *s)
+string_pin(C4String *s)
 {
     apr_atomic_inc32(&s->refcount);
 }
 
 static void
-string_unpin(ColString *s)
+string_unpin(C4String *s)
 {
     if (apr_atomic_dec32(&s->refcount) == 0)
         ol_free(s);
@@ -282,7 +282,7 @@ static apr_status_t
 datum_cleanup(void *data)
 {
     /* XXX: We assume the input datum is a string */
-    ColString *str = (ColString *) data;
+    C4String *str = (C4String *) data;
 
     string_unpin(str);
     return APR_SUCCESS;
@@ -393,12 +393,12 @@ int8_from_str(const char *str)
     return result;
 }
 
-static ColString *
+static C4String *
 make_string(apr_size_t slen)
 {
-    ColString *s;
+    C4String *s;
 
-    s = ol_alloc(offsetof(ColString, data) + (slen * sizeof(char)));
+    s = ol_alloc(offsetof(C4String, data) + (slen * sizeof(char)));
     s->len = slen;
     s->refcount = 1;
     return s;
@@ -456,7 +456,7 @@ int8_to_str(Datum d, StrBuf *buf)
 void
 string_to_str(Datum d, StrBuf *buf)
 {
-    ColString *s = d.s;
+    C4String *s = d.s;
     sbuf_append_data(buf, s->data, s->len);
 }
 
@@ -597,7 +597,7 @@ int8_to_buf(Datum d, StrBuf *buf)
 void
 string_to_buf(Datum d, StrBuf *buf)
 {
-    ColString *s = d.s;
+    C4String *s = d.s;
     apr_uint32_t net_len;
 
     net_len = htonl(s->len);

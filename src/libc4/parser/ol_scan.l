@@ -1,7 +1,7 @@
 %{
 #include <string.h>
 
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "parser/parser-internal.h"
 
 #include "ol_parse.h"
@@ -17,7 +17,7 @@ static unsigned char unescape_char(unsigned char c);
 %option nounput
 %option noyywrap
 %option reentrant
-%option extra-type="ColParser *"
+%option extra-type="C4Parser *"
 
 digit           [0-9]
 space           [ \t\n\r\f]
@@ -60,23 +60,23 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 <comment>"*"+"/"        { BEGIN(INITIAL); }
 
 \" {
-    ColParser *context = yyget_extra(yyscanner);
+    C4Parser *context = yyget_extra(yyscanner);
     sbuf_reset(context->lit_buf);
     BEGIN(string);
 }
 
 <string>\\. {
-    ColParser *context = yyget_extra(yyscanner);
+    C4Parser *context = yyget_extra(yyscanner);
     sbuf_append_char(context->lit_buf, unescape_char((unsigned char) yytext[1]));
 }
 
 <string>[^\\\"]+ {
-    ColParser *context = yyget_extra(yyscanner);
+    C4Parser *context = yyget_extra(yyscanner);
     sbuf_append_data(context->lit_buf, yytext, yyleng);
 }
 
 <string>\" {
-    ColParser *context = yyget_extra(yyscanner);
+    C4Parser *context = yyget_extra(yyscanner);
     yylval.str = sbuf_dup(context->lit_buf, SCANNER_POOL);
     BEGIN(INITIAL);
     printf("SCONST = %s\n", yylval.str);

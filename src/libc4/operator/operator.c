@@ -1,11 +1,11 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "nodes/copyfuncs.h"
 #include "operator/operator.h"
 
 static apr_status_t operator_cleanup(void *data);
 
 Operator *
-operator_make(ColNodeKind kind, apr_size_t sz, PlanNode *plan,
+operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
               Operator *next_op, OpChain *chain,
               op_invoke_func invoke_f, op_destroy_func destroy_f)
 {

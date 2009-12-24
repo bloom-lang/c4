@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "types/schema.h"
 #include "types/tuple.h"
 #include "util/tuple_pool.h"

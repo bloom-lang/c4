@@ -18,13 +18,13 @@ typedef unsigned char DataType;
 #define TYPE_INT8    6
 #define TYPE_STRING  7
 
-typedef struct ColString
+typedef struct C4String
 {
     /* The number of bytes in "data"; XXX: including NUL terminator? */
     apr_uint32_t len;
     apr_uint32_t refcount;
     char data[1];       /* Variable-sized */
-} ColString;
+} C4String;
 
 typedef union Datum
 {
@@ -36,7 +36,7 @@ typedef union Datum
     apr_int64_t    i8;
     double         d8;
     /* Pass-by-ref types (boxed) */
-    ColString     *s;
+    C4String     *s;
 } Datum;
 
 typedef bool (*datum_eq_func)(Datum d1, Datum d2);

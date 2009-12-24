@@ -1,4 +1,4 @@
-#include "col-internal.h"
+#include "c4-internal.h"
 #include "parser/ast.h"
 #include "types/catalog.h"
 #include "types/datum.h"
