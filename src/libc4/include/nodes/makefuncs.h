@@ -16,11 +16,11 @@ AstRule *make_rule(const char *name, bool is_delete, bool is_network,
                    apr_pool_t *p);
 AstFact *make_fact(AstTableRef *head, apr_pool_t *p);
 AstTableRef *make_table_ref(const char *name, List *cols, apr_pool_t *p);
-AstColumnRef *make_column_ref(ColNode *expr, apr_pool_t *p);
+AstColumnRef *make_column_ref(C4Node *expr, apr_pool_t *p);
 AstJoinClause *make_join_clause(AstTableRef *ref, bool not,
                                 AstHashVariant hash_v, apr_pool_t *p);
-AstQualifier *make_qualifier(ColNode *expr, apr_pool_t *p);
-AstOpExpr *make_ast_op_expr(ColNode *lhs, ColNode *rhs,
+AstQualifier *make_qualifier(C4Node *expr, apr_pool_t *p);
+AstOpExpr *make_ast_op_expr(C4Node *lhs, C4Node *rhs,
                             AstOperKind op_kind, apr_pool_t *p);
 AstVarExpr *make_ast_var_expr(const char *name, DataType type, apr_pool_t *p);
 AstConstExpr *make_ast_const_expr(AstConstKind c_kind, const char *value,
