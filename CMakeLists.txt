@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(Col)
+project(C4)
 subdirs(src)
 
 set(PACKAGE_VERSION 1)
