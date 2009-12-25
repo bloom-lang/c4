@@ -1,1 +1,1 @@
-subdirs(cli libc4)
+subdirs(c4i libc4)
