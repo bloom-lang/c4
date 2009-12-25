@@ -13,4 +13,4 @@ make
 To run:
 
 cd build
-./src/cli/coverlog foo.olg
+./src/c4i/c4i foo.olg

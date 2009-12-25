@@ -1,6 +1,6 @@
 #!/bin/sh
 
-COL=$HOME/build-col/src/cli/coverlog
+C4=$HOME/build-col/src/c4i/c4i
 
 PORT1=11000
 PORT2=11001
@@ -11,7 +11,7 @@ SELF2="tcp:$LOCALHOST:$PORT2"
 
 set -b
 
-$COL -p $PORT1 ./net_loop.olg &
+$C4 -p $PORT1 ./net_loop.olg &
 #sleep 10
 
-$COL -p $PORT2 -s "ping(\"$SELF1\", \"$SELF2\", 0);" ./net_loop.olg
+$C4 -p $PORT2 -s "ping(\"$SELF1\", \"$SELF2\", 0);" ./net_loop.olg

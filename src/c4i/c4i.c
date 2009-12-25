@@ -3,8 +3,8 @@
 #include <apr_strings.h>
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "c4-api.h"
@@ -88,7 +88,7 @@ main(int argc, const char *argv[])
 static void
 usage(void)
 {
-    printf("Usage: coverlog [ -h | -p port | -s srctext ] srcfile\n");
+    printf("Usage: c4i [ -h | -p port | -s srctext ] srcfile\n");
     exit(1);
 }
 
