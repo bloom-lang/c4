@@ -14,7 +14,5 @@ find_package(Bison REQUIRED)
 find_package(Flex REQUIRED)
 find_package(SQLite3 REQUIRED)
 
-include_directories(${APR_INCLUDES} ${APU_INCLUDES} ${SQLITE3_INCLUDE_DIR})
-
 set(CMAKE_C_FLAGS "-g -Wall -W -Wmissing-prototypes -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
 message (STATUS "CFLAGS: ${CMAKE_C_FLAGS}")

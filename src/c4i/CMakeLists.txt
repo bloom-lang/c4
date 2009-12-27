@@ -1,4 +1,4 @@
-include_directories(../libc4/include)
+include_directories(../libc4/include ${APR_INCLUDES})
 link_directories(../libc4)
 
 add_executable(c4i c4i.c)

@@ -1,4 +1,6 @@
+# Make sure that C4-internal headers precede system / library headers
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR})
+include_directories(${APR_INCLUDES} ${APU_INCLUDES} ${SQLITE3_INCLUDE_DIR})
 
 file(GLOB_RECURSE libc4_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 
