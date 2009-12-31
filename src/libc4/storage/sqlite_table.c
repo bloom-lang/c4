@@ -219,6 +219,13 @@ sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur)
     return sqlite_table_scan_next(a_tbl, cur);
 }
 
+/*
+ * Construct a C4 tuple from the next row of the SQLite result set.
+ *
+ * XXX: when we advance to a subsequent SQLite row, the storage for the previous
+ * row is released; we currently get this wrong, because we don't copy when
+ * building C4 datums.
+ */
 static Tuple *
 sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
 {
@@ -235,7 +242,6 @@ sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
 
     tuple = tuple_make_empty(schema);
 
-    /* iterate through the columns and construct a Tuple struct */
     for (i = 0; i < schema->len; i++)
     {
         Datum d;
