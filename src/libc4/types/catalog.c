@@ -100,7 +100,7 @@ cat_get_table(C4Catalog *cat, const char *name)
                                      APR_HASH_KEY_STRING);
 }
 
-C4Table *
+AbstractTable *
 cat_get_table_impl(C4Catalog *cat, const char *name)
 {
     return (cat_get_table(cat, name))->table;

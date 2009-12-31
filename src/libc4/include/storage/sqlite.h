@@ -1,6 +1,8 @@
 #ifndef C4_SQLITE_H
 #define C4_SQLITE_H
 
+#include <sqlite3.h>
+
 typedef struct SQLiteState
 {
     C4Instance *c4;

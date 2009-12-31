@@ -1,15 +1,17 @@
 #ifndef SQLITE_TABLE_H
 #define SQLITE_TABLE_H
 
+#include <sqlite3.h>
+
 #include "storage/table.h"
 
-struct C4SQLiteTable
+typedef struct SQLiteTable
 {
+    AbstractTable table;
     sqlite3_stmt *insert_stmt;
-    sqlite3_stmt *scan_stmt;
-};
+} SQLiteTable;
 
-C4SQLiteTable *sqlite_table_make(C4Table *ctbl);
-bool sqlite_table_insert(C4Table *ctbl, Tuple *t);
+SQLiteTable *sqlite_table_make(TableDef *def, C4Instance *c4,
+                               apr_pool_t *pool);
 
 #endif  /* SQLITE_TABLE_H */

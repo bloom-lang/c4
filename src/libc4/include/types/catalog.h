@@ -8,7 +8,7 @@
 
 typedef struct C4Catalog C4Catalog;
 
-struct C4Table;
+struct AbstractTable;
 struct OpChainList;
 
 /*
@@ -28,7 +28,7 @@ typedef struct TableDef
     int ls_colno;
 
     /* Table implementation */
-    struct C4Table *table;
+    struct AbstractTable *table;
 
     /*
      * We keep a direct pointer to the router's list of op chains that have
@@ -45,7 +45,7 @@ void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
                       List *schema, List *key_list);
 void cat_delete_table(C4Catalog *cat, const char *name);
 TableDef *cat_get_table(C4Catalog *cat, const char *name);
-struct C4Table *cat_get_table_impl(C4Catalog *cat, const char *name);
+struct AbstractTable *cat_get_table_impl(C4Catalog *cat, const char *name);
 
 Schema *cat_get_schema(C4Catalog *cat, const char *name);
 

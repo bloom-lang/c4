@@ -1,5 +1,4 @@
 #include "c4-internal.h"
-#include "types/datum.h"
 #include "operator/scan.h"
 #include "operator/scancursor.h"
 
@@ -7,7 +6,7 @@ static void
 scan_invoke(Operator *op, Tuple *t)
 {
     ScanOperator *scan_op = (ScanOperator *) op;
-    C4Table *ctbl = scan_op->table;
+    AbstractTable *tbl = scan_op->table;
     ExprEvalContext *exec_cxt;
     Tuple *scan_tuple;
     ScanCursor cur;
@@ -15,9 +14,9 @@ scan_invoke(Operator *op, Tuple *t)
     exec_cxt = scan_op->op.exec_cxt;
     exec_cxt->inner = t;
 
-    for (scan_tuple = table_scan_first(ctbl, &cur);
+    for (scan_tuple = tbl->scan_first(tbl, &cur);
          scan_tuple != NULL;
-         scan_tuple = table_scan_next(ctbl, &cur))
+         scan_tuple = tbl->scan_next(tbl, &cur))
     {
         exec_cxt->outer = scan_tuple;
         if (eval_qual_set(scan_op->nquals, scan_op->qual_ary))

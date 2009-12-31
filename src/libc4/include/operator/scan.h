@@ -10,7 +10,7 @@ typedef struct ScanOperator
     Operator op;
     int nquals;
     ExprState **qual_ary;
-    C4Table *table;
+    AbstractTable *table;
 } ScanOperator;
 
 ScanOperator *scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain);

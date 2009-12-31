@@ -4,24 +4,43 @@
 #include "storage/sqlite.h"
 #include "storage/sqlite_table.h"
 
-static apr_status_t sqlite_table_cleanup(void *data);
+static void sqlite_table_create_sql(SQLiteTable *tbl);
+static void sqlite_table_cleanup(AbstractTable *a_tbl);
+static bool sqlite_table_insert(AbstractTable *a_tbl, Tuple *t);
+static Tuple *sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur);
+static Tuple *sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
 
-C4SQLiteTable *
-sqlite_table_make(C4Table *ctbl)
+SQLiteTable *
+sqlite_table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
 {
+    SQLiteTable *tbl;
+
+    tbl = (SQLiteTable *) table_make_super(sizeof(*tbl), def, c4,
+                                           sqlite_table_insert,
+                                           sqlite_table_cleanup,
+                                           sqlite_table_scan_first,
+                                           sqlite_table_scan_next,
+                                           pool);
+
+    sqlite_table_create_sql(tbl);
+
+    return tbl;
+}
+
+static void
+sqlite_table_create_sql(SQLiteTable *tbl)
+{
+    TableDef *tbl_def = tbl->table.def;
+    Schema *schema = tbl_def->schema;
     StrBuf *stmt;
     StrBuf *pkeys;
     int i;
 
-    ctbl->sql_table = apr_pcalloc(ctbl->pool, sizeof(*ctbl->sql_table));
-    apr_pool_cleanup_register(ctbl->pool, ctbl->sql_table,
-                              sqlite_table_cleanup, apr_pool_cleanup_null);
+    stmt = sbuf_make(tbl->table.pool);
+    pkeys = sbuf_make(tbl->table.pool);
 
-    stmt = sbuf_make(ctbl->pool);
-    pkeys = sbuf_make(ctbl->pool);
-
-    sbuf_appendf(stmt, "CREATE TABLE %s (", ctbl->def->name);
-    for (i = 0; i < ctbl->def->schema->len; i++)
+    sbuf_appendf(stmt, "CREATE TABLE %s (", tbl_def->name);
+    for (i = 0; i < schema->len; i++)
     {
         if (i != 0)
         {
@@ -29,7 +48,7 @@ sqlite_table_make(C4Table *ctbl)
             sbuf_append_char(pkeys, ',');
         }
 
-        switch (ctbl->def->schema->types[i])
+        switch (schema->types[i])
         {
             case TYPE_BOOL:
             case TYPE_INT2:
@@ -54,43 +73,33 @@ sqlite_table_make(C4Table *ctbl)
                 ERROR("Invalid data type: TYPE_INVALID");
 
             default:
-                ERROR("Unexpected data type: %uc", ctbl->def->schema->types[i]);
+                ERROR("Unexpected data type: %uc", schema->types[i]);
         }
     }
     sbuf_append_char(pkeys, '\0');
     sbuf_appendf(stmt, ", PRIMARY KEY (%s));", pkeys->data);
     sbuf_append_char(stmt, '\0');
 
-    sqlite_exec_sql(ctbl->c4->sql, stmt->data);
-
-    return ctbl->sql_table;
+    sqlite_exec_sql(tbl->table.c4->sql, stmt->data);
 }
 
 /*
- * Close the DB connection. Normal table unpins tuples here. What do we do?
+ * Close the DB connection. MemTable unpins tuples here. What do we do?
  */
-static apr_status_t
-sqlite_table_cleanup(void *data)
+static void
+sqlite_table_cleanup(AbstractTable *a_tbl)
 {
-    C4Table *ctbl = (C4Table *) data;
+    SQLiteTable *tbl = (SQLiteTable *) a_tbl;
     char stmt[1024];
 
-    snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", ctbl->def->name);
-    sqlite_exec_sql(ctbl->c4->sql, stmt);
+    snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", a_tbl->def->name);
+    sqlite_exec_sql(a_tbl->c4->sql, stmt);
 
-    if (ctbl->sql_table->insert_stmt != NULL)
+    if (tbl->insert_stmt != NULL)
     {
-        if (sqlite3_finalize(ctbl->sql_table->insert_stmt) != SQLITE_OK)
-            FAIL_SQLITE(ctbl->c4);
+        if (sqlite3_finalize(tbl->insert_stmt) != SQLITE_OK)
+            FAIL_SQLITE(a_tbl->c4);
     }
-
-    if (ctbl->sql_table->scan_stmt != NULL)
-    {
-        if (sqlite3_finalize(ctbl->sql_table->scan_stmt) != SQLITE_OK)
-            FAIL_SQLITE(ctbl->c4);
-    }
-
-    return APR_SUCCESS;
 }
 
 /*
@@ -98,17 +107,18 @@ sqlite_table_cleanup(void *data)
  * returns false if the insert was a no-op because the tuple is already
  * contained by this table.
  */
-bool
-sqlite_table_insert(C4Table *ctbl, Tuple *t)
+static bool
+sqlite_table_insert(AbstractTable *a_tbl, Tuple *t)
 {
     /* take prepared SQL statement, use Schema to walk the tuple for insert constants. */
-    SQLiteState *sql = ctbl->c4->sql;
-    C4SQLiteTable *sql_table = ctbl->sql_table;
-    DataType *types = ctbl->def->schema->types;
+    SQLiteTable *tbl = (SQLiteTable *) a_tbl;
+    TableDef *tbl_def = a_tbl->def;
+    DataType *types = tbl_def->schema->types;
+    SQLiteState *sql = a_tbl->c4->sql;
     int i;
     int res;
 
-    if (sql_table->insert_stmt == NULL)
+    if (tbl->insert_stmt == NULL)
     {
         /* Prepare an insert statement */
         char *param_str;
@@ -116,47 +126,47 @@ sqlite_table_insert(C4Table *ctbl, Tuple *t)
         int stmt_len;
 
         /* XXX: memory leak */
-        param_str = schema_to_sql_param_str(tuple_get_schema(t), ctbl->pool);
+        param_str = schema_to_sql_param_str(tuple_get_schema(t), a_tbl->pool);
 
         /* XXX: need to escape SQL string */
         stmt_len = snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
-                            ctbl->def->name, param_str);
+                            tbl_def->name, param_str);
 
         if ((res = sqlite3_prepare_v2(sql->db,
                                       stmt, stmt_len,
-                                      &sql_table->insert_stmt,
+                                      &tbl->insert_stmt,
                                       NULL)))
             ERROR("SQLite prepare failure %d: %s", res, stmt);
     }
     else
-        (void) sqlite3_reset(sql_table->insert_stmt);
+        (void) sqlite3_reset(tbl->insert_stmt);
 
-    for (i = 0; i < ctbl->def->schema->len; i++)
+    for (i = 0; i < tbl_def->schema->len; i++)
     {
         Datum val = tuple_get_val(t, i);
 
         switch (types[i])
         {
             case TYPE_BOOL:
-                sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.b);
+                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.b);
                 break;
             case TYPE_CHAR:
-                sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.c);
+                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.c);
                 break;
             case TYPE_INT2:
-                sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.i2);
+                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.i2);
                 break;
             case TYPE_INT4:
-                sqlite3_bind_int(sql_table->insert_stmt, i + 1, val.i4);
+                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.i4);
                 break;
             case TYPE_INT8:
-                sqlite3_bind_int64(sql_table->insert_stmt, i + 1, val.i8);
+                sqlite3_bind_int64(tbl->insert_stmt, i + 1, val.i8);
                 break;
             case TYPE_DOUBLE:
-                sqlite3_bind_double(sql_table->insert_stmt, i + 1, val.d8);
+                sqlite3_bind_double(tbl->insert_stmt, i + 1, val.d8);
                 break;
             case TYPE_STRING:
-                sqlite3_bind_text(sql_table->insert_stmt, i + 1, val.s->data,
+                sqlite3_bind_text(tbl->insert_stmt, i + 1, val.s->data,
                                   val.s->len, SQLITE_STATIC);
                 break;
 
@@ -172,20 +182,20 @@ sqlite_table_insert(C4Table *ctbl, Tuple *t)
         sqlite_begin_xact(sql);
 
     do {
-        res = sqlite3_step(sql_table->insert_stmt);
+        res = sqlite3_step(tbl->insert_stmt);
     } while (res == SQLITE_OK);
 
     /* We assume that a constraint failure is a PK violation due to a dup */
     if (res == SQLITE_CONSTRAINT)
         return false;
     if (res != SQLITE_DONE)
-        FAIL_SQLITE(ctbl->c4);
+        FAIL_SQLITE(tbl->table.c4);
 
     return true;        /* Not a duplicate */
 }
 
-Tuple *
-sqlite_table_scan_first(C4Table *ctbl, ScanCursor *cur)
+static Tuple *
+sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur)
 {
     if (cur->sqlite_stmt == NULL)
     {
@@ -195,9 +205,9 @@ sqlite_table_scan_first(C4Table *ctbl, ScanCursor *cur)
 
         /* XXX: escape table name? */
         stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
-                            ctbl->def->name);
+                            a_tbl->def->name);
 
-        if ((res = sqlite3_prepare_v2(ctbl->c4->sql->db,
+        if ((res = sqlite3_prepare_v2(a_tbl->c4->sql->db,
                                       stmt, stmt_len,
                                       &cur->sqlite_stmt,
                                       NULL)))
@@ -206,13 +216,13 @@ sqlite_table_scan_first(C4Table *ctbl, ScanCursor *cur)
     else
         (void) sqlite3_reset(cur->sqlite_stmt);
 
-    return sqlite_table_scan_next(ctbl, cur);
+    return sqlite_table_scan_next(a_tbl, cur);
 }
 
-Tuple *
-sqlite_table_scan_next(C4Table *ctbl, ScanCursor *cur)
+static Tuple *
+sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
 {
-    Schema *schema = ctbl->def->schema;
+    Schema *schema = a_tbl->def->schema;
     Tuple *tuple;
     int res;
     int i;
@@ -221,7 +231,7 @@ sqlite_table_scan_next(C4Table *ctbl, ScanCursor *cur)
     if (res == SQLITE_DONE)
         return NULL;
     if (res != SQLITE_ROW)
-        FAIL_SQLITE(ctbl->c4);
+        FAIL_SQLITE(a_tbl->c4);
 
     tuple = tuple_make_empty(schema);
 

@@ -132,7 +132,7 @@ router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
     }
 
     /* If the tuple is a duplicate, no need to route it */
-    if (table_insert(tbl_def->table, tuple) == false)
+    if (tbl_def->table->insert(tbl_def->table, tuple) == false)
         return;
 
     router_enqueue_internal(router, tuple, tbl_def);
