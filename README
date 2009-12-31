@@ -1,7 +1,7 @@
 Build dependencies: flex (>= 2.3.35), bison, cmake (>= 2.8), apr,
-apr-util, SQLite (>= 3), and BerkeleyDB (>= 4.7). At the moment, the
-binaries provided by each of these packages (flex, bison,
-apr-1-config, and apu-1-config) must be in your $PATH.
+apr-util and SQLite (>= 3). At the moment, the binaries provided by
+each of these packages (flex, bison, apr-1-config, and apu-1-config)
+must be in your $PATH.
 
 To build:
 

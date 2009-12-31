@@ -9,7 +9,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 find_package(Apr REQUIRED)
 find_package(Apu REQUIRED)
-find_package(BerkeleyDB)
+#find_package(BerkeleyDB)
 find_package(Bison REQUIRED)
 find_package(Flex REQUIRED)
 find_package(SQLite3 REQUIRED)
