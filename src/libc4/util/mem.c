@@ -54,7 +54,7 @@ make_subpool(apr_pool_t *parent)
 
     s = apr_pool_create(&pool, parent);
     if (s != APR_SUCCESS)
-        FAIL();
+        FAIL_APR(s);
 
     return pool;
 }
