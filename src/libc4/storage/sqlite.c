@@ -15,7 +15,7 @@ sqlite_init(C4Instance *c4)
     sql->c4 = c4;
     sql->xact_in_progress = false;
 
-    db_fname = apr_pstrcat(c4->pool, c4->base_dir, "/", "sqlite.db", NULL);
+    db_fname = apr_pstrcat(c4->tmp_pool, c4->base_dir, "/", "sqlite.db", NULL);
     if ((res = sqlite3_open(db_fname, &sql->db)) != 0)
         ERROR("sqlite3_open failed: %d", res);
 

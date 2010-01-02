@@ -24,7 +24,20 @@
 
 struct C4Instance
 {
+    /*
+     * The root APR pool for this instance of C4. This is created when
+     * the instance is created, and destroyed after the instance has
+     * shutdown.
+     */
     apr_pool_t *pool;
+
+    /*
+     * Per-fixpoint APR pool for temporary allocations. This is
+     * cleared at the end of each fixpoint. Given the need, we could
+     * introduce more fine-grained temporary pools.
+     */
+    apr_pool_t *tmp_pool;
+
     struct C4Catalog *cat;
     struct C4Router *router;
     struct C4Network *net;

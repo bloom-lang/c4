@@ -180,6 +180,8 @@ compute_fixpoint(C4Router *router)
     if (router->c4->sql->xact_in_progress)
         sqlite_commit_xact(router->c4->sql);
 
+    /* Fixpoint is now considered to be "complete" */
+
     /* Enqueue any outbound network messages */
     while (!tuple_buf_is_empty(net_buf))
     {
@@ -195,6 +197,7 @@ compute_fixpoint(C4Router *router)
     ASSERT(tuple_buf_is_empty(route_buf));
     tuple_buf_reset(route_buf);
     tuple_buf_reset(net_buf);
+    apr_pool_clear(router->c4->tmp_pool);
 
     if (benchmark_done)
         exit(1);
@@ -204,17 +207,12 @@ static void
 route_program(C4Router *router, const char *src)
 {
     C4Instance *c4 = router->c4;
-    apr_pool_t *program_pool;
     AstProgram *ast;
     ProgramPlan *plan;
 
-    program_pool = make_subpool(c4->pool);
-
-    ast = parse_str(src, program_pool, c4);
-    plan = plan_program(ast, program_pool, c4);
-    install_plan(plan, program_pool, c4);
-
-    apr_pool_destroy(program_pool);
+    ast = parse_str(src, c4->tmp_pool, c4);
+    plan = plan_program(ast, c4->tmp_pool, c4);
+    install_plan(plan, c4->tmp_pool, c4);
 }
 
 static void

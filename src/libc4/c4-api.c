@@ -23,14 +23,13 @@ c4_terminate(void)
 }
 
 static Datum
-get_local_addr(int port, apr_pool_t *pool)
+get_local_addr(int port, apr_pool_t *tmp_pool)
 {
     char buf[APRMAXHOSTLEN + 1];
     char addr[APRMAXHOSTLEN + 1 + 20];
     apr_status_t s;
 
-    /* XXX: use temporary pool? No leak with current APR implementation. */
-    s = apr_gethostname(buf, sizeof(buf), pool);
+    s = apr_gethostname(buf, sizeof(buf), tmp_pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
@@ -64,16 +63,16 @@ get_user_home_dir(apr_pool_t *pool)
 }
 
 static char *
-get_c4_base_dir(int port, apr_pool_t *pool)
+get_c4_base_dir(int port, apr_pool_t *pool, apr_pool_t *tmp_pool)
 {
     char *home_dir;
     char *base_dir;
     apr_status_t s;
 
-    home_dir = get_user_home_dir(pool);
+    home_dir = get_user_home_dir(tmp_pool);
     base_dir = apr_psprintf(pool, "%s/c4_home/tcp_%d",
                             home_dir, port);
-    s = apr_dir_make_recursive(base_dir, APR_FPROT_OS_DEFAULT, pool);
+    s = apr_dir_make_recursive(base_dir, APR_FPROT_OS_DEFAULT, tmp_pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
@@ -94,13 +93,14 @@ c4_make(int port)
 
     c4 = apr_pcalloc(pool, sizeof(*c4));
     c4->pool = pool;
+    c4->tmp_pool = make_subpool(c4->pool);
     c4->log = logger_make(c4);
     c4->cat = cat_make(c4);
     c4->router = router_make(c4);
     c4->net = network_make(c4, port);
     c4->port = network_get_port(c4->net);
-    c4->local_addr = get_local_addr(c4->port, c4->pool);
-    c4->base_dir = get_c4_base_dir(c4->port, c4->pool);
+    c4->local_addr = get_local_addr(c4->port, c4->tmp_pool);
+    c4->base_dir = get_c4_base_dir(c4->port, c4->pool, c4->tmp_pool);
     c4->sql = sqlite_init(c4);
 
     apr_pool_cleanup_register(pool, c4, c4_cleanup, apr_pool_cleanup_null);
