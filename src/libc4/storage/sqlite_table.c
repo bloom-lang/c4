@@ -7,7 +7,8 @@
 static void sqlite_table_create_sql(SQLiteTable *tbl);
 static void sqlite_table_cleanup(AbstractTable *a_tbl);
 static bool sqlite_table_insert(AbstractTable *a_tbl, Tuple *t);
-static Tuple *sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur);
+static ScanCursor *sqlite_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
+static void sqlite_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
 static Tuple *sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
 
 SQLiteTable *
@@ -18,7 +19,8 @@ sqlite_table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
     tbl = (SQLiteTable *) table_make_super(sizeof(*tbl), def, c4,
                                            sqlite_table_insert,
                                            sqlite_table_cleanup,
-                                           sqlite_table_scan_first,
+                                           sqlite_table_scan_make,
+                                           sqlite_table_scan_reset,
                                            sqlite_table_scan_next,
                                            pool);
 
@@ -89,17 +91,10 @@ sqlite_table_create_sql(SQLiteTable *tbl)
 static void
 sqlite_table_cleanup(AbstractTable *a_tbl)
 {
-    SQLiteTable *tbl = (SQLiteTable *) a_tbl;
     char stmt[1024];
 
     snprintf(stmt, sizeof(stmt), "DROP TABLE %s;", a_tbl->def->name);
     sqlite_exec_sql(a_tbl->c4->sql, stmt);
-
-    if (tbl->insert_stmt != NULL)
-    {
-        if (sqlite3_finalize(tbl->insert_stmt) != SQLITE_OK)
-            FAIL_SQLITE(a_tbl->c4);
-    }
 }
 
 /*
@@ -131,12 +126,7 @@ sqlite_table_insert(AbstractTable *a_tbl, Tuple *t)
         /* XXX: need to escape SQL string */
         stmt_len = snprintf(stmt, sizeof(stmt), "INSERT INTO %s VALUES (%s);",
                             tbl_def->name, param_str);
-
-        if ((res = sqlite3_prepare_v2(sql->db,
-                                      stmt, stmt_len,
-                                      &tbl->insert_stmt,
-                                      NULL)))
-            ERROR("SQLite prepare failure %d: %s", res, stmt);
+        tbl->insert_stmt = sqlite_pstmt_make(sql, stmt, stmt_len, a_tbl->pool);
     }
     else
         (void) sqlite3_reset(tbl->insert_stmt);
@@ -194,29 +184,28 @@ sqlite_table_insert(AbstractTable *a_tbl, Tuple *t)
     return true;        /* Not a duplicate */
 }
 
-static Tuple *
-sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur)
+static ScanCursor *
+sqlite_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool)
 {
-    if (cur->sqlite_stmt == NULL)
-    {
-        char stmt[1024];
-        int stmt_len;
-        int res;
+    ScanCursor *scan;
+    char stmt[1024];
+    int stmt_len;
 
-        /* XXX: escape table name? */
-        stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
-                            a_tbl->def->name);
+    scan = apr_pcalloc(pool, sizeof(*scan));
+    scan->pool = pool;
 
-        if ((res = sqlite3_prepare_v2(a_tbl->c4->sql->db,
-                                      stmt, stmt_len,
-                                      &cur->sqlite_stmt,
-                                      NULL)))
-            ERROR("SQLite prepare failure %d: %s", res, stmt);
-    }
-    else
-        (void) sqlite3_reset(cur->sqlite_stmt);
+    /* XXX: escape table name? */
+    stmt_len = snprintf(stmt, sizeof(stmt), "SELECT * FROM %s;",
+                        a_tbl->def->name);
+    scan->sqlite_stmt = sqlite_pstmt_make(a_tbl->c4->sql, stmt, stmt_len, pool);
 
-    return sqlite_table_scan_next(a_tbl, cur);
+    return scan;
+}
+
+static void
+sqlite_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan)
+{
+    (void) sqlite3_reset(scan->sqlite_stmt);
 }
 
 /*
@@ -227,14 +216,14 @@ sqlite_table_scan_first(AbstractTable *a_tbl, ScanCursor *cur)
  * building C4 datums.
  */
 static Tuple *
-sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
+sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *scan)
 {
     Schema *schema = a_tbl->def->schema;
     Tuple *tuple;
     int res;
     int i;
 
-    res = sqlite3_step(cur->sqlite_stmt);
+    res = sqlite3_step(scan->sqlite_stmt);
     if (res == SQLITE_DONE)
         return NULL;
     if (res != SQLITE_ROW)
@@ -249,25 +238,25 @@ sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
         switch (schema->types[i])
         {
             case TYPE_BOOL:
-                d.b = (bool) sqlite3_column_int(cur->sqlite_stmt, i);
+                d.b = (bool) sqlite3_column_int(scan->sqlite_stmt, i);
                 break;
             case TYPE_CHAR:
-                d.c = (unsigned char) sqlite3_column_int(cur->sqlite_stmt, i);
+                d.c = (unsigned char) sqlite3_column_int(scan->sqlite_stmt, i);
                 break;
             case TYPE_INT2:
-                d.i2 = (apr_int16_t) sqlite3_column_int(cur->sqlite_stmt, i);
+                d.i2 = (apr_int16_t) sqlite3_column_int(scan->sqlite_stmt, i);
                 break;
             case TYPE_INT4:
-                d.i4 = (apr_int32_t) sqlite3_column_int(cur->sqlite_stmt, i);
+                d.i4 = (apr_int32_t) sqlite3_column_int(scan->sqlite_stmt, i);
                 break;
             case TYPE_INT8:
-                d.i8 = (apr_int64_t) sqlite3_column_int64(cur->sqlite_stmt, i);
+                d.i8 = (apr_int64_t) sqlite3_column_int64(scan->sqlite_stmt, i);
                 break;
             case TYPE_DOUBLE:
-                d.d8 = (double) sqlite3_column_double(cur->sqlite_stmt, i);
+                d.d8 = (double) sqlite3_column_double(scan->sqlite_stmt, i);
                 break;
             case TYPE_STRING:
-                d = string_from_str((const char *) sqlite3_column_text(cur->sqlite_stmt, i));
+                d = string_from_str((const char *) sqlite3_column_text(scan->sqlite_stmt, i));
                 break;
 
             case TYPE_INVALID:

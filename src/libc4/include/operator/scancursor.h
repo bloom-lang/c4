@@ -3,13 +3,14 @@
 
 #include <sqlite3.h>
 
-#include "operator/scan.h"
 #include "util/hash.h"
 
-/* only one of these cursor types should be non-null */
 typedef struct ScanCursor
 {
-    c4_hash_index_t *hi;
+    apr_pool_t *pool;
+    /* Cursor over MemTable */
+    c4_hash_index_t *hash_iter;
+    /* Cursor over SQLiteTable */
     sqlite3_stmt *sqlite_stmt;
 } ScanCursor;
 

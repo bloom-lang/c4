@@ -32,7 +32,8 @@ AbstractTable *
 table_make_super(apr_size_t sz, TableDef *def,
                  C4Instance *c4, table_insert_f insert_f,
                  table_cleanup_f cleanup_f,
-                 table_scan_first_f scan_first_f,
+                 table_scan_make_f scan_make_f,
+                 table_scan_reset_f scan_reset_f,
                  table_scan_next_f scan_next_f,
                  apr_pool_t *pool)
 {
@@ -44,7 +45,8 @@ table_make_super(apr_size_t sz, TableDef *def,
     tbl->def = def;
     tbl->insert = insert_f;
     tbl->cleanup = cleanup_f;
-    tbl->scan_first = scan_first_f;
+    tbl->scan_make = scan_make_f;
+    tbl->scan_reset = scan_reset_f;
     tbl->scan_next = scan_next_f;
 
     apr_pool_cleanup_register(pool, tbl, abstract_table_cleanup,

@@ -9,16 +9,15 @@ scan_invoke(Operator *op, Tuple *t)
     AbstractTable *tbl = scan_op->table;
     ExprEvalContext *exec_cxt;
     Tuple *scan_tuple;
-    ScanCursor cur;
 
     exec_cxt = scan_op->op.exec_cxt;
     exec_cxt->inner = t;
 
-    for (scan_tuple = tbl->scan_first(tbl, &cur);
-         scan_tuple != NULL;
-         scan_tuple = tbl->scan_next(tbl, &cur))
+    tbl->scan_reset(tbl, scan_op->cursor);
+    while ((scan_tuple = tbl->scan_next(tbl, scan_op->cursor)) != NULL)
     {
         exec_cxt->outer = scan_tuple;
+
         if (eval_qual_set(scan_op->nquals, scan_op->qual_ary))
         {
             Tuple *join_tuple;
@@ -53,6 +52,7 @@ scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain)
 
     tbl_name = plan->scan_rel->ref->name;
     scan_op->table = cat_get_table_impl(chain->c4->cat, tbl_name);
+    scan_op->cursor = scan_op->table->scan_make(scan_op->table, scan_op->op.pool);
 
     scan_op->nquals = list_length(scan_op->op.plan->quals);
     scan_op->qual_ary = apr_palloc(scan_op->op.pool,
