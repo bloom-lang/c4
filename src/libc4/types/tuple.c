@@ -111,7 +111,7 @@ tuple_hash(Tuple *tuple)
 
 /*
  * XXX: Note that we return a malloc'd string, with a cleanup function
- * registered in the given context. This might get expensive if used
+ * registered in the given pool. This might get expensive if used
  * frequently...
  */
 char *
