@@ -54,6 +54,7 @@ struct c4_hash_index_t {
     c4_hash_t         *ht;
     c4_hash_entry_t   *this, *next;
     unsigned int        index;
+    int                 at_end;
 };
 
 /*
@@ -125,15 +126,10 @@ c4_hash_t *c4_hash_make_custom(apr_pool_t *pool,
 
 c4_hash_index_t *c4_hash_next(c4_hash_index_t *hi)
 {
-    hi->this = hi->next;
-    while (!hi->this) {
-        if (hi->index > hi->ht->max)
-            return NULL;
-
-        hi->this = hi->ht->array[hi->index++];
-    }
-    hi->next = hi->this->next;
-    return hi;
+    if (c4_hash_iter_next(hi))
+        return hi;
+    else
+        return NULL;
 }
 
 c4_hash_index_t *c4_hash_first(apr_pool_t *p, c4_hash_t *ht)
@@ -145,10 +141,46 @@ c4_hash_index_t *c4_hash_first(apr_pool_t *p, c4_hash_t *ht)
         hi = &ht->iterator;
 
     hi->ht = ht;
+    c4_hash_iter_reset(hi);
+    return c4_hash_next(hi);
+}
+
+c4_hash_index_t *c4_hash_iter_make(apr_pool_t *p, c4_hash_t *ht)
+{
+    c4_hash_index_t *hi;
+
+    hi = apr_palloc(p, sizeof(*hi));
+    hi->ht = ht;
+    c4_hash_iter_reset(hi);
+
+    return hi;
+}
+
+void c4_hash_iter_reset(c4_hash_index_t *hi)
+{
     hi->index = 0;
     hi->this = NULL;
     hi->next = NULL;
-    return c4_hash_next(hi);
+    hi->at_end = 0;
+}
+
+int c4_hash_iter_next(c4_hash_index_t *hi)
+{
+    if (hi->at_end)
+        return 0;
+
+    hi->this = hi->next;
+    while (!hi->this) {
+        if (hi->index > hi->ht->max)
+        {
+            hi->at_end = 1;
+            return 0;
+        }
+
+        hi->this = hi->ht->array[hi->index++];
+    }
+    hi->next = hi->this->next;
+    return 1;
 }
 
 void c4_hash_this(c4_hash_index_t *hi,
@@ -156,6 +188,9 @@ void c4_hash_this(c4_hash_index_t *hi,
                    apr_ssize_t *klen,
                    void **val)
 {
+    if (hi->at_end)
+        FAIL();
+
     if (key)  *key  = hi->this->key;
     if (klen) *klen = hi->this->klen;
     if (val)  *val  = (void *)hi->this->val;

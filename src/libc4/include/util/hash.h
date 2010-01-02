@@ -136,22 +136,42 @@ void *c4_hash_set_if_new(c4_hash_t *ht, const void *key,
 void *c4_hash_get(c4_hash_t *ht, const void *key, apr_ssize_t klen);
 
 /**
- * Start iterating over the entries in a hash table.
- * @param p The pool to allocate the c4_hash_index_t iterator. If this
- *          pool is NULL, then an internal, non-thread-safe iterator is used.
+ * Prepare to start iterating over the entries in a hash table. This
+ * creates an iterator and places it "before" the first element in the
+ * hash table; that is, c4_hash_iter_make() + c4_hash_next() is
+ * equivalent to a single call to c4_hash_first().
+ * @param p The pool to allocate the c4_hash_index_t iterator in. Must
+ *          not be NULL.
  * @param ht The hash table
- * @remark  There is no restriction on adding or deleting hash entries during
- * an iteration (although the results may be unpredictable unless all you do
- * is delete the current entry) and multiple iterations can be in
- * progress at the same time.
+ */
+c4_hash_index_t *c4_hash_iter_make(apr_pool_t *p, c4_hash_t *ht);
+
+/**
+ * Reset the state of a hash table iterator, so that it is placed
+ * "before" the first element in the hash table.
+ */
+void c4_hash_iter_reset(c4_hash_index_t *hi);
+
+/**
+ * Continue iterating over the entries in a hash table.
+ * @param hi The iteration state. This is written-through (modified).
+ * @return 1 if there are any entries remaining in the hash table, 0 otherwise.
+ */
+int c4_hash_iter_next(c4_hash_index_t *hi);
+
+/**
+ * APR-style API to start iterating over the entries of a hash table.
+ * @param p The pool to allocate the c4_hash_index_t iterator in. If NULL,
+ *          an internal non-threadsafe iterator is used.
+ * @param ht The hash table
+ * @return Iteration state, or NULL if the hash table is empty
  */
 c4_hash_index_t *c4_hash_first(apr_pool_t *p, c4_hash_t *ht);
 
 /**
- * Continue iterating over the entries in a hash table.
+ * APR-style API for hash iteration.
  * @param hi The iteration state
- * @return a pointer to the updated iteration state.  NULL if there are no more  
- *         entries.
+ * @return The next updated iteration state, or NULL if out of elements.
  */
 c4_hash_index_t *c4_hash_next(c4_hash_index_t *hi);
 
