@@ -2,6 +2,7 @@
 #include "storage/sqlite.h"
 
 static apr_status_t sqlite_cleanup(void *data);
+static apr_status_t sqlite_pstmt_cleanup(void *data);
 
 SQLiteState *
 sqlite_init(C4Instance *c4)
@@ -63,3 +64,34 @@ sqlite_exec_sql(SQLiteState *sql, const char *stmt)
     if (sqlite3_exec(sql->db, stmt, NULL, NULL, NULL) != SQLITE_OK)
         FAIL_SQLITE(sql->c4);
 }
+
+/*
+ * Create a new SQLite3 prepared statement, and register a cleanup
+ * function in the given pool. stmt_len can be -1 to use strlen(stmt).
+ */
+sqlite3_stmt *
+sqlite_pstmt_make(SQLiteState *sql, const char *stmt, int stmt_len,
+                  apr_pool_t *pool)
+{
+    sqlite3_stmt *pstmt;
+
+    if (sqlite3_prepare_v2(sql->db, stmt, stmt_len, &pstmt, NULL) != SQLITE_OK)
+        FAIL_SQLITE(sql->c4);
+
+    apr_pool_cleanup_register(pool, pstmt, sqlite_pstmt_cleanup,
+                              apr_pool_cleanup_null);
+
+    return pstmt;
+}
+
+static apr_status_t
+sqlite_pstmt_cleanup(void *data)
+{
+    sqlite3_stmt *stmt = (sqlite3_stmt *) data;
+
+    if (sqlite3_finalize(stmt) != SQLITE_OK)
+        FAIL();         /* XXX: better error recovery */
+
+    return APR_SUCCESS;
+}
+
