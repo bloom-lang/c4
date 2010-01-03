@@ -33,7 +33,7 @@
 #include "planner/planner-internal.h"
 
 static ProgramPlan *
-program_plan_make(AstProgram *ast, apr_pool_t *pool)
+program_plan_make(apr_pool_t *pool)
 {
     ProgramPlan *pplan;
 
@@ -45,7 +45,7 @@ program_plan_make(AstProgram *ast, apr_pool_t *pool)
 }
 
 static PlannerState *
-planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, C4Instance *c4)
+planner_state_make(apr_pool_t *plan_pool, C4Instance *c4)
 {
     PlannerState *state;
     apr_pool_t *tmp_pool;
@@ -55,7 +55,7 @@ planner_state_make(AstProgram *ast, apr_pool_t *plan_pool, C4Instance *c4)
     state->c4 = c4;
     state->plan_pool = plan_pool;
     state->tmp_pool = tmp_pool;
-    state->plan = program_plan_make(ast, plan_pool);
+    state->plan = program_plan_make(plan_pool);
     state->current_plist = NULL;
 
     return state;
@@ -342,7 +342,7 @@ plan_program(AstProgram *ast, apr_pool_t *pool, C4Instance *c4)
     ProgramPlan *pplan;
     ListCell *lc;
 
-    state = planner_state_make(ast, pool, c4);
+    state = planner_state_make(pool, c4);
     pplan = state->plan;
 
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
