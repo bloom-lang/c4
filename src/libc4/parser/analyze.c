@@ -448,10 +448,17 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
         }
         else
         {
+            /*
+             * OpExprs and AggExprs are disallowed. This might be relaxed in the
+             * future.
+             */
+            if (cref->expr->kind != AST_VAR_EXPR)
+                ERROR("A join clause in the rule body must contain "
+                      "either variables or constants");
+
             if (is_dont_care_var(cref->expr))
                 goto done;
 
-            ASSERT(cref->expr->kind == AST_VAR_EXPR);
             var = (AstVarExpr *) cref->expr;
 
             /*
