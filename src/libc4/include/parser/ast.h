@@ -56,13 +56,6 @@ typedef struct AstRule
     bool is_network;
 } AstRule;
 
-typedef enum AstHashVariant
-{
-    AST_HASH_NONE = 0,
-    AST_HASH_DELETE,
-    AST_HASH_INSERT
-} AstHashVariant;
-
 struct AstTableRef
 {
     C4Node node;
