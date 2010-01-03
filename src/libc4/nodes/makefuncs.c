@@ -135,6 +135,16 @@ make_ast_const_expr(AstConstKind c_kind, const char *value, apr_pool_t *p)
     return result;
 }
 
+AstAggExpr *
+make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p)
+{
+    AstAggExpr *result = apr_pcalloc(p, sizeof(*result));
+    result->node.kind = AST_AGG_EXPR;
+    result->agg_kind = a_kind;
+    result->expr = copy_node(expr, p);
+    return result;
+}
+
 FilterPlan *
 make_filter_plan(const char *tbl_name, List *quals,
                  List *qual_exprs, List *proj_list, apr_pool_t *p)

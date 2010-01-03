@@ -25,6 +25,15 @@ expr_tree_walker(C4Node *node, expr_callback fn, void *data)
         case AST_CONST_EXPR:
             break;
 
+        case AST_AGG_EXPR:
+            {
+                AstAggExpr *agg_expr = (AstAggExpr *) node;
+
+                if (expr_tree_walker(agg_expr->expr, fn, data) == false)
+                    return false;
+            }
+            break;
+
         case AST_QUALIFIER:
             {
                 AstQualifier *ast_qual = (AstQualifier *) node;

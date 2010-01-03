@@ -2,7 +2,6 @@ Parser and lexer:
 
 * Support for parentheses
 * Type casts
-* Aggregation
 * Trinary conditional operator ("?:")
 * Allow location specifiers to be attached to constants
 * Unicode identifiers and string literals

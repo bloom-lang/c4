@@ -37,6 +37,7 @@ static void analyze_op_expr(AstOpExpr *op_expr, bool inside_qual,
 static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
                              AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
+static void analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state);
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
@@ -64,6 +65,7 @@ static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
 static DataType var_expr_get_type(AstVarExpr *var);
+static DataType agg_expr_get_type(AstAggExpr *agg);
 
 
 static void
@@ -536,6 +538,10 @@ analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state)
             analyze_const_expr((AstConstExpr *) node, state);
             break;
 
+        case AST_AGG_EXPR:
+            analyze_agg_expr((AstAggExpr *) node, state);
+            break;
+
         default:
             ERROR("Unexpected expr node kind: %d", (int) node->kind);
     }
@@ -625,6 +631,16 @@ static void
 analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state)
 {
     ;
+}
+
+static void
+analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state)
+{
+    analyze_expr(a_expr->expr);
+
+    if (a_expr->agg_kind == AST_AGG_SUM &&
+        expr_get_type(a_expr->expr) != TYPE_INT8)
+        ERROR("Sum aggregate must be used with int8 value");
 }
 
 static void
@@ -1001,6 +1017,9 @@ expr_get_type(C4Node *node)
         case AST_CONST_EXPR:
             return const_expr_get_type((AstConstExpr *) node);
 
+        case AST_AGG_EXPR:
+            return agg_expr_get_type((AstAggExpr *) node);
+
         default:
             ERROR("Unexpected node kind: %d", (int) node->kind);
     }
@@ -1075,4 +1094,24 @@ var_expr_get_type(AstVarExpr *var)
 {
     ASSERT(var->type != TYPE_INVALID);
     return var->type;
+}
+
+static DataType
+agg_expr_get_type(AstAggExpr *agg)
+{
+    switch (agg->agg_kind)
+    {
+        case AST_AGG_COUNT:
+            return TYPE_INT8;
+
+        case AST_AGG_MAX:
+        case AST_AGG_MIN:
+            return expr_get_type(agg->expr);
+
+        case AST_AGG_SUM:
+            return TYPE_INT8;
+
+        default:
+            ERROR("Unexpected agg kind: %d", (int) agg->agg_kind);
+    }
 }

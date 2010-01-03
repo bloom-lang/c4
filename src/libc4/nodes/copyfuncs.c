@@ -75,6 +75,12 @@ copy_ast_const_expr(AstConstExpr *in, apr_pool_t *p)
     return make_ast_const_expr(in->const_kind, in->value, p);
 }
 
+static AstAggExpr *
+copy_ast_agg_expr(AstAggExpr *in, apr_pool_t *p)
+{
+    return make_ast_agg_expr(in->agg_kind, in->expr, p);
+}
+
 static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
@@ -152,6 +158,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_OP_EXPR:
             return copy_ast_op_expr((AstOpExpr *) n, pool);
+
+        case AST_AGG_EXPR:
+            return copy_ast_agg_expr((AstAggExpr *) n, pool);
 
         case AST_VAR_EXPR:
             return copy_ast_var_expr((AstVarExpr *) n, pool);

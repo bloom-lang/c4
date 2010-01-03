@@ -21,6 +21,7 @@ static void split_rule_body(List *body, List **joins,
     List           *list;
     void           *ptr;
     bool            boolean;
+    AstAggKind      agg_kind;
 }
 
 %start program
@@ -30,6 +31,7 @@ static void split_rule_body(List *body, List **joins,
 %lex-param { yyscan_t scanner }
 
 %token KEYS DEFINE MEMORY SQLITE DELETE NOTIN OL_FALSE OL_TRUE
+       OL_COUNT OL_MAX OL_MIN OL_SUM
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
 %left OL_EQ OL_NEQ
@@ -42,7 +44,8 @@ static void split_rule_body(List *body, List **joins,
 %type <list>       program_body opt_int_list int_list schema_list define_schema
 %type <list>       opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
-%type <ptr>        var_expr rule_prefix schema_elt
+%type <ptr>        var_expr agg_expr rule_prefix schema_elt
+%type <agg_kind>   agg_kind
 %type <str>        bool_const
 %type <ival>       iconst_ival
 %type <boolean>    opt_not opt_delete
@@ -200,6 +203,7 @@ expr:
   op_expr
 | const_expr
 | var_expr
+| agg_expr
 ;
 
 op_expr:
@@ -235,6 +239,15 @@ bool_const:
 ;
 
 var_expr: VAR_IDENT { $$ = make_ast_var_expr($1, TYPE_INVALID, context->pool); };
+
+agg_expr: agg_kind '<' var_expr '>' { $$ = make_ast_agg_expr($1, $3, context->pool); }
+
+agg_kind:
+  OL_COUNT      { $$ = AST_AGG_COUNT; }
+| OL_MAX        { $$ = AST_AGG_MAX; }
+| OL_MIN        { $$ = AST_AGG_MIN; }
+| OL_SUM        { $$ = AST_AGG_SUM; }
+;
 
 column_ref_list:
   column_ref { $$ = list_make1($1, context->pool); }

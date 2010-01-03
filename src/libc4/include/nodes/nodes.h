@@ -16,6 +16,7 @@ typedef enum C4NodeKind
     AST_OP_EXPR,
     AST_VAR_EXPR,
     AST_CONST_EXPR,
+    AST_AGG_EXPR,
 
     /* Plan nodes */
     PLAN_FILTER,

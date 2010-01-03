@@ -37,5 +37,6 @@ ExprOp *make_expr_op(DataType type, AstOperKind op_kind,
 ExprVar *make_expr_var(DataType type, int attno, bool is_outer,
                        const char *name, apr_pool_t *p);
 ExprConst *make_expr_const(DataType type, Datum val, apr_pool_t *p);
+AstAggExpr *make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p);
 
 #endif  /* MAKEFUNCS_H */

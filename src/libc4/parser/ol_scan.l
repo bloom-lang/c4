@@ -105,6 +105,11 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "<>"                    { return OL_NEQ; }
 "=="                    { return OL_EQ; }
 
+"count"                 { return OL_COUNT; }
+"max"                   { return OL_MAX; }
+"min"                   { return OL_MIN; }
+"sum"                   { return OL_SUM; }
+
 "define"                { return DEFINE; }
 "delete"                { return DELETE; }
 "false"                 { return OL_FALSE; }

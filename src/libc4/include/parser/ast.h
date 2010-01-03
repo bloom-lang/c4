@@ -134,4 +134,19 @@ typedef struct AstConstExpr
     char *value;
 } AstConstExpr;
 
+typedef enum AstAggKind
+{
+    AST_AGG_COUNT,
+    AST_AGG_MAX,
+    AST_AGG_MIN,
+    AST_AGG_SUM
+} AstAggKind;
+
+typedef struct AstAggExpr
+{
+    C4Node node;
+    AstAggKind agg_kind;
+    C4Node *expr;
+} AstAggExpr;
+
 #endif  /* AST_H */

@@ -30,6 +30,8 @@ node_get_kind_str(C4Node *node)
             return "AstVarExpr";
         case AST_CONST_EXPR:
             return "AstConstExpr";
+        case AST_AGG_EXPR:
+            return "AstAggExpr";
 
         case PLAN_FILTER:
             return "PlanFilter";
