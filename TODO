@@ -66,9 +66,10 @@ Tables and storage:
 * Invent a concept of "table IDs", and use them instead of table names
 * Support for BDB persistent tables
   * Can we store in-memory Tuple/Datum format directly to BDB?
-* Support a more generic table interface
 * Consider adding a "regexp" table type: given a string input, parses
   into tuple format by applying a regular expression
+  * Rather than regexp, look at PADS and related work
+  * Also do output to external format
 * Optimize the hash table implementation
 * Consider using Judy trees/arrays instead of hash tables
 * Support for secondary indexes, index scans on PK
