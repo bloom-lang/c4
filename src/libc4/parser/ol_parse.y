@@ -72,14 +72,14 @@ clause:
  * confused by adjacent optional productions. Is there a better fix?
  */
 define:
-  DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
-}
-| DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
+  DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
     $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
 }
 | DEFINE '(' TBL_IDENT ',' SQLITE ',' opt_keys define_schema ')' {
     $$ = make_define($3, AST_STORAGE_SQLITE, $7, $8, context->pool);
+}
+| DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
 }
 ;
 
