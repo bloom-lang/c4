@@ -75,8 +75,6 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     bool seen_loc_spec;
     ListCell *lc;
 
-    printf("DEFINE => %s\n", def->name);
-
     if (is_table_defined(def->name, state))
         ERROR("Table %s already exists", def->name);
 
@@ -136,8 +134,6 @@ static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
-
-    printf("RULE => %s\n", rule->head->name);
 
     /*
      * If the rule has a user-defined name, check that it is unique within
@@ -286,7 +282,9 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
         char *var_name;
 
         apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
-        if (apr_hash_get(cxt.var_seen, var_name, APR_HASH_KEY_STRING) == NULL)
+
+        if (apr_hash_get(cxt.var_seen, var_name,
+                         APR_HASH_KEY_STRING) == NULL)
         {
             printf("Unused variable name: %s\n", var_name);
         }
@@ -648,8 +646,6 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
 {
     AstTableRef *target = fact->head;
     ListCell *lc;
-
-    printf("FACT => %s\n", target->name);
 
     analyze_table_ref(target, state);
 
