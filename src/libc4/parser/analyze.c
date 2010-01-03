@@ -636,7 +636,7 @@ analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state)
 static void
 analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state)
 {
-    analyze_expr(a_expr->expr);
+    analyze_expr(a_expr->expr, false, state);
 
     if (a_expr->agg_kind == AST_AGG_SUM &&
         expr_get_type(a_expr->expr) != TYPE_INT8)
