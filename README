@@ -24,3 +24,5 @@ Code Style:
   each group, includes should be sorted alphabetically.
 
 * Error messages (e.g. ERROR()) should begin with a capital letter.
+
+* Lines should generally be wrapped at 80 characters
