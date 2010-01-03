@@ -48,7 +48,7 @@ copy_column_ref(AstColumnRef *in, apr_pool_t *p)
 static AstJoinClause *
 copy_join_clause(AstJoinClause *in, apr_pool_t *p)
 {
-    return make_join_clause(in->ref, in->not, in->hash_variant, p);
+    return make_join_clause(in->ref, in->not, p);
 }
 
 static AstQualifier *

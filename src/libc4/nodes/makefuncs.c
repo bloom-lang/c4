@@ -86,14 +86,12 @@ make_column_ref(C4Node *expr, apr_pool_t *p)
 }
 
 AstJoinClause *
-make_join_clause(AstTableRef *ref, bool not, AstHashVariant hash_v,
-                 apr_pool_t *p)
+make_join_clause(AstTableRef *ref, bool not, apr_pool_t *p)
 {
     AstJoinClause *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_JOIN_CLAUSE;
     result->ref = copy_node(ref, p);
     result->not = not;
-    result->hash_variant = hash_v;
     return result;
 }
 

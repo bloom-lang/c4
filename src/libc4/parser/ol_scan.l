@@ -99,8 +99,6 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 
 {self}                  { return yytext[0]; }
 
-"#delete"               { return OL_HASH_DELETE; }
-"#insert"               { return OL_HASH_INSERT; }
 "<="                    { return OL_LTE; }
 ">="                    { return OL_GTE; }
 "!="                    { return OL_NEQ; }

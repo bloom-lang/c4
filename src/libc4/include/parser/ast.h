@@ -84,7 +84,6 @@ typedef struct AstJoinClause
     C4Node node;
     AstTableRef *ref;
     bool not;
-    AstHashVariant hash_variant;
 } AstJoinClause;
 
 /* XXX: get rid of this? */

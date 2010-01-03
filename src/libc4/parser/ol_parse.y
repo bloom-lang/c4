@@ -21,7 +21,6 @@ static void split_rule_body(List *body, List **joins,
     List           *list;
     void           *ptr;
     bool            boolean;
-    AstHashVariant  hash_v;
 }
 
 %start program
@@ -30,8 +29,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN OL_HASH_INSERT OL_HASH_DELETE
-       OL_FALSE OL_TRUE
+%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN OL_FALSE OL_TRUE
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
 %left OL_EQ OL_NEQ
@@ -48,7 +46,6 @@ static void split_rule_body(List *body, List **joins,
 %type <str>        bool_const
 %type <ival>       iconst_ival
 %type <boolean>    opt_not opt_delete
-%type <hash_v>     opt_hash_variant
 
 %%
 program: program_body {
@@ -185,20 +182,14 @@ rule_body_elem:
 | qualifier
 ;
 
-join_clause: opt_not TBL_IDENT opt_hash_variant '(' column_ref_list ')' {
-    AstTableRef *ref = make_table_ref($2, $5, context->pool);
-    $$ = make_join_clause(ref, $1, $3, context->pool);
+join_clause: opt_not TBL_IDENT '(' column_ref_list ')' {
+    AstTableRef *ref = make_table_ref($2, $4, context->pool);
+    $$ = make_join_clause(ref, $1, context->pool);
 };
 
 opt_not:
   NOTIN                 { $$ = true; }
 | /* EMPTY */           { $$ = false; }
-;
-
-opt_hash_variant:
-  OL_HASH_DELETE       { $$ = AST_HASH_DELETE; }
-| OL_HASH_INSERT       { $$ = AST_HASH_INSERT; }
-| /* EMPTY */          { $$ = AST_HASH_NONE; }
 ;
 
 table_ref: TBL_IDENT '(' column_ref_list ')' { $$ = make_table_ref($1, $3, context->pool); };
