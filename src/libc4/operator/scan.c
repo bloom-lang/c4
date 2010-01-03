@@ -22,9 +22,22 @@ scan_invoke(Operator *op, Tuple *t)
         {
             Tuple *join_tuple;
 
+            /* If this is NOT and we see a matching tuple, we're done */
+            if (scan_op->anti_scan)
+                return;
+
             join_tuple = operator_do_project(op);
             op->next->invoke(op->next, join_tuple);
         }
+    }
+
+    /* If this is NOT and no matches, emit an output tuple */
+    if (scan_op->anti_scan)
+    {
+        Tuple *join_tuple;
+
+        join_tuple = operator_do_project(op);
+        op->next->invoke(op->next, join_tuple);
     }
 }
 
@@ -53,6 +66,7 @@ scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain)
     tbl_name = plan->scan_rel->ref->name;
     scan_op->table = cat_get_table_impl(chain->c4->cat, tbl_name);
     scan_op->cursor = scan_op->table->scan_make(scan_op->table, scan_op->op.pool);
+    scan_op->anti_scan = plan->scan_rel->not;
 
     scan_op->nquals = list_length(scan_op->op.plan->quals);
     scan_op->qual_ary = apr_palloc(scan_op->op.pool,

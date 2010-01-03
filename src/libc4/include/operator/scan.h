@@ -13,6 +13,7 @@ typedef struct ScanOperator
     ExprState **qual_ary;
     AbstractTable *table;
     ScanCursor *cursor;
+    bool anti_scan;
 } ScanOperator;
 
 ScanOperator *scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain);
