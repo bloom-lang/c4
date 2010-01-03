@@ -42,7 +42,7 @@ static void split_rule_body(List *body, List **joins,
 %type <list>       program_body opt_int_list int_list schema_list define_schema
 %type <list>       opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
-%type <ptr>        var_expr column_ref_expr rule_prefix schema_elt
+%type <ptr>        var_expr rule_prefix schema_elt
 %type <str>        bool_const
 %type <ival>       iconst_ival
 %type <boolean>    opt_not opt_delete
@@ -242,13 +242,7 @@ column_ref_list:
 ;
 
 column_ref:
-  column_ref_expr   { $$ = make_column_ref($1, context->pool); }
-;
-
-column_ref_expr:
-  const_expr
-| var_expr
-| op_expr
+  expr   { $$ = make_column_ref($1, context->pool); }
 ;
 
 %%
