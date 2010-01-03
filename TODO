@@ -79,6 +79,7 @@ Build system:
 
 * Make use of profile-guided optimization with GCC
 * Add a build-time flag to disable assertions
+* Support GCC 4.5's interprocedural optimization mode
 
 APR:
 
