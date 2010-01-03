@@ -120,7 +120,7 @@ schema_to_sql_param_str(Schema *schema, apr_pool_t *pool)
 {
     StrBuf *buf;
     int i;
-	
+
     buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
     {
@@ -128,7 +128,7 @@ schema_to_sql_param_str(Schema *schema, apr_pool_t *pool)
             sbuf_append_char(buf, ',');
         sbuf_append_char(buf, '?');
     }
-	
+
     sbuf_append_char(buf, '\0');
     return buf->data;
 }

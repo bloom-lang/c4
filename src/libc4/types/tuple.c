@@ -146,22 +146,22 @@ tuple_to_sql_insert_str(Tuple *tuple, apr_pool_t *pool)
     Schema *schema;
     StrBuf *buf;
     int i;
-	
+
     schema = tuple_get_schema(tuple);
     buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
     {
         if (i != 0)
             sbuf_append_char(buf, ',');
-		if (schema->types[i] == TYPE_STRING)
-			sbuf_append_char(buf, '\'');
-		
+        if (schema->types[i] == TYPE_STRING)
+            sbuf_append_char(buf, '\'');
+
         (schema->text_out_funcs[i])(tuple_get_val(tuple, i), buf);
 
-		if (schema->types[i] == TYPE_STRING)
-			sbuf_append_char(buf, '\'');
+        if (schema->types[i] == TYPE_STRING)
+            sbuf_append_char(buf, '\'');
     }
-	
+
     sbuf_append_char(buf, '\0');
     return buf->data;
 }

@@ -25,10 +25,10 @@ newline         [\n\r]
 non_newline     [^\n\r]
 
 /* "self" is the set of characters that are returned to the parser as-is. */
-self			[,()\[\].;\:\+\-\*\/\%\^\=@\{\}\<\>]
+self            [,()\[\].;\:\+\-\*\/\%\^\=@\{\}\<\>]
 
-comment			("//"{non_newline}*)
-whitespace		({space}+|{comment})
+comment         ("//"{non_newline}*)
+whitespace      ({space}+|{comment})
 
 /*
  * Note that we distinguish between "table identifiers" and "variable
@@ -153,7 +153,7 @@ setup_scan_buf(const char *str, apr_size_t len, apr_pool_t *pool)
 
     scan_buf = apr_palloc(pool, len + 2);
     memcpy(scan_buf, str, len);
-	scan_buf[len] = scan_buf[len + 1] = YY_END_OF_BUFFER_CHAR;
+    scan_buf[len] = scan_buf[len + 1] = YY_END_OF_BUFFER_CHAR;
 
     return scan_buf;
 }

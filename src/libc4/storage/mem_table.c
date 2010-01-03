@@ -104,7 +104,7 @@ mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan)
 static Tuple *
 mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
 {
-	Tuple *ret_tuple;
+    Tuple *ret_tuple;
 
     if (!c4_hash_iter_next(cur->hash_iter))
         return NULL;

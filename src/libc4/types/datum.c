@@ -585,7 +585,7 @@ int8_to_buf(Datum d, StrBuf *buf)
     apr_uint32_t n32;
 
     /* Send high-order half first */
-	n32 = (apr_uint32_t) (i >> 32);
+    n32 = (apr_uint32_t) (i >> 32);
     n32 = htonl(n32);
     sbuf_append_data(buf, (char *) &n32, sizeof(n32));
 
