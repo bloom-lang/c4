@@ -183,9 +183,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 
     make_var_eq_table(rule, state);
     generate_implied_quals(rule, state);
-
     analyze_rule_location(rule, state);
-
     find_unused_vars(rule, state);
 }
 

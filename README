@@ -14,3 +14,13 @@ To run:
 
 cd build
 ./src/c4i/c4i foo.olg
+
+Code Style:
+
+* Use four spaces for indentation, not tabs.
+
+* When including headers, external headers should be included first,
+  then "c4-internal.h", and finally other required C4 headers. Within
+  each group, includes should be sorted alphabetically.
+
+* Error messages (e.g. ERROR()) should begin with a capital letter.
