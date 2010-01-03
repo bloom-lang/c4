@@ -12,6 +12,7 @@ Parser and lexer:
   code points?
 * Error reporting; location of syntax error
 * Support for assignments?
+* Warn about redundant joins: "foo(A), foo(A);" is redundant
 
 Planner:
 
