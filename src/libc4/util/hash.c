@@ -171,8 +171,7 @@ int c4_hash_iter_next(c4_hash_index_t *hi)
 
     hi->this = hi->next;
     while (!hi->this) {
-        if (hi->index > hi->ht->max)
-        {
+        if (hi->index > hi->ht->max) {
             hi->at_end = 1;
             return 0;
         }
@@ -543,10 +542,8 @@ int c4_hash_do(c4_hash_do_callback_fn_t *comp,
     c4_hash_index_t *hi;
     int rv, dorv  = 1;
 
-    hix.ht    = (c4_hash_t *)ht;
-    hix.index = 0;
-    hix.this  = NULL;
-    hix.next  = NULL;
+    hix.ht = (c4_hash_t *)ht;
+    c4_hash_iter_reset(&hix);
 
     if ((hi = c4_hash_next(&hix))) {
         /* Scan the entire table */
