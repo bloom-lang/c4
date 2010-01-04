@@ -19,7 +19,6 @@ main(void)
     c4_initialize();
 
     c4 = c4_make(0);
-    c4_start(c4);
     c4_destroy(c4);
 
     c4_terminate();

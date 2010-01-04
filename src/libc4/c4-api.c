@@ -103,6 +103,9 @@ c4_make(int port)
     c4->base_dir = get_c4_base_dir(c4->port, c4->pool, c4->tmp_pool);
     c4->sql = sqlite_init(c4);
 
+    router_start(c4->router);
+    network_start(c4->net);
+
     apr_pool_cleanup_register(pool, c4, c4_cleanup, apr_pool_cleanup_null);
 
     return c4;
@@ -189,15 +192,6 @@ C4Status
 c4_install_str(C4Instance *c4, const char *str)
 {
     router_enqueue_program(c4->router, str);
-
-    return C4_OK;
-}
-
-C4Status
-c4_start(C4Instance *c4)
-{
-    router_start(c4->router);
-    network_start(c4->net);
 
     return C4_OK;
 }

@@ -99,7 +99,6 @@ setup_c4(apr_int16_t port, const char *srcfile)
     C4Status s;
 
     c = c4_make(port);
-    c4_start(c);
     s = c4_install_file(c, srcfile);
     if (s)
         printf("Failed to install file \"%s\": %d\n", srcfile, (int) s);

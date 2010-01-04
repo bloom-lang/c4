@@ -31,6 +31,4 @@ C4Status c4_destroy(C4Instance *c4);
 C4Status c4_install_file(C4Instance *c4, const char *path);
 C4Status c4_install_str(C4Instance *c4, const char *str);
 
-C4Status c4_start(C4Instance *c4);
-
 #endif  /* C4_API_H */
