@@ -1,11 +1,6 @@
 #ifndef C4_INTERNAL_H
 #define C4_INTERNAL_H
 
-/* Enable assertions? */
-#if 0
-#define ASSERT_ENABLED
-#endif
-
 #include "c4-api.h"
 
 /* Commonly-used external headers */

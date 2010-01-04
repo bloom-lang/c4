@@ -10,6 +10,12 @@ cd build
 cmake ..
 make
 
+By default, this performs a "debug" build: assertions are enabled, and
+compiler optimizations are disabled. To disable assertions and enable
+optimizations, specify a release build when running cmake:
+
+cmake -D C4_BUILD_TYPE=Release ..
+
 To run:
 
 cd build
