@@ -10,7 +10,7 @@
 #include "c4-api.h"
 
 static void usage(void);
-static C4ClientInstance *setup_c4(apr_int16_t port, const char *srcfile);
+static C4Client *setup_c4(apr_int16_t port, const char *srcfile);
 
 int
 main(int argc, const char *argv[])
@@ -29,7 +29,7 @@ main(int argc, const char *argv[])
     apr_status_t s;
     apr_int64_t port = 0;
     char *src_string = NULL;
-    C4ClientInstance *c;
+    C4Client *c;
 
     c4_initialize();
 
@@ -92,10 +92,10 @@ usage(void)
     exit(1);
 }
 
-static C4ClientInstance *
+static C4Client *
 setup_c4(apr_int16_t port, const char *srcfile)
 {
-    C4ClientInstance *c;
+    C4Client *c;
     C4Status s;
 
     c = c4_make(port);

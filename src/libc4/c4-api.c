@@ -12,7 +12,7 @@
  * runtime. Note that it is NOT safe for the runtime to allocate resources
  * (other than sub-pools) from the client state's pool.
  */
-struct C4ClientInstance
+struct C4Client
 {
     apr_pool_t *pool;
     apr_queue_t *queue;
@@ -33,11 +33,11 @@ c4_terminate(void)
     apr_terminate();
 }
 
-C4ClientInstance *
+C4Client *
 c4_make(int port)
 {
     apr_pool_t *pool;
-    C4ClientInstance *c4;
+    C4Client *c4;
     apr_status_t s;
 
     pool = make_subpool(NULL);
@@ -54,7 +54,7 @@ c4_make(int port)
 }
 
 C4Status
-c4_destroy(C4ClientInstance *c4)
+c4_destroy(C4Client *c4)
 {
     apr_status_t s;
     apr_status_t thread_status;
@@ -77,7 +77,7 @@ c4_destroy(C4ClientInstance *c4)
  * single memory buffer without too much pain.
  */
 C4Status
-c4_install_file(C4ClientInstance *c4, const char *path)
+c4_install_file(C4Client *c4, const char *path)
 {
     apr_status_t s;
     apr_file_t *file;
@@ -129,7 +129,7 @@ done:
  * for the caller to wait until the program has been installed?
  */
 C4Status
-c4_install_str(C4ClientInstance *c4, const char *str)
+c4_install_str(C4Client *c4, const char *str)
 {
     router_enqueue_program(c4->queue, str);
 
