@@ -1,8 +1,6 @@
 #ifndef C4_INTERNAL_H
 #define C4_INTERNAL_H
 
-#include "c4-api.h"
-
 /* Commonly-used external headers */
 #include <apr_general.h>
 #include <apr_pools.h>

@@ -2,6 +2,7 @@
 #include <apr_queue.h>
 #include <apr_thread_proc.h>
 
+#include "c4-api.h"
 #include "c4-internal.h"
 #include "router.h"
 #include "runtime.h"
