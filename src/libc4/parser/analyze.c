@@ -11,7 +11,9 @@ typedef struct AnalyzeState
     apr_pool_t *pool;
     C4Instance *c4;
     AstProgram *program;
+    /* Map from table name => AstDefine */
     apr_hash_t *define_tbl;
+    /* Map from rule name => AstRule */
     apr_hash_t *rule_tbl;
 
     /* Current index for system-generated rule names */
@@ -56,7 +58,7 @@ static void add_qual(char *lhs_name, C4Node *rhs, AstOperKind op_kind,
                      AstRule *rule, AnalyzeState *state);
 static bool is_dont_care_var(C4Node *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
-static void generate_implied_quals(AstRule *rule, AnalyzeState *state);
+static void make_implied_quals(AstRule *rule, AnalyzeState *state);
 static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
 static bool is_table_defined(const char *tbl_name, AnalyzeState *state);
 static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
@@ -182,7 +184,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     }
 
     make_var_eq_table(rule, state);
-    generate_implied_quals(rule, state);
+    make_implied_quals(rule, state);
     analyze_rule_location(rule, state);
     find_unused_vars(rule, state);
 }
@@ -976,7 +978,7 @@ table_get_num_cols(const char *tbl_name, AnalyzeState *state)
  * XXX: We currently do this via a braindead algorithm.
  */
 static void
-generate_implied_quals(AstRule *rule, AnalyzeState *state)
+make_implied_quals(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
     int count;
