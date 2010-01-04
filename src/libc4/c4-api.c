@@ -17,7 +17,7 @@ struct C4Client
 {
     apr_pool_t *pool;
     apr_queue_t *queue;
-    apr_thread_t *thread;
+    apr_thread_t *runtime_thread;
 };
 
 void
@@ -49,7 +49,7 @@ c4_make(int port)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    c4->thread = c4_runtime_start(port, c4->queue, c4->pool);
+    c4->runtime_thread = c4_runtime_start(port, c4->queue, c4->pool);
 
     return c4;
 }
@@ -63,9 +63,11 @@ c4_destroy(C4Client *c4)
     s = apr_queue_term(c4->queue);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
-    s = apr_thread_join(&thread_status, c4->thread);
+    s = apr_thread_join(&thread_status, c4->runtime_thread);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
+    if (thread_status != APR_SUCCESS)
+        FAIL_APR(thread_status);
 
     apr_pool_destroy(c4->pool);
     return C4_OK;
