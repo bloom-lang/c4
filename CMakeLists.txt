@@ -23,7 +23,7 @@ find_package(Bison REQUIRED)
 find_package(Flex REQUIRED)
 find_package(SQLite3 REQUIRED)
 
-set(CMAKE_C_FLAGS "-g -Wall -W -Wmissing-prototypes -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra -Wdeclaration-after-statement -Wmissing-declarations -Wmissing-prototypes -Winline -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
 
 if(CMAKE_BUILD_TYPE STREQUAL Release)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
