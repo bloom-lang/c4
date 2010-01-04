@@ -12,6 +12,8 @@ Parser and lexer:
 * Error reporting; location of syntax error
 * Support for assignments?
 * Warn about redundant joins: "foo(A), foo(A);" is redundant
+* Constraints on aggregate usage: if an agg is used in one rule head
+  but not another for the same table, what is to be done?
 
 Planner:
 
