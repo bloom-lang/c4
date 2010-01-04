@@ -3,10 +3,11 @@
 
 # This module defines
 # APR_INCLUDES, where to find apr.h, etc.
-# APR_LIBS, linker switches to use with ld to link against apr
+# APR_LIBS, linker switches to use with ld to link against APR
 # APR_EXTRALIBS, additional libraries to link against
 # APR_CFLAGS, the flags to use to compile
 # APR_FOUND, set to TRUE if found, FALSE otherwise
+# APR_VERSION, the version of APR that was found
 
 set(APR_FOUND FALSE)
 
@@ -21,29 +22,30 @@ macro(_apr_invoke _varname _regexp)
     )
 
     if(_apr_failed)
-        message(FATAL_ERROR "apr-1-config ${ARGN} failed")
-    else(_apr_failed)
+        message(FATAL_ERROR "${APR_CONFIG_EXECUTABLE} ${ARGN} failed")
+    else()
         string(REGEX REPLACE "[\r\n]"  "" _apr_output "${_apr_output}")
         string(REGEX REPLACE " +$"     "" _apr_output "${_apr_output}")
 
         if(NOT ${_regexp} STREQUAL "")
             string(REGEX REPLACE "${_regexp}" " " _apr_output "${_apr_output}")
-        endif(NOT ${_regexp} STREQUAL "")
+        endif()
 
         # XXX: We don't want to invoke separate_arguments() for APR_CFLAGS;
         # just leave as-is
         if(NOT ${_varname} STREQUAL "APR_CFLAGS")
             separate_arguments(_apr_output)
-        endif(NOT ${_varname} STREQUAL "APR_CFLAGS")
+        endif()
 
         set(${_varname} "${_apr_output}")
-    endif(_apr_failed)
+    endif()
 endmacro(_apr_invoke)
 
 _apr_invoke(APR_CFLAGS     ""        --cppflags --cflags)
 _apr_invoke(APR_INCLUDES  "(^| )-I" --includes)
 _apr_invoke(APR_LIBS      ""        --link-ld)
 _apr_invoke(APR_EXTRALIBS "(^| )-l" --libs)
+_apr_invoke(APR_VERSION   ""        --version)
 
 INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(APR DEFAULT_MSG APR_INCLUDES APR_LIBS)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(APR DEFAULT_MSG APR_INCLUDES APR_LIBS APR_VERSION)
