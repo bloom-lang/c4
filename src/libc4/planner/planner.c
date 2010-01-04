@@ -45,7 +45,7 @@ program_plan_make(apr_pool_t *pool)
 }
 
 static PlannerState *
-planner_state_make(apr_pool_t *plan_pool, C4Instance *c4)
+planner_state_make(apr_pool_t *plan_pool, C4Runtime *c4)
 {
     PlannerState *state;
     apr_pool_t *tmp_pool;
@@ -336,7 +336,7 @@ plan_rule(AstRule *rule, PlannerState *state)
 }
 
 ProgramPlan *
-plan_program(AstProgram *ast, apr_pool_t *pool, C4Instance *c4)
+plan_program(AstProgram *ast, apr_pool_t *pool, C4Runtime *c4)
 {
     PlannerState *state;
     ProgramPlan *pplan;

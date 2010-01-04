@@ -55,7 +55,7 @@ typedef struct ScanPlan
     AstJoinClause *scan_rel;
 } ScanPlan;
 
-ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, C4Instance *c4);
+ProgramPlan *plan_program(AstProgram *ast, apr_pool_t *pool, C4Runtime *c4);
 void print_plan_info(PlanNode *plan, apr_pool_t *p);
 
 #endif  /* PLANNER_H */

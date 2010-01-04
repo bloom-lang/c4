@@ -7,7 +7,7 @@
 
 typedef struct C4Network C4Network;
 
-C4Network *network_make(C4Instance *c4, int port);
+C4Network *network_make(C4Runtime *c4, int port);
 void network_start(C4Network *net);
 void network_destroy(C4Network *net);
 

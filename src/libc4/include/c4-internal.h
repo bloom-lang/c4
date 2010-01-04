@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct C4Instance C4Instance;
+typedef struct C4Runtime C4Runtime;
 
 /* Commonly-used internal headers */
 #include "types/datum.h"
@@ -21,7 +21,7 @@ typedef struct C4Instance C4Instance;
  * Private runtime state. This is not visible to the client, and can be safely
  * modified by the router thread.
  */
-struct C4Instance
+struct C4Runtime
 {
     /*
      * The root APR pool for this instance of C4. This is created when the

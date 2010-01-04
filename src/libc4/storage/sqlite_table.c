@@ -12,7 +12,7 @@ static void sqlite_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
 static Tuple *sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
 
 SQLiteTable *
-sqlite_table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
+sqlite_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 {
     SQLiteTable *tbl;
 

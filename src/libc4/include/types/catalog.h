@@ -39,7 +39,7 @@ typedef struct TableDef
     struct OpChainList *op_chain_list;
 } TableDef;
 
-C4Catalog *cat_make(C4Instance *c4);
+C4Catalog *cat_make(C4Runtime *c4);
 
 void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
                       List *schema, List *key_list);

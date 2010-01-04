@@ -5,7 +5,7 @@
 static void
 insert_invoke(Operator *op, Tuple *t)
 {
-    C4Instance *c4 = op->chain->c4;
+    C4Runtime *c4 = op->chain->c4;
     InsertOperator *insert_op = (InsertOperator *) op;
     ExprEvalContext *exec_cxt;
     Tuple *proj_tuple;

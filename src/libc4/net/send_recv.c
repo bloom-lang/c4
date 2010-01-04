@@ -15,7 +15,7 @@
 
 struct RecvThread
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *pool;
     char *remote_loc;
 
@@ -31,7 +31,7 @@ struct RecvThread
 
 struct SendThread
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *pool;
     char *remote_loc;
 
@@ -56,7 +56,7 @@ static void create_send_socket(SendThread *st);
 static void parse_loc_spec(const char *loc_spec, char *host, int *port_p);
 
 RecvThread *
-recv_thread_make(C4Instance *c4, apr_socket_t *sock, apr_pool_t *pool)
+recv_thread_make(C4Runtime *c4, apr_socket_t *sock, apr_pool_t *pool)
 {
     RecvThread *rt;
 
@@ -149,7 +149,7 @@ recv_thread_get_loc(RecvThread *rt)
  * function is invoked by the router thread and hence shouldn't block.
  */
 SendThread *
-send_thread_make(C4Instance *c4, const char *remote_loc, apr_pool_t *pool)
+send_thread_make(C4Runtime *c4, const char *remote_loc, apr_pool_t *pool)
 {
     apr_status_t s;
     SendThread *st;

@@ -15,7 +15,7 @@
 
 struct C4Router
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *pool;
 
     /* Map from table name => OpChainList */
@@ -54,7 +54,7 @@ static void router_enqueue(apr_queue_t *queue, WorkItem *wi);
 static void compute_fixpoint(C4Router *router);
 
 C4Router *
-router_make(C4Instance *c4, apr_queue_t *queue)
+router_make(C4Runtime *c4, apr_queue_t *queue)
 {
     C4Router *router;
 
@@ -171,7 +171,7 @@ compute_fixpoint(C4Router *router)
 static void
 route_program(C4Router *router, const char *src)
 {
-    C4Instance *c4 = router->c4;
+    C4Runtime *c4 = router->c4;
     AstProgram *ast;
     ProgramPlan *plan;
 

@@ -20,7 +20,7 @@ typedef struct OpChain OpChain;
 struct OpChain
 {
     apr_pool_t *pool;
-    C4Instance *c4;
+    C4Runtime *c4;
     TableDef *delta_tbl;
     AstTableRef *head;
     Operator *chain_start;

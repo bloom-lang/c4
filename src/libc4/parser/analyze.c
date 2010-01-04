@@ -9,7 +9,7 @@
 typedef struct AnalyzeState
 {
     apr_pool_t *pool;
-    C4Instance *c4;
+    C4Runtime *c4;
     AstProgram *program;
     /* Map from table name => AstDefine */
     apr_hash_t *define_tbl;
@@ -713,7 +713,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
  * modified.
  */
 void
-analyze_ast(AstProgram *program, apr_pool_t *pool, C4Instance *c4)
+analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
 {
     AnalyzeState *state;
     ListCell *lc;

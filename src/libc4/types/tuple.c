@@ -199,7 +199,7 @@ tuple_from_buf(StrBuf *buf, TableDef *tbl_def)
 }
 
 bool
-tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Instance *c4)
+tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Runtime *c4)
 {
     Datum tuple_addr;
 

@@ -54,7 +54,7 @@ void tuple_unpin(Tuple *tuple);
 bool tuple_equal(Tuple *t1, Tuple *t2);
 apr_uint32_t tuple_hash(Tuple *t);
 
-bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Instance *c4);
+bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Runtime *c4);
 
 char *tuple_to_str(Tuple *tuple, apr_pool_t *pool);
 char *tuple_to_sql_insert_str(Tuple *tuple, apr_pool_t *pool);

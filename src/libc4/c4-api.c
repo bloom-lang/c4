@@ -49,7 +49,7 @@ c4_make(int port)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    c4->thread = c4_instance_start(port, c4->queue, c4->pool);
+    c4->thread = c4_runtime_start(port, c4->queue, c4->pool);
 
     return c4;
 }

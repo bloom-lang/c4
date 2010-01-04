@@ -5,7 +5,7 @@ static apr_status_t sqlite_cleanup(void *data);
 static apr_status_t sqlite_pstmt_cleanup(void *data);
 
 SQLiteState *
-sqlite_init(C4Instance *c4)
+sqlite_init(C4Runtime *c4)
 {
     SQLiteState *sql;
     char *db_fname;

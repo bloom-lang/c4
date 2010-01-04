@@ -7,7 +7,7 @@
 static apr_status_t abstract_table_cleanup(void *data);
 
 AbstractTable *
-table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
+table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 {
     AbstractTable *tbl;
 
@@ -30,7 +30,7 @@ table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
 
 AbstractTable *
 table_make_super(apr_size_t sz, TableDef *def,
-                 C4Instance *c4, table_insert_f insert_f,
+                 C4Runtime *c4, table_insert_f insert_f,
                  table_cleanup_f cleanup_f,
                  table_scan_make_f scan_make_f,
                  table_scan_reset_f scan_reset_f,

@@ -5,8 +5,8 @@
 #include "storage/sqlite.h"
 #include "types/catalog.h"
 
-static void * APR_THREAD_FUNC instance_thread_main(apr_thread_t *thread,
-                                                   void *data);
+static void * APR_THREAD_FUNC runtime_thread_main(apr_thread_t *thread,
+                                                  void *data);
 
 static Datum
 get_local_addr(int port, apr_pool_t *tmp_pool)
@@ -66,12 +66,12 @@ get_c4_base_dir(int port, apr_pool_t *pool, apr_pool_t *tmp_pool)
     return base_dir;
 }
 
-static C4Instance *
-c4_instance_make(int port, apr_queue_t *queue)
+static C4Runtime *
+c4_runtime_make(int port, apr_queue_t *queue)
 {
     apr_status_t s;
     apr_pool_t *pool;
-    C4Instance *c4;
+    C4Runtime *c4;
 
     s = apr_pool_create(&pool, NULL);
     if (s != APR_SUCCESS)
@@ -109,7 +109,7 @@ typedef struct RuntimeInitData
  * given pool; the C4 runtime itself uses a distinct top-level APR pool.
  */
 apr_thread_t *
-c4_instance_start(int port, apr_queue_t *queue, apr_pool_t *pool)
+c4_runtime_start(int port, apr_queue_t *queue, apr_pool_t *pool)
 {
     apr_status_t s;
     apr_threadattr_t *thread_attr;
@@ -124,7 +124,7 @@ c4_instance_start(int port, apr_queue_t *queue, apr_pool_t *pool)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    s = apr_thread_create(&thread, thread_attr, instance_thread_main,
+    s = apr_thread_create(&thread, thread_attr, runtime_thread_main,
                           init_data, pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
@@ -133,12 +133,12 @@ c4_instance_start(int port, apr_queue_t *queue, apr_pool_t *pool)
 }
 
 static void * APR_THREAD_FUNC
-instance_thread_main(apr_thread_t *thread, void *data)
+runtime_thread_main(apr_thread_t *thread, void *data)
 {
     RuntimeInitData *init_data = (RuntimeInitData *) data;
-    C4Instance *c4;
+    C4Runtime *c4;
 
-    c4 = c4_instance_make(init_data->port, init_data->queue);
+    c4 = c4_runtime_make(init_data->port, init_data->queue);
     ol_free(init_data);
 
     network_start(c4->net);

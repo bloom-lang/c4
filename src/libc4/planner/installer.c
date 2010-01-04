@@ -9,7 +9,7 @@
 
 typedef struct InstallState
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *tmp_pool;
 } InstallState;
 
@@ -176,7 +176,7 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
 }
 
 static InstallState *
-istate_make(apr_pool_t *pool, C4Instance *c4)
+istate_make(apr_pool_t *pool, C4Runtime *c4)
 {
     InstallState *istate;
 
@@ -188,7 +188,7 @@ istate_make(apr_pool_t *pool, C4Instance *c4)
 }
 
 void
-install_plan(ProgramPlan *plan, apr_pool_t *pool, C4Instance *c4)
+install_plan(ProgramPlan *plan, apr_pool_t *pool, C4Runtime *c4)
 {
     InstallState *istate;
 

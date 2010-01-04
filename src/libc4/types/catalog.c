@@ -8,7 +8,7 @@
 
 struct C4Catalog
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *pool;
 
     /* A map from table names => TableDef */
@@ -16,7 +16,7 @@ struct C4Catalog
 };
 
 C4Catalog *
-cat_make(C4Instance *c4)
+cat_make(C4Runtime *c4)
 {
     apr_pool_t *pool;
     C4Catalog *cat;

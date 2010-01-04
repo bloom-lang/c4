@@ -4,13 +4,13 @@
 
 struct C4Logger
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     /* This is reset on each call to c4_log() */
     apr_pool_t *tmp_pool;
 };
 
 C4Logger *
-logger_make(C4Instance *c4)
+logger_make(C4Runtime *c4)
 {
     C4Logger *logger;
 
@@ -21,7 +21,7 @@ logger_make(C4Instance *c4)
 }
 
 void
-c4_log(C4Instance *c4, const char *fmt, ...)
+c4_log(C4Runtime *c4, const char *fmt, ...)
 {
     va_list args;
     char *str;
@@ -35,14 +35,14 @@ c4_log(C4Instance *c4, const char *fmt, ...)
 }
 
 char *
-log_tuple(C4Instance *c4, Tuple *tuple)
+log_tuple(C4Runtime *c4, Tuple *tuple)
 {
     char *tuple_str = tuple_to_str(tuple, c4->log->tmp_pool);
     return apr_pstrcat(c4->log->tmp_pool, "{", tuple_str, "}", NULL);
 }
 
 char *
-log_datum(C4Instance *c4, Datum datum, DataType type)
+log_datum(C4Runtime *c4, Datum datum, DataType type)
 {
     StrBuf *sbuf;
 

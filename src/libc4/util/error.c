@@ -23,7 +23,7 @@ apr_error(apr_status_t s, const char *file, int line_num)
 }
 
 void
-sqlite_error(C4Instance *c4, const char *file, int line_num)
+sqlite_error(C4Runtime *c4, const char *file, int line_num)
 {
     const char *errmsg;
 

@@ -11,7 +11,7 @@ typedef struct SQLiteTable
     sqlite3_stmt *insert_stmt;
 } SQLiteTable;
 
-SQLiteTable *sqlite_table_make(TableDef *def, C4Instance *c4,
+SQLiteTable *sqlite_table_make(TableDef *def, C4Runtime *c4,
                                apr_pool_t *pool);
 
 #endif  /* SQLITE_TABLE_H */

@@ -9,7 +9,7 @@
 
 typedef struct C4Router C4Router;
 
-C4Router *router_make(C4Instance *c4, apr_queue_t *queue);
+C4Router *router_make(C4Runtime *c4, apr_queue_t *queue);
 void router_main_loop(C4Router *router);
 apr_queue_t *router_get_queue(C4Router *router);
 

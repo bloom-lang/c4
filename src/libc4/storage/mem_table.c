@@ -11,7 +11,7 @@ static int mem_table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
 static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t *klen);
 
 MemTable *
-mem_table_make(TableDef *def, C4Instance *c4, apr_pool_t *pool)
+mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 {
     MemTable *tbl;
 

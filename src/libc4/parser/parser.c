@@ -53,7 +53,7 @@ parser_destroy(C4Parser *parser)
 }
 
 AstProgram *
-parse_str(const char *str, apr_pool_t *pool, C4Instance *c4)
+parse_str(const char *str, apr_pool_t *pool, C4Runtime *c4)
 {
     C4Parser *parser;
     AstProgram *ast;

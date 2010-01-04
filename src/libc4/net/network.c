@@ -8,7 +8,7 @@
 
 struct C4Network
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     apr_pool_t *pool;
 
     /* Thread info for server socket thread */
@@ -38,7 +38,7 @@ static SendThread *get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_d
  * port to listen on; 0 means to use an ephemeral port.
  */
 C4Network *
-network_make(C4Instance *c4, int port)
+network_make(C4Runtime *c4, int port)
 {
     apr_status_t s;
     apr_pool_t *pool;

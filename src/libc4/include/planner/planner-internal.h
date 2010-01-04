@@ -6,7 +6,7 @@
 
 typedef struct PlannerState
 {
-    C4Instance *c4;
+    C4Runtime *c4;
     ProgramPlan *plan;
     List *join_set_todo;
     List *qual_set_todo;
