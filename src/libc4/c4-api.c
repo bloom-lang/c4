@@ -1,12 +1,23 @@
 #include <apr_file_io.h>
+#include <apr_queue.h>
+#include <apr_thread_proc.h>
 
 #include "c4-internal.h"
-#include "net/network.h"
 #include "router.h"
-#include "storage/sqlite.h"
-#include "types/catalog.h"
+#include "runtime.h"
 
-static apr_status_t c4_cleanup(void *data);
+/*
+ * Client state. This is manipulated by C4 client APIs; they mostly insert
+ * elements into the thread-safe queue, which is consumed by the C4
+ * runtime. Note that it is NOT safe for the runtime to allocate resources
+ * (other than sub-pools) from the client state's pool.
+ */
+struct C4ClientInstance
+{
+    apr_pool_t *pool;
+    apr_queue_t *queue;
+    apr_thread_t *thread;
+};
 
 void
 c4_initialize(void)
@@ -22,111 +33,40 @@ c4_terminate(void)
     apr_terminate();
 }
 
-static Datum
-get_local_addr(int port, apr_pool_t *tmp_pool)
-{
-    char buf[APRMAXHOSTLEN + 1];
-    char addr[APRMAXHOSTLEN + 1 + 20];
-    apr_status_t s;
-
-    s = apr_gethostname(buf, sizeof(buf), tmp_pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    snprintf(addr, sizeof(addr), "tcp:%s:%d", buf, port);
-    printf("Local address = %s\n", addr);
-    return string_from_str(addr);
-}
-
-static char *
-get_user_home_dir(apr_pool_t *pool)
-{
-    apr_status_t s;
-    apr_uid_t uid;
-    apr_gid_t gid;
-    char *user_name;
-    char *home_dir;
-
-    s = apr_uid_current(&uid, &gid, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    s = apr_uid_name_get(&user_name, uid, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    s = apr_uid_homepath_get(&home_dir, user_name, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    return home_dir;
-}
-
-static char *
-get_c4_base_dir(int port, apr_pool_t *pool, apr_pool_t *tmp_pool)
-{
-    char *home_dir;
-    char *base_dir;
-    apr_status_t s;
-
-    home_dir = get_user_home_dir(tmp_pool);
-    base_dir = apr_psprintf(pool, "%s/c4_home/tcp_%d",
-                            home_dir, port);
-    s = apr_dir_make_recursive(base_dir, APR_FPROT_OS_DEFAULT, tmp_pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    printf("c4: Using base_dir = %s\n", base_dir);
-    return base_dir;
-}
-
-C4Instance *
+C4ClientInstance *
 c4_make(int port)
 {
-    apr_status_t s;
     apr_pool_t *pool;
-    C4Instance *c4;
+    C4ClientInstance *c4;
+    apr_status_t s;
 
-    s = apr_pool_create(&pool, NULL);
+    pool = make_subpool(NULL);
+    c4 = apr_pcalloc(pool, sizeof(*c4));
+    c4->pool = pool;
+
+    s = apr_queue_create(&c4->queue, 256, c4->pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    c4 = apr_pcalloc(pool, sizeof(*c4));
-    c4->pool = pool;
-    c4->tmp_pool = make_subpool(c4->pool);
-    c4->log = logger_make(c4);
-    c4->cat = cat_make(c4);
-    c4->router = router_make(c4);
-    c4->net = network_make(c4, port);
-    c4->port = network_get_port(c4->net);
-    c4->local_addr = get_local_addr(c4->port, c4->tmp_pool);
-    c4->base_dir = get_c4_base_dir(c4->port, c4->pool, c4->tmp_pool);
-    c4->sql = sqlite_init(c4);
-
-    router_start(c4->router);
-    network_start(c4->net);
-
-    apr_pool_cleanup_register(pool, c4, c4_cleanup, apr_pool_cleanup_null);
+    c4->thread = c4_instance_start(port, c4->queue, c4->pool);
 
     return c4;
 }
 
-static apr_status_t
-c4_cleanup(void *data)
-{
-    C4Instance *c4 = (C4Instance *) data;
-
-    network_destroy(c4->net);
-    router_destroy(c4->router);
-
-    return APR_SUCCESS;
-}
-
 C4Status
-c4_destroy(C4Instance *c4)
+c4_destroy(C4ClientInstance *c4)
 {
-    apr_pool_destroy(c4->pool);
+    apr_status_t s;
+    apr_status_t thread_status;
 
+    s = apr_queue_term(c4->queue);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+    s = apr_thread_join(&thread_status, c4->thread);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    apr_pool_destroy(c4->pool);
     return C4_OK;
 }
 
@@ -137,7 +77,7 @@ c4_destroy(C4Instance *c4)
  * single memory buffer without too much pain.
  */
 C4Status
-c4_install_file(C4Instance *c4, const char *path)
+c4_install_file(C4ClientInstance *c4, const char *path)
 {
     apr_status_t s;
     apr_file_t *file;
@@ -189,9 +129,9 @@ done:
  * for the caller to wait until the program has been installed?
  */
 C4Status
-c4_install_str(C4Instance *c4, const char *str)
+c4_install_str(C4ClientInstance *c4, const char *str)
 {
-    router_enqueue_program(c4->router, str);
+    router_enqueue_program(c4->queue, str);
 
     return C4_OK;
 }

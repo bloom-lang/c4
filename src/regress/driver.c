@@ -14,7 +14,7 @@ static char *test_files[] = {
 int
 main(void)
 {
-    C4Instance *c4;
+    C4ClientInstance *c4;
 
     c4_initialize();
 

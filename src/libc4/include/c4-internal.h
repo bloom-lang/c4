@@ -11,25 +11,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct C4Instance C4Instance;
+
 /* Commonly-used internal headers */
 #include "types/datum.h"
 #include "util/error.h"
 #include "util/logger.h"
 #include "util/mem.h"
 
+/*
+ * Private runtime state. This is not visible to the client, and can be safely
+ * modified by the router thread.
+ */
 struct C4Instance
 {
     /*
-     * The root APR pool for this instance of C4. This is created when
-     * the instance is created, and destroyed after the instance has
-     * shutdown.
+     * The root APR pool for this instance of C4. This is created when the
+     * instance is created, and destroyed when the instance is shutdown.
      */
     apr_pool_t *pool;
 
     /*
-     * Per-fixpoint APR pool for temporary allocations. This is
-     * cleared at the end of each fixpoint. Given the need, we could
-     * introduce more fine-grained temporary pools.
+     * Per-fixpoint APR pool for temporary allocations. This is cleared at the
+     * end of each fixpoint.
      */
     apr_pool_t *tmp_pool;
 

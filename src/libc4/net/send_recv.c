@@ -25,6 +25,8 @@ struct RecvThread
     apr_socket_t *sock;
     char tbl_name[MAX_TABLE_NAME + 1];
     StrBuf *buf;
+
+    apr_queue_t *router_queue;
 };
 
 struct SendThread
@@ -39,7 +41,7 @@ struct SendThread
     apr_socket_t *sock;
     StrBuf *buf;
 
-    apr_queue_t *queue;
+    apr_queue_t *input_queue;
 };
 
 typedef struct SendMessage
@@ -64,6 +66,7 @@ recv_thread_make(C4Instance *c4, apr_socket_t *sock, apr_pool_t *pool)
     rt->sock = sock;
     rt->remote_loc = socket_get_remote_loc(sock, pool);
     rt->buf = sbuf_make(pool);
+    rt->router_queue = router_get_queue(c4->router);
 
     return rt;
 }
@@ -124,7 +127,7 @@ recv_thread_main(apr_thread_t *thread, void *data)
         /* Convert to in-memory tuple format, route tuple */
         tbl_def = cat_get_table(rt->c4->cat, rt->tbl_name);    /* Thread-safety? */
         tuple = tuple_from_buf(rt->buf, tbl_def);
-        router_enqueue_tuple(rt->c4->router, tuple, tbl_def);
+        router_enqueue_tuple(rt->router_queue, tuple, tbl_def);
         tuple_unpin(tuple);
     }
 
@@ -157,7 +160,7 @@ send_thread_make(C4Instance *c4, const char *remote_loc, apr_pool_t *pool)
     st->remote_loc = apr_pstrdup(pool, remote_loc);
     st->buf = sbuf_make(st->pool);
 
-    s = apr_queue_create(&st->queue, 128, st->pool);
+    s = apr_queue_create(&st->input_queue, 128, st->pool);
     if (s != APR_SUCCESS)
         FAIL();
 
@@ -199,7 +202,7 @@ send_thread_main(apr_thread_t *thread, void *data)
         char *tbl_name;
         apr_size_t tbl_len;
 
-        s = apr_queue_pop(st->queue, (void **) &msg);
+        s = apr_queue_pop(st->input_queue, (void **) &msg);
 
         if (s == APR_EINTR)
             continue;
@@ -248,7 +251,7 @@ send_thread_enqueue(SendThread *st, Tuple *tuple, TableDef *tbl_def)
 
     while (true)
     {
-        apr_status_t s = apr_queue_push(st->queue, msg);
+        apr_status_t s = apr_queue_push(st->input_queue, msg);
 
         if (s == APR_EINTR)
             continue;

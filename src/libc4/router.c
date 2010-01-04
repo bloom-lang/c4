@@ -1,6 +1,4 @@
 #include <apr_hash.h>
-#include <apr_queue.h>
-#include <apr_thread_proc.h>
 
 #include "c4-internal.h"
 #include "net/network.h"
@@ -23,11 +21,7 @@ struct C4Router
     /* Map from table name => OpChainList */
     apr_hash_t *op_chain_tbl;
 
-    /* Thread info for router thread */
-    apr_threadattr_t *thread_attr;
-    apr_thread_t *thread;
-
-    /* Queue of to-be-routed tuples inserted by clients */
+    /* Queue of to-be-performed external actions inserted by other threads */
     apr_queue_t *queue;
 
     /* Derived tuples computed within the current fixpoint; to-be-routed */
@@ -41,8 +35,7 @@ struct C4Router
 typedef enum WorkItemKind
 {
     WI_TUPLE,
-    WI_PROGRAM,
-    WI_SHUTDOWN
+    WI_PROGRAM
 } WorkItemKind;
 
 typedef struct WorkItem
@@ -57,58 +50,30 @@ typedef struct WorkItem
     char *program_src;
 } WorkItem;
 
-static void * APR_THREAD_FUNC router_thread_start(apr_thread_t *thread, void *data);
-static void router_enqueue(C4Router *router, WorkItem *wi);
+static void router_enqueue(apr_queue_t *queue, WorkItem *wi);
 static void compute_fixpoint(C4Router *router);
 
 C4Router *
-router_make(C4Instance *c4)
+router_make(C4Instance *c4, apr_queue_t *queue)
 {
-    apr_status_t s;
-    apr_pool_t *pool;
     C4Router *router;
 
-    pool = make_subpool(c4->pool);
-    router = apr_pcalloc(pool, sizeof(*router));
+    router = apr_pcalloc(c4->pool, sizeof(*router));
     router->c4 = c4;
-    router->pool = pool;
-    router->op_chain_tbl = apr_hash_make(pool);
-    router->route_buf = tuple_buf_make(4096, pool);
-    router->net_buf = tuple_buf_make(1024, pool);
+    router->pool = c4->pool;
+    router->op_chain_tbl = apr_hash_make(router->pool);
+    router->route_buf = tuple_buf_make(4096, router->pool);
+    router->net_buf = tuple_buf_make(1024, router->pool);
     router->ntuple_routed = 0;
-
-    s = apr_queue_create(&router->queue, 256, router->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
+    router->queue = queue;
 
     return router;
 }
 
-void
-router_destroy(C4Router *router)
+apr_queue_t *
+router_get_queue(C4Router *router)
 {
-    apr_status_t s;
-
-    s = apr_queue_term(router->queue);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    apr_pool_destroy(router->pool);
-}
-
-void
-router_start(C4Router *router)
-{
-    apr_status_t s;
-
-    s = apr_threadattr_create(&router->thread_attr, router->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    s = apr_thread_create(&router->thread, router->thread_attr,
-                          router_thread_start, router, router->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
+    return router->queue;
 }
 
 /*
@@ -121,7 +86,7 @@ router_start(C4Router *router)
 void
 router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
-#if 0
+#if 1
     c4_log(router->c4, "%s: %s (=> %s)",
            __func__, log_tuple(router->c4, tuple), tbl_def->name);
 #endif
@@ -228,9 +193,6 @@ workitem_destroy(WorkItem *wi)
             ol_free(wi->program_src);
             break;
 
-        case WI_SHUTDOWN:
-            break;
-
         default:
             ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
     }
@@ -238,11 +200,9 @@ workitem_destroy(WorkItem *wi)
     ol_free(wi);
 }
 
-static void * APR_THREAD_FUNC
-router_thread_start(apr_thread_t *thread, void *data)
+void
+router_main_loop(C4Router *router)
 {
-    C4Router *router = (C4Router *) data;
-
     while (true)
     {
         apr_status_t s;
@@ -267,10 +227,6 @@ router_thread_start(apr_thread_t *thread, void *data)
                 route_program(router, wi->program_src);
                 break;
 
-            case WI_SHUTDOWN:
-                /* XXX: TODO */
-                break;
-
             default:
                 ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
         }
@@ -278,13 +234,10 @@ router_thread_start(apr_thread_t *thread, void *data)
         compute_fixpoint(router);
         workitem_destroy(wi);
     }
-
-    apr_thread_exit(thread, APR_SUCCESS);
-    return NULL;        /* Return value ignored */
 }
 
 void
-router_enqueue_program(C4Router *router, const char *src)
+router_enqueue_program(apr_queue_t *queue, const char *src)
 {
     WorkItem *wi;
 
@@ -292,18 +245,13 @@ router_enqueue_program(C4Router *router, const char *src)
     wi->kind = WI_PROGRAM;
     wi->program_src = ol_strdup(src);
 
-    router_enqueue(router, wi);
+    router_enqueue(queue, wi);
 }
 
 void
-router_enqueue_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
+router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple, TableDef *tbl_def)
 {
     WorkItem *wi;
-
-#if 0
-    c4_log(router->c4, "%s: %s",
-           __func__, log_tuple(router->c4, tuple));
-#endif
 
     /* The tuple is unpinned when the router is finished with it */
     tuple_pin(tuple);
@@ -313,7 +261,7 @@ router_enqueue_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
     wi->tuple = tuple;
     wi->tbl_def = tbl_def;
 
-    router_enqueue(router, wi);
+    router_enqueue(queue, wi);
 }
 
 /*
@@ -323,12 +271,13 @@ router_enqueue_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
  * had a chance to catchup.
  */
 static void
-router_enqueue(C4Router *router, WorkItem *wi)
+router_enqueue(apr_queue_t *queue, WorkItem *wi)
 {
     while (true)
     {
-        apr_status_t s = apr_queue_push(router->queue, wi);
+        apr_status_t s = apr_queue_push(queue, wi);
 
+        /* XXX: should propagate APR_EOF failure back to client */
         if (s == APR_EINTR)
             continue;
         if (s == APR_SUCCESS)
