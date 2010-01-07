@@ -100,7 +100,7 @@ socket_send_str(apr_socket_t *sock, const char *str)
 void
 socket_set_non_block(apr_socket_t *sock)
 {
-    apr_socket_t s;
+    apr_status_t s;
 
     s = apr_socket_opt_set(sock, APR_SO_NONBLOCK, 1);
     if (s != APR_SUCCESS)
