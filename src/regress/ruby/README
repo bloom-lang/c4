@@ -1,0 +1,6 @@
+Set DYLD_LIBRARY_PATH to contain the directory with libc4.dylib,
+or whatever is appropriate on your OS.
+
+You will also need the "ffi" gem installed:
+
+    gem install ffi

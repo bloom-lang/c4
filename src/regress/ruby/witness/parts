@@ -1,0 +1,17 @@
+bike,headset
+bike,hub
+bike,tire
+bike,wheel
+bike,fork
+bike,bottom bracket
+bike,frame
+bike,seat
+bike,bars
+bike,spoke
+wheel,tire
+wheel,hub
+wheel,spoke
+headset,bars
+frame,fork
+frame,bottom bracket
+

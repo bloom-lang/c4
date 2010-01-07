@@ -1,0 +1,13 @@
+define(q, keys(0), {string, string});
+define(p, keys(0), {string, string});
+define(r, keys(0), {string, string});
+
+r(A, C) :-
+  p(A, B),
+  q(B, C);
+
+p("foo", "bar");
+q("bar", "baz");
+q("bar", "bam");
+
+\dump r

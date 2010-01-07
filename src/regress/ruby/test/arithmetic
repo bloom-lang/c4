@@ -1,0 +1,6 @@
+define(a, keys(0), {int8});
+
+a(0);
+
+a(X+1) :- a(X), X < 20;
+\dump a

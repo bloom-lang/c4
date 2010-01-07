@@ -1,0 +1,23 @@
+define(assembly, keys(0, 1), {string, string});
+define(subpart, keys(0, 1), {string, string});
+
+subpart(A, B) :-
+  assembly(A, B);
+
+subpart(A, B) :-
+  assembly(A, C),
+  subpart(C, B);
+
+
+assembly("wheel", "spoke");
+assembly("wheel", "tire");
+assembly("wheel", "hub");
+assembly("frame", "fork");
+assembly("frame", "bottom bracket");
+assembly("headset", "bars");
+assembly("bike", "wheel");
+assembly("bike", "frame");
+assembly("bike", "headset");
+assembly("bike", "seat");
+
+\dump subpart
