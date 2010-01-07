@@ -17,7 +17,7 @@ void router_enqueue_program(apr_queue_t *queue, const char *src);
 void router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple,
                           TableDef *tbl_def);
 
-char *router_enqueue_dump_table(apr_queue_t *queue, const char *table,
+char *router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
                                 apr_pool_t *pool);
 
 /* Internal APIs: XXX: clearer naming */
