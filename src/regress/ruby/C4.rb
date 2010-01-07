@@ -1,6 +1,10 @@
 require 'rubygems'
 require 'ffi'
 
+# TODO:
+# * Invoke c4_initialize() once at startup-time, and c4_terminate()
+#   once at shutdown
+# * Arrange to invoke c4_destroy() when C4 object is GC'd
 class C4
   module C4Lib
     extend FFI::Library
@@ -33,7 +37,7 @@ class C4
     C4Lib.c4_dump_table(@c4, tbl_name)
   end
 
-  def finish
+  def destroy
     C4Lib.c4_destroy(@c4)
     C4Lib.c4_terminate
   end

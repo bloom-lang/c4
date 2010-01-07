@@ -6,7 +6,7 @@ class TestTuple < Test::Unit::TestCase
   class TestPair
     attr_reader :program, :commands, :witness
     def initialize(name)
-      @commands = Array.new
+      @commands = []
       @program = file_to_str("test/" + name)
       # sort the records on both sides.  this is ugly.
       @witness = file_to_str("witness/" + name).split("\n").sort.join("\n")
@@ -29,6 +29,11 @@ class TestTuple < Test::Unit::TestCase
   
   def setup
     @c4 = C4.new
+  end
+
+  def teardown
+    # XXX: currently broken
+    # @c4.destroy
   end
 
   def test_loop
