@@ -32,4 +32,7 @@ C4Status c4_destroy(C4Client *c4);
 C4Status c4_install_file(C4Client *c4, const char *path);
 C4Status c4_install_str(C4Client *c4, const char *str);
 
+char *c4_dump_table(C4Client *c4, const char *tbl_name);
+
+
 #endif  /* C4_API_H */

@@ -1,4 +1,5 @@
 #include <apr_hash.h>
+#include <apr_thread_cond.h>
 
 #include "c4-internal.h"
 #include "net/network.h"
@@ -10,7 +11,9 @@
 #include "storage/sqlite.h"
 #include "storage/table.h"
 #include "types/catalog.h"
+#include "util/dump_table.h"
 #include "util/list.h"
+#include "util/strbuf.h"
 #include "util/tuple_buf.h"
 
 struct C4Router
@@ -35,7 +38,8 @@ struct C4Router
 typedef enum WorkItemKind
 {
     WI_TUPLE,
-    WI_PROGRAM
+    WI_PROGRAM,
+    WI_DUMP_TABLE
 } WorkItemKind;
 
 typedef struct WorkItem
@@ -48,6 +52,13 @@ typedef struct WorkItem
 
     /* WI_PROGRAM: */
     char *program_src;
+
+    /* WI_DUMP_TABLE: */
+    char *tbl_name;
+    apr_thread_cond_t *cond;
+    apr_thread_mutex_t *lock;
+    StrBuf *buf;
+    bool is_done;
 } WorkItem;
 
 static void router_enqueue(apr_queue_t *queue, WorkItem *wi);
@@ -169,6 +180,17 @@ compute_fixpoint(C4Router *router)
 }
 
 static void
+route_dump_table(C4Router *router, WorkItem *wi)
+{
+    apr_thread_mutex_lock(wi->lock);
+
+    dump_table(router->c4, wi->tbl_name, wi->buf);
+    wi->is_done = true;
+    apr_thread_cond_signal(wi->cond);
+    apr_thread_mutex_unlock(wi->lock);
+}
+
+static void
 route_program(C4Router *router, const char *src)
 {
     C4Runtime *c4 = router->c4;
@@ -192,6 +214,10 @@ workitem_destroy(WorkItem *wi)
         case WI_PROGRAM:
             ol_free(wi->program_src);
             break;
+
+        /* XXX: hack. Let the client free the WorkItem */
+        case WI_DUMP_TABLE:
+            return;
 
         default:
             ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
@@ -227,6 +253,10 @@ router_main_loop(C4Router *router)
                 route_program(router, wi->program_src);
                 break;
 
+            case WI_DUMP_TABLE:
+                route_dump_table(router, wi);
+                break;
+
             default:
                 ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
         }
@@ -234,6 +264,38 @@ router_main_loop(C4Router *router)
         compute_fixpoint(router);
         workitem_destroy(wi);
     }
+}
+
+char *
+router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
+                          apr_pool_t *pool)
+{
+    WorkItem *wi;
+    char *result;
+
+    wi = ol_alloc0(sizeof(*wi));
+    wi->kind = WI_DUMP_TABLE;
+    wi->is_done = false;
+    wi->tbl_name = ol_strdup(tbl_name);
+    wi->buf = sbuf_make(pool);
+
+    apr_thread_mutex_create(&wi->lock, APR_THREAD_MUTEX_UNNESTED, pool);
+    apr_thread_cond_create(&wi->cond, pool);
+    apr_thread_mutex_lock(wi->lock);
+
+    router_enqueue(queue, wi);
+
+    /* may not make sense to do this here, but for now... */
+    do {
+      apr_thread_cond_wait(wi->cond, wi->lock);
+    } while (!wi->is_done);
+
+    result = wi->buf->data;
+    apr_thread_cond_destroy(wi->cond);
+    apr_thread_mutex_destroy(wi->lock);
+    ol_free(wi->tbl_name);
+    ol_free(wi);
+    return result;
 }
 
 void

@@ -138,3 +138,9 @@ c4_install_str(C4Client *c4, const char *str)
 
     return C4_OK;
 }
+
+char *
+c4_dump_table(C4Client *c4, const char *tbl_name)
+{
+    return router_enqueue_dump_table(c4->queue, tbl_name, c4->pool);
+}
