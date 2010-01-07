@@ -117,12 +117,21 @@ tuple_hash(Tuple *tuple)
 char *
 tuple_to_str(Tuple *tuple, apr_pool_t *pool)
 {
-    Schema *schema;
     StrBuf *buf;
+
+    buf = sbuf_make(pool);
+    tuple_to_str_buf(tuple, buf);
+    sbuf_append_char(buf, '\0');
+    return buf->data;
+}
+
+void
+tuple_to_str_buf(Tuple *tuple, StrBuf *buf)
+{
+    Schema *schema;
     int i;
 
     schema = tuple_get_schema(tuple);
-    buf = sbuf_make(pool);
     for (i = 0; i < schema->len; i++)
     {
         if (i != 0)
@@ -131,8 +140,38 @@ tuple_to_str(Tuple *tuple, apr_pool_t *pool)
         (schema->text_out_funcs[i])(tuple_get_val(tuple, i), buf);
     }
 
-    sbuf_append_char(buf, '\0');
-    return buf->data;
+    /* Note that we don't NUL-terminate the buffer */
+}
+
+void
+tuple_to_buf(Tuple *tuple, StrBuf *buf)
+{
+    Schema *schema;
+    int i;
+
+    schema = tuple_get_schema(tuple);
+    for (i = 0; i < schema->len; i++)
+    {
+        (schema->bin_out_funcs[i])(tuple_get_val(tuple, i), buf);
+    }
+}
+
+Tuple *
+tuple_from_buf(StrBuf *buf, TableDef *tbl_def)
+{
+    Schema *schema;
+    Tuple *result;
+    int i;
+
+    schema = tbl_def->schema;
+    result = tuple_make_empty(schema);
+
+    for (i = 0; i < schema->len; i++)
+    {
+        tuple_get_val(result, i) = (schema->bin_in_funcs[i])(buf);
+    }
+
+    return result;
 }
 
 /*
@@ -164,38 +203,6 @@ tuple_to_sql_insert_str(Tuple *tuple, apr_pool_t *pool)
 
     sbuf_append_char(buf, '\0');
     return buf->data;
-}
-
-
-void
-tuple_to_buf(Tuple *tuple, StrBuf *buf)
-{
-    Schema *schema;
-    int i;
-
-    schema = tuple_get_schema(tuple);
-    for (i = 0; i < schema->len; i++)
-    {
-        (schema->bin_out_funcs[i])(tuple_get_val(tuple, i), buf);
-    }
-}
-
-Tuple *
-tuple_from_buf(StrBuf *buf, TableDef *tbl_def)
-{
-    Schema *schema;
-    Tuple *result;
-    int i;
-
-    schema = tbl_def->schema;
-    result = tuple_make_empty(schema);
-
-    for (i = 0; i < schema->len; i++)
-    {
-        tuple_get_val(result, i) = (schema->bin_in_funcs[i])(buf);
-    }
-
-    return result;
 }
 
 bool

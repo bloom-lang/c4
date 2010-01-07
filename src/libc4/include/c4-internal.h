@@ -30,8 +30,8 @@ struct C4Runtime
     apr_pool_t *pool;
 
     /*
-     * Per-fixpoint APR pool for temporary allocations. This is cleared at the
-     * end of each fixpoint.
+     * APR pool for temporary allocations. This is cleared at the end of each
+     * fixpoint.
      */
     apr_pool_t *tmp_pool;
 

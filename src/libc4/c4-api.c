@@ -38,38 +38,37 @@ C4Client *
 c4_make(int port)
 {
     apr_pool_t *pool;
-    C4Client *c4;
+    C4Client *client;
     apr_status_t s;
 
     pool = make_subpool(NULL);
-    c4 = apr_pcalloc(pool, sizeof(*c4));
-    c4->pool = pool;
+    client = apr_pcalloc(pool, sizeof(*client));
+    client->pool = pool;
 
-    s = apr_queue_create(&c4->queue, 256, c4->pool);
+    s = apr_queue_create(&client->queue, 256, client->pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    c4->runtime_thread = c4_runtime_start(port, c4->queue, c4->pool);
-
-    return c4;
+    client->runtime_thread = c4_runtime_start(port, client->queue, client->pool);
+    return client;
 }
 
 C4Status
-c4_destroy(C4Client *c4)
+c4_destroy(C4Client *client)
 {
     apr_status_t s;
     apr_status_t thread_status;
 
-    s = apr_queue_term(c4->queue);
+    s = apr_queue_term(client->queue);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
-    s = apr_thread_join(&thread_status, c4->runtime_thread);
+    s = apr_thread_join(&thread_status, client->runtime_thread);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
     if (thread_status != APR_SUCCESS)
         FAIL_APR(thread_status);
 
-    apr_pool_destroy(c4->pool);
+    apr_pool_destroy(client->pool);
     return C4_OK;
 }
 
@@ -80,7 +79,7 @@ c4_destroy(C4Client *c4)
  * single memory buffer without too much pain.
  */
 C4Status
-c4_install_file(C4Client *c4, const char *path)
+c4_install_file(C4Client *client, const char *path)
 {
     apr_status_t s;
     apr_file_t *file;
@@ -90,7 +89,7 @@ c4_install_file(C4Client *c4, const char *path)
     apr_size_t file_size;
     C4Status result;
 
-    file_pool = make_subpool(c4->pool);
+    file_pool = make_subpool(client->pool);
     s = apr_file_open(&file, path, APR_READ | APR_BUFFERED,
                       APR_OS_DEFAULT, file_pool);
     if (s != APR_SUCCESS)
@@ -117,7 +116,7 @@ c4_install_file(C4Client *c4, const char *path)
         FAIL();
 
     buf[file_size] = '\0';
-    result = c4_install_str(c4, buf);
+    result = c4_install_str(client, buf);
 
 done:
     apr_pool_destroy(file_pool);
@@ -132,9 +131,15 @@ done:
  * for the caller to wait until the program has been installed?
  */
 C4Status
-c4_install_str(C4Client *c4, const char *str)
+c4_install_str(C4Client *client, const char *str)
 {
-    router_enqueue_program(c4->queue, str);
+    router_enqueue_program(client->queue, str);
 
     return C4_OK;
+}
+
+char *
+c4_dump_table(C4Client *client, const char *tbl_name)
+{
+    return router_enqueue_dump_table(client->queue, tbl_name, client->pool);
 }
