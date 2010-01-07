@@ -97,6 +97,20 @@ socket_send_str(apr_socket_t *sock, const char *str)
     socket_send_data(sock, str, slen);
 }
 
+void
+socket_set_non_block(apr_socket_t *sock)
+{
+    apr_status_t s;
+
+    s = apr_socket_opt_set(sock, APR_SO_NONBLOCK, 1);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_socket_timeout_set(sock, 0);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+}
+
 char *
 socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
 {
