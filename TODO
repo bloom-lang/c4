@@ -93,7 +93,7 @@ APR:
 
 Broader issues:
 
-* Testing framework
+* Unit testing framework
 * Error handling: exceptions via longjmp?
 * Add a "$LOCALHOST" variable that expands to the network address of
   the evaluating C4 instance
