@@ -22,7 +22,13 @@ struct C4Network
 
     apr_pollset_t *pollset;
 
-    /* Map from location spec => ClientState */
+    /*
+     * Map from location specifiers => ClientState. Note that this is
+     * imprecise: we might get an incoming connection from a host
+     * whose loc spec already exists in the table. In that case, we
+     * don't bother adding the new client to the table, although we
+     * allow the incoming connection to proceed.
+     */
     apr_hash_t *client_tbl;
 
     /*
@@ -242,7 +248,15 @@ accept_new_client(C4Network *net)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    /* XXX: enter into client_tbl. What if there's already an entry? */
+    /*
+     * Enter the new client's loc_spec into the client_table. If
+     * there's already a ClientState for the loc spec, don't try to
+     * replace it.
+     */
+    if (apr_hash_get(net->client_tbl, client->loc_spec,
+                     APR_HASH_KEY_STRING) != NULL)
+        apr_hash_set(net->client_tbl, client->loc_spec,
+                     APR_HASH_KEY_STRING, client);
 }
 
 static ClientState *
