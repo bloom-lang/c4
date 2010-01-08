@@ -285,7 +285,7 @@ router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
 
     /* may not make sense to do this here, but for now... */
     do {
-      apr_thread_cond_wait(wi->cond, wi->lock);
+        apr_thread_cond_wait(wi->cond, wi->lock);
     } while (!wi->is_done);
 
     result = wi->buf->data;
