@@ -95,7 +95,7 @@ c4_runtime_make(int port, apr_queue_t *queue)
 /*
  * Data that needs to be passed to a new C4 runtime thread during startup.
  * Annoyingly, we need to bundle this into a struct, because we're only allowed
- * to pass a single pointer.
+ * to pass a single pointer to a new thread.
  */
 typedef struct RuntimeInitData
 {
