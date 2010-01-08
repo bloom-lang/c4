@@ -106,7 +106,7 @@ typedef struct RuntimeInitData
 /*
  * Invoked by the client API (in the client's thread) to create a new C4 runtime
  * as a separate thread. Note that we only allocate the thread itself in the
- * given pool; the C4 runtime itself uses a distinct top-level APR pool.
+ * client-provided pool; the runtime itself uses a distinct top-level APR pool.
  */
 apr_thread_t *
 c4_runtime_start(int port, apr_queue_t *queue, apr_pool_t *pool)
@@ -141,7 +141,6 @@ runtime_thread_main(apr_thread_t *thread, void *data)
     c4 = c4_runtime_make(init_data->port, init_data->queue);
     ol_free(init_data);
 
-    network_start(c4->net);
     router_main_loop(c4->router);
 
     /* Client initiated an orderly shutdown */

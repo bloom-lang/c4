@@ -30,7 +30,7 @@ socket_recv_uint32(apr_socket_t *sock, bool *is_eof)
     return ntohl(raw_result);
 }
 
-void
+apr_size_t
 socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len, bool *is_eof)
 {
     apr_status_t s;
@@ -41,14 +41,13 @@ socket_recv_data(apr_socket_t *sock, char *buf, apr_size_t buf_len, bool *is_eof
     if (s == APR_EOF)
     {
         *is_eof = true;
-        return;
+        return len;
     }
     if (s != APR_SUCCESS)
         FAIL_APR(s);
-    if (len != buf_len)
-        FAIL();
 
     *is_eof = false;
+    return len;
 }
 
 void
@@ -111,16 +110,27 @@ socket_set_non_block(apr_socket_t *sock)
         FAIL_APR(s);
 }
 
-char *
-socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
+apr_sockaddr_t *
+socket_get_remote_addr(apr_socket_t *sock)
 {
     apr_status_t s;
     apr_sockaddr_t *addr;
-    char *ip;
 
     s = apr_socket_addr_get(&addr, APR_REMOTE, sock);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
+
+    return addr;
+}
+
+char *
+socket_get_remote_loc(apr_socket_t *sock, apr_pool_t *pool)
+{
+    apr_sockaddr_t *addr;
+    apr_status_t s;
+    char *ip;
+
+    addr = socket_get_remote_addr(sock);
 
     s = apr_sockaddr_ip_get(&ip, addr);
     if (s != APR_SUCCESS)

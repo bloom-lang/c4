@@ -127,21 +127,21 @@ compute_fixpoint(C4Router *router)
      */
     while (!tuple_buf_is_empty(route_buf))
     {
-        TupleBufEntry *ent;
+        Tuple *tuple;
+        TableDef *tbl_def;
         OpChain *op_chain;
 
-        ent = &route_buf->entries[route_buf->start];
-        route_buf->start++;
+        tuple_buf_shift(route_buf, &tuple, &tbl_def);
 
-        op_chain = ent->tbl_def->op_chain_list->head;
+        op_chain = tbl_def->op_chain_list->head;
         while (op_chain != NULL)
         {
             Operator *start = op_chain->chain_start;
-            start->invoke(start, ent->tuple);
+            start->invoke(start, tuple);
             op_chain = op_chain->next;
         }
 
-        tuple_unpin(ent->tuple);
+        tuple_unpin(tuple);
         router->ntuple_routed++;
 
         /* XXX: temporary */
@@ -161,18 +161,16 @@ compute_fixpoint(C4Router *router)
     /* Enqueue any outbound network messages */
     while (!tuple_buf_is_empty(net_buf))
     {
-        TupleBufEntry *ent;
+        Tuple *tuple;
+        TableDef *tbl_def;
 
-        ent = &net_buf->entries[net_buf->start];
-        net_buf->start++;
-
-        network_send(router->c4->net, ent->tuple, ent->tbl_def);
-        tuple_unpin(ent->tuple);
+        tuple_buf_shift(net_buf, &tuple, &tbl_def);
+        network_send(router->c4->net, tuple, tbl_def);
+        tuple_unpin(tuple);
     }
 
+    /* Sending network messages should not cause more routing work */
     ASSERT(tuple_buf_is_empty(route_buf));
-    tuple_buf_reset(route_buf);
-    tuple_buf_reset(net_buf);
     apr_pool_clear(router->c4->tmp_pool);
 
     if (benchmark_done)

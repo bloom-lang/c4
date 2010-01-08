@@ -151,6 +151,22 @@ sbuf_append_char(StrBuf *sbuf, char c)
     sbuf->len++;
 }
 
+void
+sbuf_append_int16(StrBuf *sbuf, apr_uint16_t i)
+{
+    sbuf_enlarge(sbuf, sizeof(i));
+    memcpy(sbuf->data + sbuf->len, &i, sizeof(i));
+    sbuf->len += sizeof(i);
+}
+
+void
+sbuf_append_int32(StrBuf *sbuf, apr_uint32_t i)
+{
+    sbuf_enlarge(sbuf, sizeof(i));
+    memcpy(sbuf->data + sbuf->len, &i, sizeof(i));
+    sbuf->len += sizeof(i);
+}
+
 /*
  * Ensure that the buffer can hold "more_bytes" more bytes.
  *
@@ -208,18 +224,63 @@ sbuf_read_int32(StrBuf *sbuf)
 void
 sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len)
 {
-    if (sbuf->pos + len > sbuf->len)
+    if (len > sbuf_data_avail(sbuf))
         FAIL();         /* Not enough data in the buffer */
 
     memcpy(data, sbuf->data + sbuf->pos, len);
     sbuf->pos += len;
 }
 
-void
-sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock,
-                 apr_size_t len, bool *is_eof)
+/*
+ * Try to make it so that there are "len" bytes available to be read
+ * from the buffer. This is performed relative to the current buffer
+ * position: for instance, if we already have 2 un-read bytes in the
+ * buffer and the caller asks for 4, we try to read 2 more bytes from
+ * the given socket.
+ *
+ * Returns true if successful, false otherwise. *is_eof indicates
+ * whether we hit EOF.
+ */
+bool
+sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len, bool *is_eof)
 {
-    sbuf_enlarge(sbuf, len);
-    socket_recv_data(sock, sbuf->data + sbuf->len, len, is_eof);
-    sbuf->len += len;
+    apr_size_t to_read;
+    apr_size_t did_read;
+
+    *is_eof = false;
+
+    if (len <= sbuf_data_avail(sbuf))
+        return true;
+
+    to_read = len - sbuf_data_avail(sbuf);
+    sbuf_enlarge(sbuf, to_read);
+    did_read = socket_recv_data(sock, sbuf->data + sbuf->len, to_read, is_eof);
+    sbuf->len += did_read;
+
+    return (to_read == did_read);
+}
+
+/*
+ * Attempt to write all the available data from the StrBuf to the
+ * socket. Returns "true" if we wrote all the data successfully, false
+ * otherwise.
+ */
+bool
+sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock, bool *is_eof)
+{
+    apr_size_t to_write;
+    apr_size_t did_write;
+    apr_status_t s;
+
+    /* XXX: TODO */
+    *is_eof = false;
+
+    did_write = to_write = sbuf_data_avail(sbuf);
+    if (to_write == 0)
+        return true;
+
+    s = apr_socket_send(sock, sbuf->data + sbuf->pos, &did_write);
+    sbuf->pos += did_write;
+
+    return (to_write == did_write);
 }

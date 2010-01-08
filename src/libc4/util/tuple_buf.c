@@ -76,3 +76,25 @@ tuple_buf_push(TupleBuf *buf, Tuple *tuple, TableDef *tbl_def)
 
     buf->end++;
 }
+
+/*
+ * Remove the first element of the TupleBuf, returning its content via
+ * the two out parameters. Note that we do NOT unpin the tuple: the
+ * caller should do that when they are finished with it.
+ */
+void
+tuple_buf_shift(TupleBuf *buf, Tuple **tuple, TableDef **tbl_def)
+{
+    TupleBufEntry *ent;
+
+    ASSERT(!tuple_buf_is_empty(buf));
+    ent = &buf->entries[buf->start];
+    buf->start++;
+    if (tuple_buf_is_empty(buf))
+        tuple_buf_reset(buf);
+
+    if (tuple)
+        *tuple = ent->tuple;
+    if (tbl_def)
+        *tbl_def = ent->tbl_def;
+}

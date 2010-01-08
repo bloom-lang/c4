@@ -1,26 +1,29 @@
 #include <apr_hash.h>
 #include <apr_network_io.h>
+#include <apr_poll.h>
 #include <apr_thread_proc.h>
 
 #include "c4-internal.h"
+#include "router.h"
 #include "net/network.h"
-#include "net/send_recv.h"
+#include "util/socket.h"
+#include "util/strbuf.h"
+#include "util/tuple_buf.h"
 
 struct C4Network
 {
     C4Runtime *c4;
     apr_pool_t *pool;
 
-    /* Thread info for server socket thread */
-    apr_threadattr_t *thread_attr;
-    apr_thread_t *thread;
-
     /* Server socket info */
-    apr_socket_t *sock;
+    apr_pollfd_t *pollfd;
+    apr_socket_t *serv_sock;
     apr_sockaddr_t *local_addr;
 
-    apr_hash_t *recv_tbl;
-    apr_hash_t *send_tbl;
+    apr_pollset_t *pollset;
+
+    /* Map from location spec => ClientState */
+    apr_hash_t *client_tbl;
 
     /*
      * XXX: Used to convert loc spec datums into C-style strings. This is a
@@ -29,9 +32,67 @@ struct C4Network
     StrBuf *tmp_buf;
 };
 
-static void * APR_THREAD_FUNC network_thread_main(apr_thread_t *thread, void *data);
-static void new_recv_thread(C4Network *net, apr_socket_t *sock, apr_pool_t *recv_pool);
-static SendThread *get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_def);
+/* XXX: Rename */
+typedef enum RecvState
+{
+    RECV_TABLE_NAME_LEN,
+    RECV_TABLE_NAME,
+    RECV_TUPLE_LEN,
+    RECV_TUPLE
+} RecvState;
+
+typedef enum SendState
+{
+    SEND_IDLE,
+    SEND_HEADER,
+    SEND_TUPLE
+} SendState;
+
+typedef struct ClientState
+{
+    apr_pool_t *pool;
+    C4Runtime *c4;
+    char *loc_spec;
+    apr_sockaddr_t *remote_addr;
+
+    bool connected;
+    apr_socket_t *sock;
+    apr_pollfd_t *pollfd;
+
+    /* Receive-side state: incoming data from client */
+    RecvState recv_state;
+    StrBuf *recv_name_buf;
+    StrBuf *recv_tuple_buf;
+    apr_uint16_t tbl_name_len;
+    apr_uint32_t tuple_len;
+
+    /* Send-side state: outgoing data to client */
+    SendState send_state;
+    StrBuf *send_header_buf;    /* Headers for current tuple */
+    StrBuf *send_tuple_buf;     /* Current outgoing tuple */
+    TupleBuf *pending_tuples;   /* Future outgoing tuples */
+} ClientState;
+
+#define POLLSET_SIZE 64
+
+static apr_socket_t *server_sock_make(int port, apr_pool_t *pool);
+static apr_pollfd_t *pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
+                                 apr_int16_t reqevents, void *data);
+static void accept_new_client(C4Network *net);
+static void update_client_state(const apr_pollfd_t *fd);
+static void update_recv_state(ClientState *client);
+static void update_send_state(ClientState *client);
+static void deserialize_tuple(ClientState *client);
+static ClientState *client_make(C4Network *net);
+static apr_status_t client_cleanup(void *data);
+static ClientState *get_client_for_loc_spec(C4Network *net, Tuple *tuple,
+                                            TableDef *tbl_def);
+static ClientState *connect_new_client(C4Network *net, const char *loc_spec);
+static void client_try_connect(ClientState *client);
+static void update_client_interest(ClientState *client, int reqevents);
+static apr_socket_t *create_send_socket(ClientState *client,
+                                        apr_sockaddr_t **remote_addr);
+static void parse_loc_spec(const char *loc_spec, char *host, int *port_p);
 
 /*
  * Create a new instance of the network interface. "port" is the local TCP
@@ -43,59 +104,88 @@ network_make(C4Runtime *c4, int port)
     apr_status_t s;
     apr_pool_t *pool;
     C4Network *net;
-    apr_sockaddr_t *addr;
 
     pool = make_subpool(c4->pool);
     net = apr_pcalloc(pool, sizeof(*net));
     net->c4 = c4;
     net->pool = pool;
-    net->recv_tbl = apr_hash_make(net->pool);
-    net->send_tbl = apr_hash_make(net->pool);
+    net->client_tbl = apr_hash_make(net->pool);
     net->tmp_buf = sbuf_make(net->pool);
+    net->serv_sock = server_sock_make(port, net->pool);
 
-    s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, net->pool);
+    s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->serv_sock);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    s = apr_socket_create(&net->sock, addr->family,
-                          SOCK_STREAM, APR_PROTO_TCP, net->pool);
-    if (s != APR_SUCCESS)
-        ERROR("Failed to create local TCP socket, port %d", port);
-
-    s = apr_socket_opt_set(net->sock, APR_SO_REUSEADDR, 1);
+    s = apr_pollset_create(&net->pollset, POLLSET_SIZE, net->pool,
+                           APR_POLLSET_WAKEABLE | APR_POLLSET_NOCOPY);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    s = apr_socket_bind(net->sock, addr);
-    if (s != APR_SUCCESS)
-        ERROR("Failed to bind to local TCP socket, port %d", port);
+    c4_log(c4, "apr_pollset method: %s", apr_pollset_method_name(net->pollset));
 
-    s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->sock);
+    net->pollfd = pollfd_make(net->pool, net->serv_sock, APR_POLLIN, NULL);
+    s = apr_pollset_add(net->pollset, net->pollfd);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
     return net;
 }
 
+static apr_socket_t *
+server_sock_make(int port, apr_pool_t *pool)
+{
+    apr_status_t s;
+    apr_sockaddr_t *addr;
+    apr_socket_t *serv_sock;
+
+    s = apr_sockaddr_info_get(&addr, NULL, APR_INET, port, 0, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_socket_create(&serv_sock, addr->family,
+                          SOCK_STREAM, APR_PROTO_TCP, pool);
+    if (s != APR_SUCCESS)
+        ERROR("Failed to create local TCP socket, port %d", port);
+
+    s = apr_socket_opt_set(serv_sock, APR_SO_REUSEADDR, 1);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_socket_opt_set(serv_sock, APR_SO_NONBLOCK, 1);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    socket_set_non_block(serv_sock);
+
+    s = apr_socket_listen(serv_sock, SOMAXCONN);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    return serv_sock;
+}
+
+static apr_pollfd_t *
+pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
+            apr_int16_t reqevents, void *data)
+{
+    apr_pollfd_t *result;
+
+    result = apr_palloc(pool, sizeof(*result));
+    result->p = pool;
+    result->desc.s = sock;
+    result->desc_type = APR_POLL_SOCKET;
+    result->reqevents = reqevents;
+    result->rtnevents = 0;
+    result->client_data = data;
+
+    return result;
+}
+
 void
 network_destroy(C4Network *net)
 {
     apr_pool_destroy(net->pool);
-}
-
-void
-network_start(C4Network *net)
-{
-    apr_status_t s;
-
-    s = apr_threadattr_create(&net->thread_attr, net->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    s = apr_thread_create(&net->thread, net->thread_attr,
-                          network_thread_main, net, net->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
 }
 
 int
@@ -105,79 +195,298 @@ network_get_port(C4Network *net)
 }
 
 void
-network_cleanup_rt(C4Network *net, RecvThread *rt)
+network_poll(C4Network *net)
 {
-    apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
-                 APR_HASH_KEY_STRING, NULL);
-}
-
-void
-network_cleanup_st(C4Network *net, SendThread *st)
-{
-    apr_hash_set(net->send_tbl, send_thread_get_loc(st),
-                 APR_HASH_KEY_STRING, NULL);
-}
-
-static void * APR_THREAD_FUNC
-network_thread_main(apr_thread_t *thread, void *data)
-{
-    C4Network *net = (C4Network *) data;
     apr_status_t s;
+    apr_int32_t num;
+    const apr_pollfd_t *descriptors;
+    int i;
 
-    s = apr_socket_listen(net->sock, SOMAXCONN);
+    s = apr_pollset_poll(net->pollset, -1, &num, &descriptors);
+    if (s == APR_EINTR)
+        return;         /* apr_pollset_wakeup() was called */
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    while (true)
+    for (i = 0; i < num; i++)
     {
-        apr_pool_t *recv_pool;
-        apr_socket_t *client_sock;
-
-        /*
-         * We need to preallocate the RecvThread's pool, so that we can
-         * allocate the client socket in it.
-         */
-        recv_pool = make_subpool(net->pool);
-
-        s = apr_socket_accept(&client_sock, net->sock, recv_pool);
-        if (s != APR_SUCCESS)
-            FAIL_APR(s);
-
-        new_recv_thread(net, client_sock, recv_pool);
+        if (descriptors[i].desc.s == net->serv_sock)
+            accept_new_client(net);
+        else
+            update_client_state(&descriptors[i]);
     }
-
-    apr_thread_exit(thread, APR_SUCCESS);
-    return NULL;        /* Return value ignored */
 }
 
-/* XXX: check if there's an existing recv thread at socket loc? */
 static void
-new_recv_thread(C4Network *net, apr_socket_t *sock, apr_pool_t *recv_pool)
+accept_new_client(C4Network *net)
 {
-    RecvThread *rt;
+    ClientState *client;
+    apr_status_t s;
 
-    rt = recv_thread_make(net->c4, sock, recv_pool);
-    apr_hash_set(net->recv_tbl, recv_thread_get_loc(rt),
-                 APR_HASH_KEY_STRING, rt);
-    recv_thread_start(rt);
+    client = client_make(net);
+
+    s = apr_socket_accept(&client->sock, net->serv_sock, client->pool);
+    if (s != APR_SUCCESS)
+    {
+        apr_pool_destroy(client->pool);
+        return;
+    }
+
+    socket_set_non_block(client->sock);
+    client->connected = true;
+    client->loc_spec = socket_get_remote_loc(client->sock, client->pool);
+    client->remote_addr = socket_get_remote_addr(client->sock);
+    client->pollfd = pollfd_make(client->pool, client->sock,
+                                 APR_POLLIN, client);
+    s = apr_pollset_add(net->pollset, client->pollfd);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    /* XXX: enter into client_tbl. What if there's already an entry? */
+}
+
+static ClientState *
+client_make(C4Network *net)
+{
+    ClientState *client;
+    apr_pool_t *client_pool;
+
+    client_pool = make_subpool(net->pool);
+    client = apr_pcalloc(client_pool, sizeof(*client));
+    client->pool = client_pool;
+    client->c4 = net->c4;
+    client->connected = false;
+    client->recv_state = RECV_TABLE_NAME_LEN;
+    client->recv_name_buf = sbuf_make(client->pool);
+    client->recv_tuple_buf = sbuf_make(client->pool);
+    client->send_state = SEND_IDLE;
+    client->send_header_buf = sbuf_make(client->pool);
+    client->send_tuple_buf = sbuf_make(client->pool);
+    client->pending_tuples = tuple_buf_make(64, client->pool);
+
+    apr_pool_cleanup_register(client->pool, client, client_cleanup,
+                              apr_pool_cleanup_null);
+
+    return client;
+}
+
+static apr_status_t
+client_cleanup(void *data)
+{
+    ClientState *client = (ClientState *) data;
+
+    return APR_SUCCESS;
+}
+
+static void
+update_client_state(const apr_pollfd_t *pollfd)
+{
+    ClientState *client = (ClientState *) pollfd->client_data;
+
+    /* Data available to be read from client? */
+    if (pollfd->rtnevents & APR_POLLIN)
+        update_recv_state(client);
+
+    /* Space available to write to client? */
+    if (pollfd->rtnevents & APR_POLLOUT)
+        update_send_state(client);
+}
+
+static void
+update_recv_state(ClientState *client)
+{
+    bool is_eof;
+    bool saw_data;
+
+    switch (client->recv_state)
+    {
+        case RECV_TABLE_NAME_LEN:
+            saw_data = sbuf_socket_recv(client->recv_name_buf, client->sock,
+                                        sizeof(apr_int16_t), &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!saw_data)
+                return;
+
+            client->tbl_name_len = ntohs(sbuf_read_int16(client->recv_name_buf));
+            sbuf_reset(client->recv_name_buf);
+            client->recv_state = RECV_TABLE_NAME;
+
+        case RECV_TABLE_NAME:
+            saw_data = sbuf_socket_recv(client->recv_name_buf, client->sock,
+                                        client->tbl_name_len, &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!saw_data)
+                return;
+
+            sbuf_append_char(client->recv_name_buf, '\0');
+            client->recv_state = RECV_TUPLE_LEN;
+
+        case RECV_TUPLE_LEN:
+            saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,
+                                        sizeof(apr_int32_t), &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!saw_data)
+                return;
+
+            client->tuple_len = ntohl(sbuf_read_int32(client->recv_tuple_buf));
+            sbuf_reset(client->recv_tuple_buf);
+            client->recv_state = RECV_TUPLE;
+
+        case RECV_TUPLE:
+            saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,
+                                        client->tuple_len, &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!saw_data)
+                return;
+
+            deserialize_tuple(client);
+            sbuf_reset(client->recv_name_buf);
+            sbuf_reset(client->recv_tuple_buf);
+            client->recv_state = RECV_TABLE_NAME_LEN;
+            return;
+
+        default:
+            ERROR("Unrecognized client receive state: %d",
+                  (int) client->recv_state);
+    }
+
+saw_eof:
+    if (client->recv_state != RECV_TABLE_NAME_LEN ||
+        sbuf_data_avail(client->recv_name_buf))
+        c4_log(client->c4, "unexpected EOF from client");
+
+    /* XXX: destroy client */
+    apr_pollset_remove(client->c4->net->pollset, client->pollfd);
+}
+
+/*
+ * Convert serialized tuple back into in-memory format, enqueue for
+ * processing in next fixpoint.
+ */
+static void
+deserialize_tuple(ClientState *client)
+{
+    char *tbl_name = client->recv_name_buf->data;
+    Tuple *tuple;
+    TableDef *tbl_def;
+
+    ASSERT(client->recv_state == RECV_TUPLE);
+    tbl_def = cat_get_table(client->c4->cat, tbl_name);
+    tuple = tuple_from_buf(client->recv_tuple_buf, tbl_def);
+    router_enqueue_tuple(NULL, tuple, tbl_def);
+    tuple_unpin(tuple);
+}
+
+/*
+ * We use one StrBuf for the headers (table name + length info), and
+ * one StrBuf for the serialized tuple itself: we need to include the
+ * length of the latter in the former.
+ */
+static void
+serialize_tuple(ClientState *client)
+{
+    Tuple *tuple;
+    TableDef *tbl_def;
+    apr_size_t tbl_name_len;
+    apr_size_t tuple_len;
+
+    tuple_buf_shift(client->pending_tuples, &tuple, &tbl_def);
+
+    tbl_name_len = strlen(tbl_def->name);
+    if (tbl_name_len > APR_UINT16_MAX)
+        FAIL();
+
+    sbuf_append_int16(client->send_header_buf, htons(tbl_name_len));
+    sbuf_append_data(client->send_header_buf, tbl_def->name,
+                     tbl_name_len);
+
+    tuple_to_buf(tuple, client->send_tuple_buf);
+    tuple_unpin(tuple);
+
+    tuple_len = client->send_tuple_buf->len;
+    sbuf_append_int32(client->send_header_buf, htons(tuple_len));
+}
+
+static void
+update_send_state(ClientState *client)
+{
+    bool done_write;
+    bool is_eof;
+
+    if (!client->connected)
+    {
+        client_try_connect(client);
+        return;
+    }
+
+    switch (client->send_state)
+    {
+        case SEND_IDLE:
+            serialize_tuple(client);
+            client->send_state = SEND_HEADER;
+
+        case SEND_HEADER:
+            done_write = sbuf_socket_send(client->send_header_buf,
+                                          client->sock, &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!done_write)
+                return;
+
+            client->send_state = SEND_TUPLE;
+
+        case SEND_TUPLE:
+            done_write = sbuf_socket_send(client->send_tuple_buf,
+                                          client->sock, &is_eof);
+            if (is_eof)
+                goto saw_eof;
+            if (!done_write)
+                return;
+
+            sbuf_reset(client->send_header_buf);
+            sbuf_reset(client->send_tuple_buf);
+            client->send_state = SEND_IDLE;
+            if (tuple_buf_is_empty(client->pending_tuples))
+            {
+                int reqevents = client->pollfd->reqevents;
+
+                reqevents &= ~(APR_POLLOUT);
+                update_client_interest(client, reqevents);
+            }
+            return;
+
+        default:
+            ERROR("Unrecognized client send state: %d",
+                  (int) client->send_state);
+    }
+
+saw_eof:
+    c4_log(client->c4, "saw EOF on write");
 }
 
 void
 network_send(C4Network *net, Tuple *tuple, TableDef *tbl_def)
 {
-    SendThread *st;
+    ClientState *client;
+    int reqevents;
 
-    ASSERT(tbl_def->ls_colno != -1);
-    st = get_send_thread(net, tuple, tbl_def);
-    send_thread_enqueue(st, tuple, tbl_def);
+    client = get_client_for_loc_spec(net, tuple, tbl_def);
+    tuple_buf_push(client->pending_tuples, tuple, tbl_def);
+
+    reqevents = client->pollfd->reqevents | APR_POLLOUT;
+    update_client_interest(client, reqevents);
 }
 
-static SendThread *
-get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_def)
+static ClientState *
+get_client_for_loc_spec(C4Network *net, Tuple *tuple, TableDef *tbl_def)
 {
-    SendThread *st;
+    ClientState *client;
     Datum loc_spec;
-    char *tmp_loc_str;
+    char *tmp_loc_spec;
 
     loc_spec = tuple_get_val(tuple, tbl_def->ls_colno);
     /*
@@ -187,17 +496,153 @@ get_send_thread(C4Network *net, Tuple *tuple, TableDef *tbl_def)
     sbuf_reset(net->tmp_buf);
     string_to_str(loc_spec, net->tmp_buf);
     sbuf_append_char(net->tmp_buf, '\0');
-    tmp_loc_str = net->tmp_buf->data;
+    tmp_loc_spec = net->tmp_buf->data;
 
-    st = apr_hash_get(net->send_tbl, tmp_loc_str, APR_HASH_KEY_STRING);
-    if (st == NULL)
+    client = apr_hash_get(net->client_tbl, tmp_loc_spec, APR_HASH_KEY_STRING);
+    if (client == NULL)
     {
-        st = send_thread_make(net->c4, tmp_loc_str,
-                              make_subpool(net->pool));
-        apr_hash_set(net->send_tbl, send_thread_get_loc(st),
-                     APR_HASH_KEY_STRING, st);
-        send_thread_start(st);
+        client = connect_new_client(net, tmp_loc_spec);
+        apr_hash_set(net->client_tbl, client->loc_spec,
+                     APR_HASH_KEY_STRING, client);
     }
 
-    return st;
+    return client;
+}
+
+static ClientState *
+connect_new_client(C4Network *net, const char *loc_spec)
+{
+    ClientState *client;
+    apr_status_t s;
+
+    client = client_make(net);
+    client->loc_spec = apr_pstrdup(client->pool, loc_spec);
+    client->sock = create_send_socket(client, &client->remote_addr);
+    client->pollfd = pollfd_make(client->pool, client->sock,
+                                 APR_POLLOUT, client);
+    s = apr_pollset_add(net->pollset, client->pollfd);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    client_try_connect(client);
+    return client;
+}
+
+/*
+ * Try to connect the client's socket to a remote host. Since this is
+ * a non-blocking socket, the connection attempt may not complete
+ * immediately; the socket is initially registered for APR_POLLOUT
+ * events in the pollset, which should inform us when we can complete
+ * the connection attempt.
+ */
+static void
+client_try_connect(ClientState *client)
+{
+    apr_status_t s;
+    apr_int16_t reqevents;
+
+    ASSERT(!client->connected);
+    ASSERT(client->send_state == SEND_IDLE);
+    ASSERT(client->recv_state == RECV_TABLE_NAME_LEN);
+
+    s = apr_socket_connect(client->sock, client->remote_addr);
+    /* XXX: No portable APR test for EALREADY, it seems */
+    if (APR_STATUS_IS_EINPROGRESS(s) || s == EALREADY)
+        return;
+    if (s != APR_SUCCESS)
+    {
+        c4_log(client->c4, "Failed to connect to remote host @ %s",
+               client->loc_spec);
+        FAIL_APR(s);
+    }
+
+    /*
+     * Now that we're connected, we're ready to consume incoming
+     * data. If there is pending outbound data, we're interested in
+     * sending that too.
+     */
+    client->connected = true;
+    reqevents = APR_POLLIN;
+    if (!tuple_buf_is_empty(client->pending_tuples))
+        reqevents |= APR_POLLOUT;
+
+    update_client_interest(client, reqevents);
+}
+
+static void
+update_client_interest(ClientState *client, int reqevents)
+{
+    apr_pollset_t *pollset = client->c4->net->pollset;
+    apr_pollfd_t *pollfd = client->pollfd;
+    apr_status_t s;
+
+    if (pollfd->reqevents == reqevents)
+        return;
+
+    s = apr_pollset_remove(pollset, pollfd);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    pollfd->reqevents = reqevents;
+    s = apr_pollset_add(pollset, pollfd);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+}
+
+static apr_socket_t *
+create_send_socket(ClientState *client, apr_sockaddr_t **remote_addr)
+{
+    apr_status_t s;
+    apr_socket_t *sock;
+    apr_sockaddr_t *addr;
+    char host[APRMAXHOSTLEN];
+    int port_num;
+
+    parse_loc_spec(client->loc_spec, host, &port_num);
+
+    s = apr_sockaddr_info_get(&addr, host, APR_INET, port_num, 0, client->pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_socket_create(&sock, addr->family, SOCK_STREAM,
+                          APR_PROTO_TCP, client->pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    socket_set_non_block(sock);
+    *remote_addr = addr;
+    return sock;
+}
+
+static void
+parse_loc_spec(const char *loc_spec, char *host, int *port_p)
+{
+    const char *p = loc_spec;
+    char *colon_ptr;
+    ptrdiff_t host_len;
+    long raw_port;
+    char *end_ptr;
+
+    /* We only handle TCP for now */
+    if (strncmp(p, "tcp:", 4) != 0)
+        FAIL();
+
+    p += 4;
+    colon_ptr = rindex(p, ':');
+    if (colon_ptr == NULL)
+        FAIL();
+
+    host_len = colon_ptr - p;
+    if (host_len <= 0 || host_len >= APRMAXHOSTLEN - 1)
+        FAIL();
+
+    memcpy(host, p, host_len);
+    host[host_len] = '\0';
+
+    p += host_len + 1;
+    raw_port = strtol(p, &end_ptr, 10);
+    if (p == end_ptr || raw_port <= 0 || raw_port > INT_MAX)
+        FAIL();
+
+    *port_p = (int) raw_port;
 }
