@@ -11,13 +11,13 @@ static void * APR_THREAD_FUNC runtime_thread_main(apr_thread_t *thread,
                                                   void *data);
 
 static Datum
-get_local_addr(int port, apr_pool_t *tmp_pool)
+get_local_addr(int port, apr_pool_t *pool)
 {
     char buf[APRMAXHOSTLEN + 1];
     char addr[APRMAXHOSTLEN + 1 + 20];
     apr_status_t s;
 
-    s = apr_gethostname(buf, sizeof(buf), tmp_pool);
+    s = apr_gethostname(buf, sizeof(buf), pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
