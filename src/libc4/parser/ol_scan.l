@@ -79,7 +79,6 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
     C4Parser *context = yyget_extra(yyscanner);
     yylval.str = sbuf_dup(context->lit_buf, SCANNER_POOL);
     BEGIN(INITIAL);
-    printf("SCONST = %s\n", yylval.str);
     return SCONST;
 }
 
