@@ -224,8 +224,8 @@ network_poll(C4Network *net)
 }
 
 /*
- * Interrupt a blocking network_poll(). Note that this is typically invoked by a
- * client thread.
+ * Interrupt a blocking network_poll(). This is typically invoked by a client
+ * thread.
  */
 void
 network_wakeup(C4Network *net)
@@ -339,6 +339,8 @@ update_recv_state(ClientState *client)
             client->tbl_name_len = ntohs(sbuf_read_int16(client->recv_name_buf));
             sbuf_reset(client->recv_name_buf);
             client->recv_state = RECV_TABLE_NAME;
+            c4_log(client->c4, "RECV_TABLE_NAME_LEN => RECV_TABLE_NAME (from %s)",
+                   client->loc_spec);
 
         case RECV_TABLE_NAME:
             saw_data = sbuf_socket_recv(client->recv_name_buf, client->sock,
@@ -350,6 +352,8 @@ update_recv_state(ClientState *client)
 
             sbuf_append_char(client->recv_name_buf, '\0');
             client->recv_state = RECV_TUPLE_LEN;
+            c4_log(client->c4, "RECV_TABLE_NAME => RECV_TUPLE_LEN (from %s)",
+                   client->loc_spec);
 
         case RECV_TUPLE_LEN:
             saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,
@@ -362,6 +366,8 @@ update_recv_state(ClientState *client)
             client->tuple_len = ntohl(sbuf_read_int32(client->recv_tuple_buf));
             sbuf_reset(client->recv_tuple_buf);
             client->recv_state = RECV_TUPLE;
+            c4_log(client->c4, "RECV_TABLE_NAME => RECV_TUPLE (from %s)",
+                   client->loc_spec);
 
         case RECV_TUPLE:
             saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,
@@ -385,7 +391,8 @@ update_recv_state(ClientState *client)
 saw_eof:
     if (client->recv_state != RECV_TABLE_NAME_LEN ||
         sbuf_data_avail(client->recv_name_buf))
-        c4_log(client->c4, "unexpected EOF from client");
+        c4_log(client->c4, "Unexpected EOF from client @ %s",
+               client->loc_spec);
 
     /* XXX: destroy client */
     apr_pollset_remove(client->c4->net->pollset, client->pollfd);
