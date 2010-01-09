@@ -1,5 +1,4 @@
 #include <apr_file_io.h>
-#include <apr_queue.h>
 #include <apr_thread_proc.h>
 
 #include "c4-api.h"
@@ -16,7 +15,7 @@
 struct C4Client
 {
     apr_pool_t *pool;
-    apr_queue_t *queue;
+    C4Runtime *runtime;
     apr_thread_t *runtime_thread;
 };
 
@@ -39,17 +38,12 @@ c4_make(int port)
 {
     apr_pool_t *pool;
     C4Client *client;
-    apr_status_t s;
 
     pool = make_subpool(NULL);
     client = apr_pcalloc(pool, sizeof(*client));
     client->pool = pool;
-
-    s = apr_queue_create(&client->queue, 256, client->pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
-    client->runtime_thread = c4_runtime_start(port, client->queue, client->pool);
+    client->runtime = c4_runtime_start(port, client->pool,
+                                       &client->runtime_thread);
     return client;
 }
 
@@ -59,9 +53,8 @@ c4_destroy(C4Client *client)
     apr_status_t s;
     apr_status_t thread_status;
 
-    s = apr_queue_term(client->queue);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
+    runtime_enqueue_shutdown(client->runtime);
+
     s = apr_thread_join(&thread_status, client->runtime_thread);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
@@ -133,7 +126,7 @@ done:
 C4Status
 c4_install_str(C4Client *client, const char *str)
 {
-    router_enqueue_program(client->queue, str);
+    runtime_enqueue_program(client->runtime, str);
 
     return C4_OK;
 }
@@ -141,5 +134,5 @@ c4_install_str(C4Client *client, const char *str)
 char *
 c4_dump_table(C4Client *client, const char *tbl_name)
 {
-    return router_enqueue_dump_table(client->queue, tbl_name, client->pool);
+    return runtime_enqueue_dump_table(client->runtime, tbl_name, client->pool);
 }

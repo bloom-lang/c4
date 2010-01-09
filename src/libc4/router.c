@@ -1,4 +1,5 @@
 #include <apr_hash.h>
+#include <apr_queue.h>
 #include <apr_thread_cond.h>
 
 #include "c4-internal.h"
@@ -39,7 +40,8 @@ typedef enum WorkItemKind
 {
     WI_TUPLE,
     WI_PROGRAM,
-    WI_DUMP_TABLE
+    WI_DUMP_TABLE,
+    WI_SHUTDOWN
 } WorkItemKind;
 
 typedef struct WorkItem
@@ -61,30 +63,27 @@ typedef struct WorkItem
     bool is_done;
 } WorkItem;
 
-static void router_enqueue(apr_queue_t *queue, WorkItem *wi);
-static void compute_fixpoint(C4Router *router);
+static void router_enqueue(C4Router *router, WorkItem *wi);
+static bool drain_queue(C4Router *router);
 
 C4Router *
-router_make(C4Runtime *c4, apr_queue_t *queue)
+router_make(C4Runtime *c4)
 {
     C4Router *router;
+    apr_status_t s;
 
     router = apr_pcalloc(c4->pool, sizeof(*router));
     router->c4 = c4;
     router->pool = c4->pool;
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->route_buf = tuple_buf_make(4096, router->pool);
-    router->net_buf = tuple_buf_make(1024, router->pool);
+    router->net_buf = tuple_buf_make(512, router->pool);
     router->ntuple_routed = 0;
-    router->queue = queue;
+    s = apr_queue_create(&router->queue, 512, router->pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
 
     return router;
-}
-
-apr_queue_t *
-router_get_queue(C4Router *router)
-{
-    return router->queue;
 }
 
 /*
@@ -114,12 +113,14 @@ router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
     router_enqueue_internal(router, tuple, tbl_def);
 }
 
-static void
-compute_fixpoint(C4Router *router)
+void
+router_do_fixpoint(C4Router *router)
 {
     TupleBuf *route_buf = router->route_buf;
     TupleBuf *net_buf = router->net_buf;
     bool benchmark_done = false;
+
+    ASSERT(tuple_buf_is_empty(net_buf));
 
     /*
      * NB: We route tuples from route_buf in a FIFO manner, but that
@@ -217,6 +218,9 @@ workitem_destroy(WorkItem *wi)
         case WI_DUMP_TABLE:
             return;
 
+        case WI_SHUTDOWN:
+            break;
+
         default:
             ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
     }
@@ -229,15 +233,27 @@ router_main_loop(C4Router *router)
 {
     while (true)
     {
+        network_poll(router->c4->net);
+        if (!drain_queue(router))
+            break;      /* Saw shutdown request */
+    }
+}
+
+/*
+ * Returns false if we saw a shutdown request, and true otherwise.
+ */
+static bool
+drain_queue(C4Router *router)
+{
+    while (true)
+    {
         apr_status_t s;
         WorkItem *wi;
+        bool do_shutdown = false;
 
-        s = apr_queue_pop(router->queue, (void **) &wi);
-
-        if (s == APR_EINTR)
-            continue;
-        if (s == APR_EOF)
-            break;
+        s = apr_queue_trypop(router->queue, (void **) &wi);
+        if (s == APR_EAGAIN)    /* Queue is empty */
+            return true;
         if (s != APR_SUCCESS)
             FAIL_APR(s);
 
@@ -255,18 +271,24 @@ router_main_loop(C4Router *router)
                 route_dump_table(router, wi);
                 break;
 
+            case WI_SHUTDOWN:
+                do_shutdown = true;
+                break;
+
             default:
                 ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
         }
 
-        compute_fixpoint(router);
+        router_do_fixpoint(router);
         workitem_destroy(wi);
+        if (do_shutdown)
+            return false;
     }
 }
 
 char *
-router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
-                          apr_pool_t *pool)
+runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
+                           apr_pool_t *pool)
 {
     WorkItem *wi;
     char *result;
@@ -281,7 +303,7 @@ router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
     apr_thread_cond_create(&wi->cond, pool);
     apr_thread_mutex_lock(wi->lock);
 
-    router_enqueue(queue, wi);
+    router_enqueue(c4->router, wi);
 
     /* may not make sense to do this here, but for now... */
     do {
@@ -297,7 +319,7 @@ router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
 }
 
 void
-router_enqueue_program(apr_queue_t *queue, const char *src)
+runtime_enqueue_program(C4Runtime *c4, const char *src)
 {
     WorkItem *wi;
 
@@ -305,11 +327,11 @@ router_enqueue_program(apr_queue_t *queue, const char *src)
     wi->kind = WI_PROGRAM;
     wi->program_src = ol_strdup(src);
 
-    router_enqueue(queue, wi);
+    router_enqueue(c4->router, wi);
 }
 
 void
-router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple, TableDef *tbl_def)
+runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple, TableDef *tbl_def)
 {
     WorkItem *wi;
 
@@ -321,7 +343,18 @@ router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple, TableDef *tbl_def)
     wi->tuple = tuple;
     wi->tbl_def = tbl_def;
 
-    router_enqueue(queue, wi);
+    router_enqueue(c4->router, wi);
+}
+
+void
+runtime_enqueue_shutdown(C4Runtime *c4)
+{
+    WorkItem *wi;
+
+    wi = ol_alloc0(sizeof(*wi));
+    wi->kind = WI_SHUTDOWN;
+
+    router_enqueue(c4->router, wi);
 }
 
 /*
@@ -331,11 +364,11 @@ router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple, TableDef *tbl_def)
  * had a chance to catchup.
  */
 static void
-router_enqueue(apr_queue_t *queue, WorkItem *wi)
+router_enqueue(C4Router *router, WorkItem *wi)
 {
     while (true)
     {
-        apr_status_t s = apr_queue_push(queue, wi);
+        apr_status_t s = apr_queue_push(router->queue, wi);
 
         /* XXX: should propagate APR_EOF failure back to client */
         if (s == APR_EINTR)
@@ -345,6 +378,8 @@ router_enqueue(apr_queue_t *queue, WorkItem *wi)
 
         FAIL();
     }
+
+    network_wakeup(router->c4->net);
 }
 
 /*
@@ -380,8 +415,7 @@ router_add_op_chain(C4Router *router, OpChain *op_chain)
 
 /*
  * C4-internal: enqueue a new tuple to be routed within the CURRENT
- * fixpoint. Because we don't insert into the router's work queue, this
- * should typically be invoked by the router thread itself.
+ * fixpoint.
  */
 void
 router_enqueue_internal(C4Router *router, Tuple *tuple, TableDef *tbl_def)

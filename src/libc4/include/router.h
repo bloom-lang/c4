@@ -1,26 +1,26 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
-#include <apr_queue.h>
-
 #include "operator/operator.h"
 #include "planner/planner.h"
 #include "types/tuple.h"
 
 typedef struct C4Router C4Router;
 
-C4Router *router_make(C4Runtime *c4, apr_queue_t *queue);
+C4Router *router_make(C4Runtime *c4);
 void router_main_loop(C4Router *router);
-apr_queue_t *router_get_queue(C4Router *router);
 
-void router_enqueue_program(apr_queue_t *queue, const char *src);
-void router_enqueue_tuple(apr_queue_t *queue, Tuple *tuple,
-                          TableDef *tbl_def);
+/* Public APIs */
+void runtime_enqueue_program(C4Runtime *c4, const char *src);
+void runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple,
+                           TableDef *tbl_def);
+char *runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
+                                 apr_pool_t *pool);
+void runtime_enqueue_shutdown(C4Runtime *c4);
 
-char *router_enqueue_dump_table(apr_queue_t *queue, const char *tbl_name,
-                                apr_pool_t *pool);
 
 /* Internal APIs: XXX: clearer naming */
+void router_do_fixpoint(C4Router *router);
 void router_install_tuple(C4Router *router, Tuple *tuple,
                           TableDef *tbl_def);
 void router_enqueue_internal(C4Router *router, Tuple *tuple,

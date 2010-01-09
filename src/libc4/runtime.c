@@ -1,3 +1,5 @@
+#include <apr_thread_cond.h>
+
 #include "c4-internal.h"
 #include "net/network.h"
 #include "router.h"
@@ -67,7 +69,7 @@ get_c4_base_dir(int port, apr_pool_t *pool, apr_pool_t *tmp_pool)
 }
 
 static C4Runtime *
-c4_runtime_make(int port, apr_queue_t *queue)
+c4_runtime_make(int port)
 {
     apr_status_t s;
     apr_pool_t *pool;
@@ -82,7 +84,7 @@ c4_runtime_make(int port, apr_queue_t *queue)
     c4->tmp_pool = make_subpool(c4->pool);
     c4->log = logger_make(c4);
     c4->cat = cat_make(c4);
-    c4->router = router_make(c4, queue);
+    c4->router = router_make(c4);
     c4->net = network_make(c4, port);
     c4->port = network_get_port(c4->net);
     c4->local_addr = get_local_addr(c4->port, c4->tmp_pool);
@@ -93,14 +95,20 @@ c4_runtime_make(int port, apr_queue_t *queue)
 }
 
 /*
- * Data that needs to be passed to a new C4 runtime thread during startup.
+ * Data that needs to be exchanged with a new C4 runtime thread during startup.
  * Annoyingly, we need to bundle this into a struct, because we're only allowed
  * to pass a single pointer to a new thread.
  */
 typedef struct RuntimeInitData
 {
-    apr_queue_t *queue;
+    /* Input data */
     int port;
+    apr_thread_cond_t *cond;
+    apr_thread_mutex_t *lock;
+
+    /* Output data */
+    C4Runtime *runtime;
+    bool startup_done;
 } RuntimeInitData;
 
 /*
@@ -108,28 +116,47 @@ typedef struct RuntimeInitData
  * as a separate thread. Note that we only allocate the thread itself in the
  * client-provided pool; the runtime itself uses a distinct top-level APR pool.
  */
-apr_thread_t *
-c4_runtime_start(int port, apr_queue_t *queue, apr_pool_t *pool)
+C4Runtime *
+c4_runtime_start(int port, apr_pool_t *pool, apr_thread_t **thread)
 {
+    RuntimeInitData *init_data;
     apr_status_t s;
     apr_threadattr_t *thread_attr;
-    apr_thread_t *thread;
-    RuntimeInitData *init_data;
+    C4Runtime *runtime;
 
-    init_data = ol_alloc(sizeof(*init_data));
-    init_data->queue = queue;
+    init_data = ol_alloc0(sizeof(*init_data));
     init_data->port = port;
+    s = apr_thread_mutex_create(&init_data->lock,
+                                APR_THREAD_MUTEX_DEFAULT, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+    s = apr_thread_cond_create(&init_data->cond, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    apr_thread_mutex_lock(init_data->lock);
 
     s = apr_threadattr_create(&thread_attr, pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    s = apr_thread_create(&thread, thread_attr, runtime_thread_main,
+    s = apr_thread_create(thread, thread_attr, runtime_thread_main,
                           init_data, pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    return thread;
+    do {
+        apr_thread_cond_wait(init_data->cond, init_data->lock);
+    } while (!init_data->startup_done);
+
+    runtime = init_data->runtime;
+
+    apr_thread_mutex_unlock(init_data->lock);
+    apr_thread_mutex_destroy(init_data->lock);
+    apr_thread_cond_destroy(init_data->cond);
+    ol_free(init_data);
+
+    return runtime;
 }
 
 static void * APR_THREAD_FUNC
@@ -138,13 +165,16 @@ runtime_thread_main(apr_thread_t *thread, void *data)
     RuntimeInitData *init_data = (RuntimeInitData *) data;
     C4Runtime *c4;
 
-    c4 = c4_runtime_make(init_data->port, init_data->queue);
-    ol_free(init_data);
+    c4 = c4_runtime_make(init_data->port);
+
+    /* Signal client that startup has completed */
+    init_data->runtime = c4;
+    init_data->startup_done = true;
+    apr_thread_cond_signal(init_data->cond);
 
     router_main_loop(c4->router);
 
     /* Client initiated an orderly shutdown */
-    network_destroy(c4->net);
     apr_pool_destroy(c4->pool);
     apr_thread_exit(thread, APR_SUCCESS);
 

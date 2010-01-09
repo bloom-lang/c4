@@ -108,13 +108,11 @@ C4Network *
 network_make(C4Runtime *c4, int port)
 {
     apr_status_t s;
-    apr_pool_t *pool;
     C4Network *net;
 
-    pool = make_subpool(c4->pool);
-    net = apr_pcalloc(pool, sizeof(*net));
+    net = apr_pcalloc(c4->pool, sizeof(*net));
     net->c4 = c4;
-    net->pool = pool;
+    net->pool = c4->pool;
     net->client_tbl = apr_hash_make(net->pool);
     net->tmp_buf = sbuf_make(net->pool);
     net->serv_sock = server_sock_make(port, net->pool);
@@ -188,39 +186,55 @@ pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
     return result;
 }
 
-void
-network_destroy(C4Network *net)
-{
-    apr_pool_destroy(net->pool);
-}
-
 int
 network_get_port(C4Network *net)
 {
     return net->local_addr->port;
 }
 
+/*
+ * Wait for network activity or network_wakeup(). We only return to the caller
+ * if we see a wakeup(); if any incoming tuples arrive, we compute a fixpoint
+ * directly.
+ */
 void
 network_poll(C4Network *net)
 {
-    apr_status_t s;
-    apr_int32_t num;
-    const apr_pollfd_t *descriptors;
-    int i;
+    while (true)
+    {
+        apr_status_t s;
+        apr_int32_t num;
+        const apr_pollfd_t *descriptors;
+        int i;
 
-    s = apr_pollset_poll(net->pollset, -1, &num, &descriptors);
-    if (s == APR_EINTR)
-        return;         /* apr_pollset_wakeup() was called */
+        s = apr_pollset_poll(net->pollset, -1, &num, &descriptors);
+        if (s == APR_EINTR)
+            return;         /* network_wakeup() was called */
+        if (s != APR_SUCCESS)
+            FAIL_APR(s);
+
+        for (i = 0; i < num; i++)
+        {
+            if (descriptors[i].desc.s == net->serv_sock)
+                accept_new_client(net);
+            else
+                update_client_state(&descriptors[i]);
+        }
+    }
+}
+
+/*
+ * Interrupt a blocking network_poll(). Note that this is typically invoked by a
+ * client thread.
+ */
+void
+network_wakeup(C4Network *net)
+{
+    apr_status_t s;
+
+    s = apr_pollset_wakeup(net->pollset);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
-
-    for (i = 0; i < num; i++)
-    {
-        if (descriptors[i].desc.s == net->serv_sock)
-            accept_new_client(net);
-        else
-            update_client_state(&descriptors[i]);
-    }
 }
 
 static void
@@ -378,8 +392,8 @@ saw_eof:
 }
 
 /*
- * Convert serialized tuple back into in-memory format, enqueue for
- * processing in next fixpoint.
+ * Convert serialized tuple back into in-memory format, add to router, and
+ * immediately compute a fixpoint.
  */
 static void
 deserialize_tuple(ClientState *client)
@@ -391,7 +405,8 @@ deserialize_tuple(ClientState *client)
     ASSERT(client->recv_state == RECV_TUPLE);
     tbl_def = cat_get_table(client->c4->cat, tbl_name);
     tuple = tuple_from_buf(client->recv_tuple_buf, tbl_def);
-    router_enqueue_tuple(NULL, tuple, tbl_def);
+    router_enqueue_internal(client->c4->router, tuple, tbl_def);
+    router_do_fixpoint(client->c4->router);
     tuple_unpin(tuple);
 }
 

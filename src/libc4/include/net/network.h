@@ -10,6 +10,7 @@ C4Network *network_make(C4Runtime *c4, int port);
 void network_destroy(C4Network *net);
 
 void network_poll(C4Network *net);
+void network_wakeup(C4Network *net);
 void network_send(C4Network *net, Tuple *tuple, TableDef *tbl_def);
 
 int network_get_port(C4Network *net);
