@@ -165,12 +165,15 @@ runtime_thread_main(apr_thread_t *thread, void *data)
     RuntimeInitData *init_data = (RuntimeInitData *) data;
     C4Runtime *c4;
 
+    apr_thread_mutex_lock(init_data->lock);
+
     c4 = c4_runtime_make(init_data->port);
 
     /* Signal client that startup has completed */
     init_data->runtime = c4;
     init_data->startup_done = true;
     apr_thread_cond_signal(init_data->cond);
+    apr_thread_mutex_unlock(init_data->lock);
 
     router_main_loop(c4->router);
 
