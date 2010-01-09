@@ -156,11 +156,11 @@ server_sock_make(int port, apr_pool_t *pool)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    s = apr_socket_opt_set(serv_sock, APR_SO_NONBLOCK, 1);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-
     socket_set_non_block(serv_sock);
+
+    s = apr_socket_bind(serv_sock, addr);
+    if (s != APR_SUCCESS)
+        ERROR("Failed to bind to local TCP socket, port %d", port);
 
     s = apr_socket_listen(serv_sock, SOMAXCONN);
     if (s != APR_SUCCESS)
