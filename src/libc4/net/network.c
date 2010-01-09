@@ -412,7 +412,7 @@ deserialize_tuple(ClientState *client)
     ASSERT(client->recv_state == RECV_TUPLE);
     tbl_def = cat_get_table(client->c4->cat, tbl_name);
     tuple = tuple_from_buf(client->recv_tuple_buf, tbl_def);
-    router_enqueue_internal(client->c4->router, tuple, tbl_def);
+    router_install_tuple(client->c4->router, tuple, tbl_def);
     router_do_fixpoint(client->c4->router);
     tuple_unpin(tuple);
 }
@@ -444,7 +444,7 @@ serialize_tuple(ClientState *client)
     tuple_unpin(tuple);
 
     tuple_len = client->send_tuple_buf->len;
-    sbuf_append_int32(client->send_header_buf, htons(tuple_len));
+    sbuf_append_int32(client->send_header_buf, htonl(tuple_len));
 }
 
 static void
