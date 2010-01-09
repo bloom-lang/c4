@@ -242,8 +242,6 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
     ProjListContext cxt;
     ListCell *lc;
 
-    printf("%s: plan = %p\n", __func__, (void *) plan);
-
     /*
      * We need to handle PLAN_INSERT specially: its projection list is based
      * on the rule's head clause, not the expressions that appear in the
