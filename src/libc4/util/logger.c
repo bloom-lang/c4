@@ -34,6 +34,23 @@ c4_log(C4Runtime *c4, const char *fmt, ...)
     apr_pool_clear(c4->log->tmp_pool);
 }
 
+void
+c4_warn_apr(C4Runtime *c4, apr_status_t s, const char *fmt, ...)
+{
+    va_list args;
+    char *fmt_str;
+    char apr_buf[512];
+
+    va_start(args, fmt);
+    fmt_str = apr_pvsprintf(c4->log->tmp_pool, fmt, args);
+    va_end(args);
+
+    apr_strerror(s, apr_buf, sizeof(apr_buf));
+
+    fprintf(stdout, "WARN (%d): %s: \"%s\"", c4->port, fmt_str, apr_buf);
+    apr_pool_clear(c4->log->tmp_pool);
+}
+
 char *
 log_tuple(C4Runtime *c4, Tuple *tuple)
 {

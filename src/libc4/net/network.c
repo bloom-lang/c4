@@ -311,13 +311,13 @@ client_cleanup(void *data)
 
     s = apr_pollset_remove(net->pollset, client->pollfd);
     if (s != APR_SUCCESS)
-        c4_log(client->c4, "Failed to remove client @ %s from pollset",
+        c4_warn_apr(client->c4, s, "Failed to remove client @ %s from pollset",
                client->loc_spec);
 
     s = apr_socket_close(client->sock);
     if (s != APR_SUCCESS)
-        c4_log(client->c4, "Close on client socket @ %s failed",
-               client->loc_spec);
+        c4_warn_apr(client->c4, s, "Close on client socket @ %s failed",
+                    client->loc_spec);
 
     apr_hash_set(net->client_tbl, client->loc_spec,
                  APR_HASH_KEY_STRING, NULL);
