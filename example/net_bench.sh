@@ -1,6 +1,6 @@
 #!/bin/sh
 
-C4=$HOME/build-col/src/c4i/c4i
+C4=$HOME/build_c4/src/c4i/c4i
 
 PORT1=11000
 PORT2=11001
