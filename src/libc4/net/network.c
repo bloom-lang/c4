@@ -194,8 +194,8 @@ network_get_port(C4Network *net)
 
 /*
  * Wait for network activity or network_wakeup(). We only return to the caller
- * if we see a wakeup(); if any incoming tuples arrive, we compute a fixpoint
- * directly.
+ * if we see a wakeup(); if any incoming tuples arrive, we send them to the
+ * router and then compute a fixpoint ourselves.
  */
 void
 network_poll(C4Network *net)
