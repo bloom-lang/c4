@@ -14,7 +14,7 @@ static void print_backtrace(void);
 void
 apr_error(apr_status_t s, const char *file, int line_num)
 {
-    char buf[1024];
+    char buf[512];
 
     apr_strerror(s, buf, sizeof(buf));
     fprintf(stderr, "APR ERROR: \"%s\", at %s:%d\n", buf, file, line_num);
@@ -46,7 +46,7 @@ void
 var_error(const char *file, int line_num, const char *fmt, ...)
 {
     va_list args;
-    char buf[1024];
+    char buf[512];
 
     va_start(args, fmt);
     vsnprintf(buf, sizeof(buf), fmt, args);
