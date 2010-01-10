@@ -275,14 +275,11 @@ sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len, bool *is_eof)
  * otherwise.
  */
 bool
-sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock, bool *is_eof)
+sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock)
 {
     apr_size_t to_write;
     apr_size_t did_write;
     apr_status_t s;
-
-    /* XXX: TODO */
-    *is_eof = false;
 
     did_write = to_write = sbuf_data_avail(sbuf);
     if (to_write == 0)

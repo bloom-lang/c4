@@ -52,6 +52,6 @@ void sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len);
 
 bool sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock,
                       apr_size_t len, bool *is_eof);
-bool sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock, bool *is_eof);
+bool sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock);
 
 #endif  /* STRBUF_H */

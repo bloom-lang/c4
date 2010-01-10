@@ -451,7 +451,6 @@ static void
 update_send_state(ClientState *client)
 {
     bool done_write;
-    bool is_eof;
 
     if (!client->connected)
     {
@@ -467,9 +466,7 @@ update_send_state(ClientState *client)
 
         case SEND_HEADER:
             done_write = sbuf_socket_send(client->send_header_buf,
-                                          client->sock, &is_eof);
-            if (is_eof)
-                goto saw_eof;
+                                          client->sock);
             if (!done_write)
                 return;
 
@@ -477,9 +474,7 @@ update_send_state(ClientState *client)
 
         case SEND_TUPLE:
             done_write = sbuf_socket_send(client->send_tuple_buf,
-                                          client->sock, &is_eof);
-            if (is_eof)
-                goto saw_eof;
+                                          client->sock);
             if (!done_write)
                 return;
 
@@ -499,9 +494,6 @@ update_send_state(ClientState *client)
             ERROR("Unrecognized client send state: %d",
                   (int) client->send_state);
     }
-
-saw_eof:
-    c4_log(client->c4, "saw EOF on write");
 }
 
 void
