@@ -129,8 +129,8 @@ router_do_fixpoint(C4Router *router)
     ASSERT(tuple_buf_is_empty(net_buf));
 
     /*
-     * NB: We route tuples from route_buf in a FIFO manner, but that
-     * is not necessarily the only choice.
+     * We route tuples from route_buf in a FIFO manner, but that is not
+     * necessarily the only choice.
      */
     while (!tuple_buf_is_empty(route_buf))
     {
