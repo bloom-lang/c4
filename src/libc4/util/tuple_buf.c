@@ -25,6 +25,14 @@ tuple_buf_cleanup(void *data)
 {
     TupleBuf *buf = (TupleBuf *) data;
 
+    while (!tuple_buf_is_empty(buf))
+    {
+        Tuple *tuple;
+
+        tuple_buf_shift(buf, &tuple, NULL);
+        tuple_unpin(tuple);
+    }
+
     ol_free(buf->entries);
     return APR_SUCCESS;
 }
