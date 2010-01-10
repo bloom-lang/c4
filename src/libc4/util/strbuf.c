@@ -291,5 +291,8 @@ sbuf_socket_send(StrBuf *sbuf, apr_socket_t *sock, bool *is_eof)
     s = apr_socket_send(sock, sbuf->data + sbuf->pos, &did_write);
     sbuf->pos += did_write;
 
+    if (s != APR_SUCCESS && !APR_STATUS_IS_EAGAIN(s))
+        FAIL_APR(s);
+
     return (to_write == did_write);
 }
