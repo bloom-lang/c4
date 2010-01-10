@@ -260,7 +260,7 @@ sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len, bool *is_eof)
 
     if (s != APR_SUCCESS)
     {
-        if (s == APR_EOF)
+        if (APR_STATUS_IS_EOF(s))
             *is_eof = true;
         else if (!APR_STATUS_IS_EAGAIN(s))
             FAIL_APR(s);
