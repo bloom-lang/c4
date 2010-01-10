@@ -126,7 +126,7 @@ network_make(C4Runtime *c4, int port)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    c4_log(c4, "Using poll method: %s", apr_pollset_method_name(net->pollset));
+    printf("Using poll method: %s\n", apr_pollset_method_name(net->pollset));
 
     net->pollfd = pollfd_make(net->pool, net->serv_sock, APR_POLLIN, NULL);
     s = apr_pollset_add(net->pollset, net->pollfd);
@@ -311,8 +311,8 @@ client_cleanup(void *data)
     apr_status_t s;
 
     if (!tuple_buf_is_empty(client->pending_tuples))
-        c4_log(client->c4, "Destroying client @ %s with unsent messages",
-               client->loc_spec);
+        c4_log(client->c4, "Destroying client @ %s with %d unsent messages",
+               client->loc_spec, tuple_buf_size(client->pending_tuples));
 
     s = apr_pollset_remove(net->pollset, client->pollfd);
     if (s != APR_SUCCESS)
@@ -363,8 +363,6 @@ update_recv_state(ClientState *client)
             client->tbl_name_len = ntohs(sbuf_read_int16(client->recv_name_buf));
             sbuf_reset(client->recv_name_buf);
             client->recv_state = RECV_TABLE_NAME;
-            c4_log(client->c4, "RECV_TABLE_NAME_LEN => RECV_TABLE_NAME (from %s)",
-                   client->loc_spec);
 
         case RECV_TABLE_NAME:
             saw_data = sbuf_socket_recv(client->recv_name_buf, client->sock,
@@ -376,8 +374,6 @@ update_recv_state(ClientState *client)
 
             sbuf_append_char(client->recv_name_buf, '\0');
             client->recv_state = RECV_TUPLE_LEN;
-            c4_log(client->c4, "RECV_TABLE_NAME => RECV_TUPLE_LEN (from %s)",
-                   client->loc_spec);
 
         case RECV_TUPLE_LEN:
             saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,
@@ -390,8 +386,6 @@ update_recv_state(ClientState *client)
             client->tuple_len = ntohl(sbuf_read_int32(client->recv_tuple_buf));
             sbuf_reset(client->recv_tuple_buf);
             client->recv_state = RECV_TUPLE;
-            c4_log(client->c4, "RECV_TABLE_NAME => RECV_TUPLE (from %s)",
-                   client->loc_spec);
 
         case RECV_TUPLE:
             saw_data = sbuf_socket_recv(client->recv_tuple_buf, client->sock,

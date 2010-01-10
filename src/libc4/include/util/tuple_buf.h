@@ -26,6 +26,7 @@ typedef struct TupleBuf
 } TupleBuf;
 
 #define tuple_buf_is_empty(buf)     ((buf)->start == (buf)->end)
+#define tuple_buf_size(buf)         ((buf)->end - (buf)->start)
 
 TupleBuf *tuple_buf_make(int size, apr_pool_t *pool);
 void tuple_buf_reset(TupleBuf *buf);
