@@ -292,12 +292,17 @@ client_make(C4Network *net)
     client->send_tuple_buf = sbuf_make(client->pool);
     client->pending_tuples = tuple_buf_make(64, client->pool);
 
-    apr_pool_cleanup_register(client->pool, client, client_cleanup,
-                              apr_pool_cleanup_null);
+    apr_pool_pre_cleanup_register(client->pool, client, client_cleanup);
 
     return client;
 }
 
+/*
+ * Note that this is registered as a pre_cleanup, so it will be invoked before
+ * other cleanup functions for the client's pool. This is important, because the
+ * socket cleanup function will close the socket, which would cause
+ * apr_pollset_remove() to fail.
+ */
 static apr_status_t
 client_cleanup(void *data)
 {
