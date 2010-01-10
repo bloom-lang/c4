@@ -47,7 +47,7 @@ c4_warn_apr(C4Runtime *c4, apr_status_t s, const char *fmt, ...)
 
     apr_strerror(s, apr_buf, sizeof(apr_buf));
 
-    fprintf(stdout, "WARN (%d): %s: \"%s\"", c4->port, fmt_str, apr_buf);
+    fprintf(stdout, "WARN (%d): %s: \"%s\"\n", c4->port, fmt_str, apr_buf);
     apr_pool_clear(c4->log->tmp_pool);
 }
 

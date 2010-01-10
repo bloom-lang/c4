@@ -312,7 +312,7 @@ client_cleanup(void *data)
     s = apr_pollset_remove(net->pollset, client->pollfd);
     if (s != APR_SUCCESS)
         c4_warn_apr(client->c4, s, "Failed to remove client @ %s from pollset",
-               client->loc_spec);
+                    client->loc_spec);
 
     s = apr_socket_close(client->sock);
     if (s != APR_SUCCESS)
