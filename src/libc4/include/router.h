@@ -22,7 +22,7 @@ void runtime_enqueue_shutdown(C4Runtime *c4);
 /* Internal APIs: XXX: clearer naming */
 void router_do_fixpoint(C4Router *router);
 void router_install_tuple(C4Router *router, Tuple *tuple,
-                          TableDef *tbl_def);
+                          TableDef *tbl_def, bool check_remote);
 void router_enqueue_internal(C4Router *router, Tuple *tuple,
                              TableDef *tbl_def);
 void router_enqueue_net(C4Router *router, Tuple *tuple,

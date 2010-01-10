@@ -412,7 +412,7 @@ deserialize_tuple(ClientState *client)
     ASSERT(client->recv_state == RECV_TUPLE);
     tbl_def = cat_get_table(client->c4->cat, tbl_name);
     tuple = tuple_from_buf(client->recv_tuple_buf, tbl_def);
-    router_install_tuple(client->c4->router, tuple, tbl_def);
+    router_install_tuple(client->c4->router, tuple, tbl_def, false);
     router_do_fixpoint(client->c4->router);
     tuple_unpin(tuple);
 }

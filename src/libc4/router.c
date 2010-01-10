@@ -87,20 +87,26 @@ router_make(C4Runtime *c4)
 }
 
 /*
- * Route a new tuple that belongs to the given table. If the tuple is remote
- * (i.e. the tuple's location specifier denotes an address other than the local
- * node address), then we enqueue the tuple in the network buffer.  Otherwise,
- * we insert the tuple into the appropriate local table, and then route it (pass
- * it to the appropriate operator chains).
+ * Route a new tuple that belongs to the given table. If "check_remote" is true
+ * and the tuple is remote (i.e. the tuple's location specifier denotes an
+ * address other than the local node address), then we enqueue the tuple in the
+ * network buffer.  Otherwise, we insert the tuple into the specified table, and
+ * then enqueue it to be routed in the next fixpoint.
+ *
+ * XXX: "check_remote" is a hack. The problem is that a node might have many
+ * different addresses (due to multi-homing, IPv4 vs. IPv6, DNS aliases,
+ * etc.). If we receive a network tuple that doesn't exactly match our local
+ * node address, we can easily get into an infinite loop.
  */
 void
-router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
+router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
+                     bool check_remote)
 {
 #if 1
     c4_log(router->c4, "%s: %s (=> %s)",
            __func__, log_tuple(router->c4, tuple), tbl_def->name);
 #endif
-    if (tuple_is_remote(tuple, tbl_def, router->c4))
+    if (check_remote && tuple_is_remote(tuple, tbl_def, router->c4))
     {
         router_enqueue_net(router, tuple, tbl_def);
         return;
@@ -260,7 +266,7 @@ drain_queue(C4Router *router)
         switch (wi->kind)
         {
             case WI_TUPLE:
-                router_install_tuple(router, wi->tuple, wi->tbl_def);
+                router_install_tuple(router, wi->tuple, wi->tbl_def, true);
                 break;
 
             case WI_PROGRAM:

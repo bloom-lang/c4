@@ -170,7 +170,7 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
 
         tbl_def = cat_get_table(istate->c4->cat, fact->head->name);
         t = fact_make_tuple(fact, tbl_def, istate);
-        router_install_tuple(istate->c4->router, t, tbl_def);
+        router_install_tuple(istate->c4->router, t, tbl_def, true);
         tuple_unpin(t);
     }
 }
