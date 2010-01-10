@@ -239,23 +239,32 @@ sbuf_read_data(StrBuf *sbuf, char *data, apr_size_t len)
  * the given socket.
  *
  * Returns true if successful, false otherwise. *is_eof indicates
- * whether we hit EOF.
+ * whether we hit EOF -- this might happen even if "true" is returned.
  */
 bool
 sbuf_socket_recv(StrBuf *sbuf, apr_socket_t *sock, apr_size_t len, bool *is_eof)
 {
     apr_size_t to_read;
     apr_size_t did_read;
+    apr_status_t s;
 
     *is_eof = false;
 
     if (len <= sbuf_data_avail(sbuf))
         return true;
 
-    to_read = len - sbuf_data_avail(sbuf);
-    sbuf_enlarge(sbuf, to_read);
-    did_read = socket_recv_data(sock, sbuf->data + sbuf->len, to_read, is_eof);
+    did_read = to_read = len - sbuf_data_avail(sbuf);
+    sbuf_enlarge(sbuf, sbuf->len + to_read);
+    s = apr_socket_recv(sock, sbuf->data + sbuf->len, &did_read);
     sbuf->len += did_read;
+
+    if (s != APR_SUCCESS)
+    {
+        if (s == APR_EOF)
+            *is_eof = true;
+        else if (!APR_STATUS_IS_EAGAIN(s))
+            FAIL_APR(s);
+    }
 
     return (to_read == did_read);
 }
