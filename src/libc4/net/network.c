@@ -302,6 +302,25 @@ static apr_status_t
 client_cleanup(void *data)
 {
     ClientState *client = (ClientState *) data;
+    C4Network *net = client->c4->net;
+    apr_status_t s;
+
+    if (!tuple_buf_is_empty(client->pending_tuples))
+        c4_log(client->c4, "Destroying client @ %s with unsent messages",
+               client->loc_spec);
+
+    s = apr_pollset_remove(net->pollset, client->pollfd);
+    if (s != APR_SUCCESS)
+        c4_log(client->c4, "Failed to remove client @ %s from pollset",
+               client->loc_spec);
+
+    s = apr_socket_close(client->sock);
+    if (s != APR_SUCCESS)
+        c4_log(client->c4, "Close on client socket @ %s failed",
+               client->loc_spec);
+
+    apr_hash_set(net->client_tbl, client->loc_spec,
+                 APR_HASH_KEY_STRING, NULL);
 
     return APR_SUCCESS;
 }
@@ -394,8 +413,7 @@ saw_eof:
         c4_log(client->c4, "Unexpected EOF from client @ %s",
                client->loc_spec);
 
-    /* XXX: destroy client */
-    apr_pollset_remove(client->c4->net->pollset, client->pollfd);
+    apr_pool_destroy(client->pool);
 }
 
 /*
