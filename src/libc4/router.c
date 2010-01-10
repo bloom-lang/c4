@@ -88,10 +88,10 @@ router_make(C4Runtime *c4)
 
 /*
  * Route a new tuple that belongs to the given table. If the tuple is remote
- * (i.e. the tuple's location specifier denotes an address other than the
- * local node address), then we enqueue the tuple in the network buffer.
- * Otherwise, we route the tuple locally (pass it to the appropriate
- * operator chains).
+ * (i.e. the tuple's location specifier denotes an address other than the local
+ * node address), then we enqueue the tuple in the network buffer.  Otherwise,
+ * we insert the tuple into the appropriate local table, and then route it (pass
+ * it to the appropriate operator chains).
  */
 void
 router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
