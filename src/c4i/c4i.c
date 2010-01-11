@@ -83,6 +83,7 @@ main(int argc, const char *argv[])
 
     apr_pool_destroy(pool);
     c4_terminate();
+    return 0;
 }
 
 static void
