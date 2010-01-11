@@ -173,7 +173,7 @@ void
 router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
                      bool check_remote)
 {
-#if 1
+#if 0
     c4_log(router->c4, "%s: %s (=> %s)",
            __func__, log_tuple(router->c4, tuple), tbl_def->name);
 #endif
