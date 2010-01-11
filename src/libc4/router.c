@@ -342,6 +342,7 @@ runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
 {
     WorkItem *wi;
     char *result;
+    apr_status_t s;
 
     wi = ol_alloc0(sizeof(*wi));
     wi->kind = WI_DUMP_TABLE;
@@ -349,8 +350,12 @@ runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
     wi->tbl_name = ol_strdup(tbl_name);
     wi->buf = sbuf_make(pool);
 
-    apr_thread_mutex_create(&wi->lock, APR_THREAD_MUTEX_UNNESTED, pool);
-    apr_thread_cond_create(&wi->cond, pool);
+    s = apr_thread_mutex_create(&wi->lock, APR_THREAD_MUTEX_DEFAULT, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+    s = apr_thread_cond_create(&wi->cond, pool);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
     apr_thread_mutex_lock(wi->lock);
 
     router_enqueue(c4->router, wi);
@@ -361,6 +366,7 @@ runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
     } while (!wi->is_done);
 
     result = wi->buf->data;
+    apr_thread_mutex_unlock(wi->lock);
     apr_thread_cond_destroy(wi->cond);
     apr_thread_mutex_destroy(wi->lock);
     ol_free(wi->tbl_name);
