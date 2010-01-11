@@ -13,10 +13,6 @@ make_tuple_pool(Schema *schema, apr_pool_t *pool)
 
     tpool = apr_palloc(pool, sizeof(*tpool));
     tpool->pool = pool;
-    if ((s = apr_thread_mutex_create(&tpool->lock,
-                                     APR_THREAD_MUTEX_DEFAULT,
-                                     tpool->pool)) != APR_SUCCESS)
-        FAIL_APR(s);
     tpool->schema = schema;
     tpool->free_head = NULL;
     /* XXX: Ensure this is word-aligned */
@@ -36,9 +32,6 @@ tuple_pool_loan(TuplePool *tpool)
     Tuple *result;
     apr_status_t s;
 
-    if ((s = apr_thread_mutex_lock(tpool->lock)) != APR_SUCCESS)
-        FAIL_APR(s);
-
     /*
      * Use the free list if there are any tuples in it. We return the
      * most-recently inserted element of the free list, on the theory that
@@ -52,8 +45,6 @@ tuple_pool_loan(TuplePool *tpool)
 
         result->ptr.schema = tpool->schema;
         result->refcount = 1;
-        if ((s = apr_thread_mutex_unlock(tpool->lock)) != APR_SUCCESS)
-            FAIL_APR(s);
         return result;
     }
 
@@ -81,8 +72,6 @@ tuple_pool_loan(TuplePool *tpool)
     tpool->raw_alloc += tpool->tuple_size;
     tpool->nalloc_unused--;
 
-    if ((s = apr_thread_mutex_unlock(tpool->lock)) != APR_SUCCESS)
-        FAIL_APR(s);
     return result;
 }
 
