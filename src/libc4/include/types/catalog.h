@@ -1,6 +1,7 @@
 #ifndef CATALOG_H
 #define CATALOG_H
 
+#include "c4-api.h"     /* XXX: Wrong */
 #include "parser/ast.h"
 #include "types/datum.h"
 #include "types/schema.h"
@@ -10,6 +11,9 @@ typedef struct C4Catalog C4Catalog;
 
 struct AbstractTable;
 struct OpChainList;
+struct Tuple;
+
+typedef struct CallbackRecord CallbackRecord;
 
 /*
  * A TableDef is a container for metadata about a C4 table. Because this
@@ -27,6 +31,9 @@ typedef struct TableDef
     /* Column number of location spec, or -1 if none */
     int ls_colno;
 
+    /* List of callbacks registered for this table */
+    CallbackRecord *cb;
+
     /* Table implementation */
     struct AbstractTable *table;
 
@@ -39,6 +46,13 @@ typedef struct TableDef
     struct OpChainList *op_chain_list;
 } TableDef;
 
+struct CallbackRecord
+{
+    C4TableCallback callback;
+    void *data;
+    struct CallbackRecord *next;
+};
+
 C4Catalog *cat_make(C4Runtime *c4);
 
 void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
@@ -46,8 +60,11 @@ void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
 void cat_delete_table(C4Catalog *cat, const char *name);
 TableDef *cat_get_table(C4Catalog *cat, const char *name);
 struct AbstractTable *cat_get_table_impl(C4Catalog *cat, const char *name);
-
 Schema *cat_get_schema(C4Catalog *cat, const char *name);
+
+void cat_register_callback(C4Catalog *cat, const char *tbl_name,
+                           C4TableCallback callback, void *data);
+void table_invoke_callbacks(TableDef *tbl, struct Tuple *tuple);
 
 bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);

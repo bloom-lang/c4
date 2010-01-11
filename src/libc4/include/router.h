@@ -1,6 +1,7 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
+#include "c4-api.h"     /* XXX: Wrong */
 #include "operator/operator.h"
 #include "planner/planner.h"
 #include "types/tuple.h"
@@ -16,8 +17,9 @@ void runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple,
                            TableDef *tbl_def);
 char *runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
                                  apr_pool_t *pool);
+void runtime_enqueue_callback(C4Runtime *c4, const char *tbl_name,
+                              C4TableCallback callback, void *data);
 void runtime_enqueue_shutdown(C4Runtime *c4);
-
 
 /* Internal APIs: XXX: clearer naming */
 void router_do_fixpoint(C4Router *router);

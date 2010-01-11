@@ -34,5 +34,21 @@ C4Status c4_install_str(C4Client *c4, const char *str);
 
 char *c4_dump_table(C4Client *c4, const char *tbl_name);
 
+struct TableDef;
+struct Tuple;
+
+typedef void (*C4TableCallback)(struct Tuple *tuple,
+                                struct TableDef *tbl_def, void *data);
+
+/*
+ * Register a callback that is invoked for each tuple inserted into the
+ * specified table. The "data" argument is passed into the callback.
+ *
+ * In the current implementation, callbacks are called synchronously (blocking
+ * the runtime until the callback returns), and are invoked immediately after a
+ * table insertion occurs (i.e. not at fixpoint boundaries).
+ */
+C4Status c4_register_callback(C4Client *c4, const char *tbl_name,
+                              C4TableCallback callback, void *data);
 
 #endif  /* C4_API_H */

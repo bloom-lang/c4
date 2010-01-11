@@ -4,6 +4,7 @@
 #include "parser/ast.h"
 #include "router.h"
 #include "types/catalog.h"
+#include "types/tuple.h"
 #include "storage/table.h"
 
 struct C4Catalog
@@ -72,6 +73,7 @@ cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
     tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
     tbl_def->ls_colno = find_loc_spec_colno(schema);
+    tbl_def->cb = NULL;
     tbl_def->table = table_make(tbl_def, cat->c4, tbl_pool);
     tbl_def->op_chain_list = router_get_opchain_list(cat->c4->router,
                                                      tbl_def->name);
@@ -116,6 +118,36 @@ cat_get_schema(C4Catalog *cat, const char *name)
         return NULL;
 
     return tbl_def->schema;
+}
+
+void
+cat_register_callback(C4Catalog *cat, const char *tbl_name,
+                      C4TableCallback callback, void *data)
+{
+    TableDef *tbl_def;
+    CallbackRecord *cb_rec;
+
+    tbl_def = cat_get_table(cat, tbl_name);
+    if (tbl_def == NULL)
+        ERROR("No such table: %s", tbl_name);
+
+    cb_rec = apr_palloc(cat->pool, sizeof(*cb_rec));
+    cb_rec->callback = callback;
+    cb_rec->data = data;
+    cb_rec->next = tbl_def->cb;
+    tbl_def->cb = cb_rec;
+}
+
+void
+table_invoke_callbacks(TableDef *tbl_def, Tuple *tuple)
+{
+    CallbackRecord *cb_rec = tbl_def->cb;
+
+    while (cb_rec != NULL)
+    {
+        cb_rec->callback(tuple, tbl_def, cb_rec->data);
+        cb_rec = cb_rec->next;
+    }
 }
 
 bool

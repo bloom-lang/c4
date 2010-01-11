@@ -41,6 +41,7 @@ typedef enum WorkItemKind
     WI_TUPLE,
     WI_PROGRAM,
     WI_DUMP_TABLE,
+    WI_CALLBACK,
     WI_SHUTDOWN
 } WorkItemKind;
 
@@ -61,6 +62,11 @@ typedef struct WorkItem
     apr_thread_mutex_t *lock;
     StrBuf *buf;
     bool is_done;
+
+    /* WI_CALLBACK */
+    char *callback_tbl_name;
+    C4TableCallback callback;
+    void *callback_data;
 } WorkItem;
 
 static void router_enqueue(C4Router *router, WorkItem *wi);
@@ -84,39 +90,6 @@ router_make(C4Runtime *c4)
         FAIL_APR(s);
 
     return router;
-}
-
-/*
- * Route a new tuple that belongs to the given table. If "check_remote" is true
- * and the tuple is remote (i.e. the tuple's location specifier denotes an
- * address other than the local node address), then we enqueue the tuple in the
- * network buffer.  Otherwise, we insert the tuple into the specified table, and
- * then enqueue it to be routed in the next fixpoint.
- *
- * XXX: "check_remote" is a hack. The problem is that a node might have many
- * different addresses (due to multi-homing, IPv4 vs. IPv6, DNS aliases,
- * etc.). If we receive a network tuple that doesn't exactly match our local
- * node address, we can easily get into an infinite loop.
- */
-void
-router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
-                     bool check_remote)
-{
-#if 1
-    c4_log(router->c4, "%s: %s (=> %s)",
-           __func__, log_tuple(router->c4, tuple), tbl_def->name);
-#endif
-    if (check_remote && tuple_is_remote(tuple, tbl_def, router->c4))
-    {
-        router_enqueue_net(router, tuple, tbl_def);
-        return;
-    }
-
-    /* If the tuple is a duplicate, no need to route it */
-    if (tbl_def->table->insert(tbl_def->table, tuple) == false)
-        return;
-
-    router_enqueue_internal(router, tuple, tbl_def);
 }
 
 void
@@ -184,15 +157,38 @@ router_do_fixpoint(C4Router *router)
         exit(1);
 }
 
-static void
-route_dump_table(C4Router *router, WorkItem *wi)
+/*
+ * Route a new tuple that belongs to the given table. If "check_remote" is true
+ * and the tuple is remote (i.e. the tuple's location specifier denotes an
+ * address other than the local node address), then we enqueue the tuple in the
+ * network buffer.  Otherwise, we insert the tuple into the specified table, and
+ * then enqueue it to be routed in the next fixpoint.
+ *
+ * XXX: "check_remote" is a hack. The problem is that a node might have many
+ * different addresses (due to multi-homing, IPv4 vs. IPv6, DNS aliases,
+ * etc.). If we receive a network tuple that doesn't exactly match our local
+ * node address, we can easily get into an infinite loop.
+ */
+void
+router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
+                     bool check_remote)
 {
-    apr_thread_mutex_lock(wi->lock);
+#if 1
+    c4_log(router->c4, "%s: %s (=> %s)",
+           __func__, log_tuple(router->c4, tuple), tbl_def->name);
+#endif
+    if (check_remote && tuple_is_remote(tuple, tbl_def, router->c4))
+    {
+        router_enqueue_net(router, tuple, tbl_def);
+        return;
+    }
 
-    dump_table(router->c4, wi->tbl_name, wi->buf);
-    wi->is_done = true;
-    apr_thread_cond_signal(wi->cond);
-    apr_thread_mutex_unlock(wi->lock);
+    /* If the tuple is a duplicate, no need to route it */
+    if (tbl_def->table->insert(tbl_def->table, tuple) == false)
+        return;
+
+    table_invoke_callbacks(tbl_def, tuple);
+    router_enqueue_internal(router, tuple, tbl_def);
 }
 
 static void
@@ -205,6 +201,17 @@ route_program(C4Router *router, const char *src)
     ast = parse_str(src, c4->tmp_pool, c4);
     plan = plan_program(ast, c4->tmp_pool, c4);
     install_plan(plan, c4->tmp_pool, c4);
+}
+
+static void
+route_dump_table(C4Router *router, WorkItem *wi)
+{
+    apr_thread_mutex_lock(wi->lock);
+
+    dump_table(router->c4, wi->tbl_name, wi->buf);
+    wi->is_done = true;
+    apr_thread_cond_signal(wi->cond);
+    apr_thread_mutex_unlock(wi->lock);
 }
 
 static void
@@ -223,6 +230,10 @@ workitem_destroy(WorkItem *wi)
         /* XXX: hack. Let the client free the WorkItem */
         case WI_DUMP_TABLE:
             return;
+
+        case WI_CALLBACK:
+            ol_free(wi->callback_tbl_name);
+            break;
 
         case WI_SHUTDOWN:
             break;
@@ -277,6 +288,11 @@ drain_queue(C4Router *router)
                 route_dump_table(router, wi);
                 break;
 
+            case WI_CALLBACK:
+                cat_register_callback(router->c4->cat, wi->callback_tbl_name,
+                                      wi->callback, wi->callback_data);
+                break;
+
             case WI_SHUTDOWN:
                 do_shutdown = true;
                 break;
@@ -290,6 +306,34 @@ drain_queue(C4Router *router)
         if (do_shutdown)
             return false;
     }
+}
+
+void
+runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple, TableDef *tbl_def)
+{
+    WorkItem *wi;
+
+    /* The tuple is unpinned when the router is finished with it */
+    tuple_pin(tuple);
+
+    wi = ol_alloc0(sizeof(*wi));
+    wi->kind = WI_TUPLE;
+    wi->tuple = tuple;
+    wi->tbl_def = tbl_def;
+
+    router_enqueue(c4->router, wi);
+}
+
+void
+runtime_enqueue_program(C4Runtime *c4, const char *src)
+{
+    WorkItem *wi;
+
+    wi = ol_alloc0(sizeof(*wi));
+    wi->kind = WI_PROGRAM;
+    wi->program_src = ol_strdup(src);
+
+    router_enqueue(c4->router, wi);
 }
 
 char *
@@ -325,29 +369,16 @@ runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
 }
 
 void
-runtime_enqueue_program(C4Runtime *c4, const char *src)
+runtime_enqueue_callback(C4Runtime *c4, const char *tbl_name,
+                         C4TableCallback callback, void *data)
 {
     WorkItem *wi;
 
     wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_PROGRAM;
-    wi->program_src = ol_strdup(src);
-
-    router_enqueue(c4->router, wi);
-}
-
-void
-runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple, TableDef *tbl_def)
-{
-    WorkItem *wi;
-
-    /* The tuple is unpinned when the router is finished with it */
-    tuple_pin(tuple);
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_TUPLE;
-    wi->tuple = tuple;
-    wi->tbl_def = tbl_def;
+    wi->kind = WI_CALLBACK;
+    wi->callback_tbl_name = ol_strdup(tbl_name);
+    wi->callback = callback;
+    wi->callback_data = data;
 
     router_enqueue(c4->router, wi);
 }

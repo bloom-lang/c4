@@ -136,3 +136,12 @@ c4_dump_table(C4Client *client, const char *tbl_name)
 {
     return runtime_enqueue_dump_table(client->runtime, tbl_name, client->pool);
 }
+
+C4Status
+c4_register_callback(C4Client *client, const char *tbl_name,
+                     C4TableCallback callback, void *data)
+{
+    runtime_enqueue_callback(client->runtime, tbl_name, callback, data);
+
+    return C4_OK;
+}
