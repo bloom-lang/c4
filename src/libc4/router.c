@@ -32,8 +32,6 @@ struct C4Router
     TupleBuf *route_buf;
     /* Pending network output tuples computed within current fixpoint */
     TupleBuf *net_buf;
-
-    int ntuple_routed;
 };
 
 typedef enum WorkItemKind
@@ -84,7 +82,6 @@ router_make(C4Runtime *c4)
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->route_buf = tuple_buf_make(4096, router->pool);
     router->net_buf = tuple_buf_make(512, router->pool);
-    router->ntuple_routed = 0;
     s = apr_queue_create(&router->queue, 512, router->pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
@@ -97,7 +94,6 @@ router_do_fixpoint(C4Router *router)
 {
     TupleBuf *route_buf = router->route_buf;
     TupleBuf *net_buf = router->net_buf;
-    bool benchmark_done = false;
 
     ASSERT(tuple_buf_is_empty(net_buf));
 
@@ -122,14 +118,6 @@ router_do_fixpoint(C4Router *router)
         }
 
         tuple_unpin(tuple);
-        router->ntuple_routed++;
-
-        /* XXX: temporary */
-        if (router->ntuple_routed >= 3000000)
-        {
-            benchmark_done = true;
-            break;
-        }
     }
 
     /* If we modified persistent storage, commit to disk */
@@ -152,9 +140,6 @@ router_do_fixpoint(C4Router *router)
     /* Sending network messages should not cause more routing work */
     ASSERT(tuple_buf_is_empty(route_buf));
     apr_pool_clear(router->c4->tmp_pool);
-
-    if (benchmark_done)
-        exit(1);
 }
 
 /*
