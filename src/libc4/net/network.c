@@ -81,6 +81,7 @@ typedef struct ClientState
 
 #define POLLSET_SIZE 64
 
+static apr_status_t network_cleanup(void *data);
 static apr_socket_t *server_sock_make(int port, apr_pool_t *pool);
 static apr_pollfd_t *pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
                                  apr_int16_t reqevents, void *data);
@@ -133,7 +134,22 @@ network_make(C4Runtime *c4, int port)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
+    apr_pool_cleanup_register(c4->pool, net, network_cleanup,
+                              apr_pool_cleanup_null);
+
     return net;
+}
+
+static apr_status_t
+network_cleanup(void *data)
+{
+    C4Network *net = (C4Network *) data;
+
+    /* Sanity check: no more clients in table */
+    if (apr_hash_count(net->client_tbl) != 0)
+        FAIL();
+
+    return APR_SUCCESS;
 }
 
 static apr_socket_t *
