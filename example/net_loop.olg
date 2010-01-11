@@ -1,3 +1,0 @@
-define(ping, keys(0), {@string, string, int8});
-
-ping(X, Y, C + 1) :- ping(Y, X, C);
