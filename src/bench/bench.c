@@ -10,8 +10,6 @@
 
 #include "c4-api.h"
 
-#define NET_BENCH_SRC "/Users/neilconway/c4/example/net_loop.olg"
-
 static void usage(void);
 static void do_net_bench(apr_pool_t *pool);
 static void do_perf_bench(apr_pool_t *pool);
