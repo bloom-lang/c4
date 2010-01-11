@@ -20,7 +20,7 @@ typedef enum C4Status
 } C4Status;
 
 /*
- * Initialize and terminate C4 for the current process. Must be the
+ * Initialize and terminate the C4 library for the current process. Must be the
  * first and last API functions called, respectively.
  */
 void c4_initialize(void);
@@ -28,6 +28,7 @@ void c4_terminate(void);
 
 C4Client *c4_make(int port);
 C4Status c4_destroy(C4Client *c4);
+int c4_get_port(C4Client *c4);
 
 C4Status c4_install_file(C4Client *c4, const char *path);
 C4Status c4_install_str(C4Client *c4, const char *str);

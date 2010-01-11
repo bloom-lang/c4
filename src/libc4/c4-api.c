@@ -65,6 +65,12 @@ c4_destroy(C4Client *client)
     return C4_OK;
 }
 
+int
+c4_get_port(C4Client *client)
+{
+    return client->runtime->port;
+}
+
 /*
  * Read the file at the specified filesystem path into memory, parse it, and
  * then install the resulting program into the specified C4 runtime. XXX:
