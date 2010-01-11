@@ -17,7 +17,7 @@ main(int argc, const char *argv[])
 {
     static const apr_getopt_option_t opt_option[] =
         {
-            {"src-string", 's', true, "install source" },
+            { "src-string", 's', true, "install source" },
             { "help", 'h', false, "show help" },
             { "port", 'p', true, "port number" },
             { NULL, 0, 0, NULL }
