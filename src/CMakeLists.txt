@@ -1,1 +1,1 @@
-subdirs(c4i libc4 regress)
+subdirs(bench c4i libc4 regress)
