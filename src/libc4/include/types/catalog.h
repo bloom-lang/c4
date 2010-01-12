@@ -48,7 +48,7 @@ typedef struct TableDef
 
 struct CallbackRecord
 {
-    C4TableCallback callback;
+    C4TupleCallback callback;
     void *data;
     struct CallbackRecord *next;
 };
@@ -63,7 +63,7 @@ struct AbstractTable *cat_get_table_impl(C4Catalog *cat, const char *name);
 Schema *cat_get_schema(C4Catalog *cat, const char *name);
 
 void cat_register_callback(C4Catalog *cat, const char *tbl_name,
-                           C4TableCallback callback, void *data);
+                           C4TupleCallback callback, void *data);
 void table_invoke_callbacks(TableDef *tbl, struct Tuple *tuple);
 
 bool is_numeric_type(DataType type_id);

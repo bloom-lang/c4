@@ -63,7 +63,7 @@ typedef struct WorkItem
 
     /* WI_CALLBACK */
     char *callback_tbl_name;
-    C4TableCallback callback;
+    C4TupleCallback callback;
     void *callback_data;
 } WorkItem;
 
@@ -361,7 +361,7 @@ runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
 
 void
 runtime_enqueue_callback(C4Runtime *c4, const char *tbl_name,
-                         C4TableCallback callback, void *data)
+                         C4TupleCallback callback, void *data)
 {
     WorkItem *wi;
 

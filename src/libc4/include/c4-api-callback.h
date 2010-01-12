@@ -9,7 +9,7 @@
 struct TableDef;
 struct Tuple;
 
-typedef void (*C4TableCallback)(struct Tuple *tuple,
+typedef void (*C4TupleCallback)(struct Tuple *tuple,
                                 struct TableDef *tbl_def, void *data);
 
 #endif  /* C4_API_CALLBACK_H */

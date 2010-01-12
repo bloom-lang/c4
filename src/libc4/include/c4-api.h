@@ -46,6 +46,6 @@ char *c4_dump_table(C4Client *c4, const char *tbl_name);
  * table insertion occurs (i.e. not at fixpoint boundaries).
  */
 C4Status c4_register_callback(C4Client *c4, const char *tbl_name,
-                              C4TableCallback callback, void *data);
+                              C4TupleCallback callback, void *data);
 
 #endif  /* C4_API_H */

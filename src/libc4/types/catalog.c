@@ -122,7 +122,7 @@ cat_get_schema(C4Catalog *cat, const char *name)
 
 void
 cat_register_callback(C4Catalog *cat, const char *tbl_name,
-                      C4TableCallback callback, void *data)
+                      C4TupleCallback callback, void *data)
 {
     TableDef *tbl_def;
     CallbackRecord *cb_rec;
