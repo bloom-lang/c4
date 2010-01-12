@@ -1,7 +1,7 @@
 #ifndef CATALOG_H
 #define CATALOG_H
 
-#include "c4-api.h"     /* XXX: Wrong */
+#include "c4-api-callback.h"
 #include "parser/ast.h"
 #include "types/datum.h"
 #include "types/schema.h"

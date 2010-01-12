@@ -1,7 +1,7 @@
 #ifndef ROUTER_H
 #define ROUTER_H
 
-#include "c4-api.h"     /* XXX: Wrong */
+#include "c4-api-callback.h"
 #include "operator/operator.h"
 #include "planner/planner.h"
 #include "types/tuple.h"

@@ -1,6 +1,8 @@
 #ifndef C4_API_H
 #define C4_API_H
 
+#include "c4-api-callback.h"
+
 /*
  * An opaque type that holds the client-side state associated with a
  * single instance of the C4 runtime. C4 API calls use this state to
@@ -34,12 +36,6 @@ C4Status c4_install_file(C4Client *c4, const char *path);
 C4Status c4_install_str(C4Client *c4, const char *str);
 
 char *c4_dump_table(C4Client *c4, const char *tbl_name);
-
-struct TableDef;
-struct Tuple;
-
-typedef void (*C4TableCallback)(struct Tuple *tuple,
-                                struct TableDef *tbl_def, void *data);
 
 /*
  * Register a callback that is invoked for each tuple inserted into the
