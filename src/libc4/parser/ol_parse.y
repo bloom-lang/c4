@@ -4,6 +4,7 @@
 #include "nodes/makefuncs.h"
 /* XXX: see note about #include order in parser.c */
 #include "parser/parser-internal.h"
+#include "ol_parse.h"
 #include "ol_scan.h"
 #include "util/list.h"
 
@@ -26,6 +27,7 @@ static void split_rule_body(List *body, List **joins,
 
 %start program
 %error-verbose
+%pure-parser
 %parse-param { C4Parser *context }
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }

@@ -17,6 +17,7 @@ static unsigned char unescape_char(unsigned char c);
 %option nounput
 %option noyywrap
 %option reentrant
+%option bison-bridge
 %option extra-type="C4Parser *"
 
 digit           [0-9]
@@ -77,19 +78,19 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 
 <string>\" {
     C4Parser *context = yyget_extra(yyscanner);
-    yylval.str = sbuf_dup(context->lit_buf, SCANNER_POOL);
+    yylval->str = sbuf_dup(context->lit_buf, SCANNER_POOL);
     BEGIN(INITIAL);
     return SCONST;
 }
 
 \'[^\\\']\' {
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, &yytext[1], 1);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, &yytext[1], 1);
     return CCONST;
 }
 
 \'\\.\' {
     char c = unescape_char((unsigned char) yytext[2]);
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, &c, 1);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, &c, 1);
     return CCONST;
 }
 
@@ -119,22 +120,22 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "true"                  { return OL_TRUE; }
 
 {integer} {
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return ICONST;
 }
 
 {real} {
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return FCONST;
 }
 
 {var_ident} {
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return VAR_IDENT;
 }
 
 {tbl_ident} {
-    yylval.str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
+    yylval->str = apr_pstrmemdup(SCANNER_POOL, yytext, yyleng);
     return TBL_IDENT;
 }
 

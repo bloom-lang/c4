@@ -7,6 +7,7 @@
  * ol_scan.h, because Flex is broken.
  */
 #include "parser/parser-internal.h"
+#include "ol_parse.h"
 #include "ol_scan.h"
 
 static C4Parser *
