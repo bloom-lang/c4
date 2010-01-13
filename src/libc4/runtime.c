@@ -1,5 +1,3 @@
-#include <apr_thread_cond.h>
-
 #include "c4-internal.h"
 #include "net/network.h"
 #include "router.h"
@@ -103,12 +101,10 @@ typedef struct RuntimeInitData
 {
     /* Input data */
     int port;
-    apr_thread_cond_t *cond;
-    apr_thread_mutex_t *lock;
+    C4ThreadSync *thread_sync;
 
     /* Output data */
     C4Runtime *runtime;
-    bool startup_done;
 } RuntimeInitData;
 
 /*
@@ -117,7 +113,8 @@ typedef struct RuntimeInitData
  * client-provided pool; the runtime itself uses a distinct top-level APR pool.
  */
 C4Runtime *
-c4_runtime_start(int port, apr_pool_t *pool, apr_thread_t **thread)
+c4_runtime_start(int port, C4ThreadSync *thread_sync,
+                 apr_pool_t *pool, apr_thread_t **thread)
 {
     RuntimeInitData *init_data;
     apr_status_t s;
@@ -126,15 +123,9 @@ c4_runtime_start(int port, apr_pool_t *pool, apr_thread_t **thread)
 
     init_data = ol_alloc0(sizeof(*init_data));
     init_data->port = port;
-    s = apr_thread_mutex_create(&init_data->lock,
-                                APR_THREAD_MUTEX_DEFAULT, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-    s = apr_thread_cond_create(&init_data->cond, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
+    init_data->thread_sync = thread_sync;
 
-    apr_thread_mutex_lock(init_data->lock);
+    thread_sync_prepare(init_data->thread_sync);
 
     s = apr_threadattr_create(&thread_attr, pool);
     if (s != APR_SUCCESS)
@@ -145,17 +136,10 @@ c4_runtime_start(int port, apr_pool_t *pool, apr_thread_t **thread)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    do {
-        apr_thread_cond_wait(init_data->cond, init_data->lock);
-    } while (!init_data->startup_done);
+    thread_sync_wait(init_data->thread_sync);
 
     runtime = init_data->runtime;
-
-    apr_thread_mutex_unlock(init_data->lock);
-    apr_thread_mutex_destroy(init_data->lock);
-    apr_thread_cond_destroy(init_data->cond);
     ol_free(init_data);
-
     return runtime;
 }
 
@@ -165,15 +149,11 @@ runtime_thread_main(apr_thread_t *thread, void *data)
     RuntimeInitData *init_data = (RuntimeInitData *) data;
     C4Runtime *c4;
 
-    apr_thread_mutex_lock(init_data->lock);
-
     c4 = c4_runtime_make(init_data->port);
 
     /* Signal client that startup has completed */
     init_data->runtime = c4;
-    init_data->startup_done = true;
-    apr_thread_cond_signal(init_data->cond);
-    apr_thread_mutex_unlock(init_data->lock);
+    thread_sync_signal(init_data->thread_sync);
 
     router_main_loop(c4->router);
 

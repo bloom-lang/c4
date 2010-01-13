@@ -5,6 +5,7 @@
 #include "c4-internal.h"
 #include "router.h"
 #include "runtime.h"
+#include "util/thread_sync.h"
 
 /*
  * Client state. This is manipulated by C4 client APIs; they mostly insert
@@ -15,6 +16,7 @@
 struct C4Client
 {
     apr_pool_t *pool;
+    C4ThreadSync *thread_sync;
     C4Runtime *runtime;
     apr_thread_t *runtime_thread;
 };
@@ -42,7 +44,8 @@ c4_make(int port)
     pool = make_subpool(NULL);
     client = apr_pcalloc(pool, sizeof(*client));
     client->pool = pool;
-    client->runtime = c4_runtime_start(port, client->pool,
+    client->thread_sync = thread_sync_make(client->pool);
+    client->runtime = c4_runtime_start(port, client->thread_sync, client->pool,
                                        &client->runtime_thread);
     return client;
 }
