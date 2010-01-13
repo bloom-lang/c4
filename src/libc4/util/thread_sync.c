@@ -46,7 +46,12 @@ thread_sync_make(apr_pool_t *pool)
 void
 thread_sync_prepare(C4ThreadSync *ts)
 {
-    apr_thread_mutex_lock(ts->lock);
+    apr_status_t s;
+
+    s = apr_thread_mutex_lock(ts->lock);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
     ASSERT(ts->state == SYNC_IDLE);
     ts->state = SYNC_PREPARED;
     /* We continue to hold the lock */
@@ -55,24 +60,40 @@ thread_sync_prepare(C4ThreadSync *ts)
 void
 thread_sync_wait(C4ThreadSync *ts)
 {
+    apr_status_t s;
+
     /* Lock is held on entry */
     ASSERT(ts->state == SYNC_PREPARED);
     ts->state = SYNC_WAITING;
 
     do {
-        apr_thread_cond_wait(ts->cond, ts->lock);
+        s = apr_thread_cond_wait(ts->cond, ts->lock);
+        if (s != APR_SUCCESS)
+            FAIL_APR(s);
     } while (ts->state != SYNC_SIGNALED);
 
     ts->state = SYNC_IDLE;
-    apr_thread_mutex_unlock(ts->lock);
+    s = apr_thread_mutex_unlock(ts->lock);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
 }
 
 void
 thread_sync_signal(C4ThreadSync *ts)
 {
-    apr_thread_mutex_lock(ts->lock);
+    apr_status_t s;
+
+    s = apr_thread_mutex_lock(ts->lock);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
     ASSERT(ts->state == SYNC_WAITING);
     ts->state = SYNC_SIGNALED;
-    apr_thread_cond_signal(ts->cond);
-    apr_thread_mutex_unlock(ts->lock);
+    s = apr_thread_cond_signal(ts->cond);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    s = apr_thread_mutex_unlock(ts->lock);
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
 }
