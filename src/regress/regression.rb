@@ -22,18 +22,17 @@ class TestTuple < Test::Unit::TestCase
         else
           str << line
         end
-      end      
+      end
       return str
     end
   end
-  
+
   def setup
     @c4 = C4.new
   end
 
   def teardown
-    # XXX: currently broken
-    # @c4.destroy
+    @c4.destroy
   end
 
   def test_loop

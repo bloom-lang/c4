@@ -32,7 +32,7 @@ class C4
   def install_str(inprog)
     s = C4Lib.c4_install_str(@c4, inprog)
   end
-  
+
   def dump_table(tbl_name)
     C4Lib.c4_dump_table(@c4, tbl_name)
   end
