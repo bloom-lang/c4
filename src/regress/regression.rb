@@ -4,12 +4,12 @@ require 'test/unit'
 
 class TestTuple < Test::Unit::TestCase
   class TestPair
-    attr_reader :program, :commands, :witness
+    attr_reader :program, :commands, :expected
     def initialize(name)
       @commands = []
       @program = file_to_str("input/" + name)
       # sort the records on both sides.  this is ugly.
-      @witness = file_to_str("expected/" + name).split("\n").sort.join("\n")
+      @expected = file_to_str("expected/" + name).split("\n").sort.join("\n")
     end
 
     def file_to_str(file)
@@ -47,7 +47,7 @@ class TestTuple < Test::Unit::TestCase
         output << @c4.dump_table(c)
       end
 
-      assert_equal(tp.witness, output.split("\n").sort.join("\n"))
+      assert_equal(tp.expected, output.split("\n").sort.join("\n"))
     end
   end
 end
