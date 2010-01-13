@@ -200,8 +200,8 @@ drain_queue(C4Router *router)
                 break;
 
             case WI_CALLBACK:
-                cat_register_callback(router->c4->cat, wi->callback_tbl_name,
-                                      wi->callback, wi->callback_data);
+                cat_register_callback(router->c4->cat, wi->cb_tbl_name,
+                                      wi->cb_func, wi->cb_data);
                 break;
 
             case WI_SHUTDOWN:

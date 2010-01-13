@@ -38,9 +38,9 @@ typedef struct WorkItem
     StrBuf *buf;
 
     /* WI_CALLBACK */
-    const char *callback_tbl_name;
-    C4TupleCallback callback;
-    void *callback_data;
+    const char *cb_tbl_name;
+    C4TupleCallback cb_func;
+    void *cb_data;
 } WorkItem;
 
 void runtime_enqueue_work(C4Runtime *c4, WorkItem *wi);

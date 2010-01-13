@@ -173,9 +173,9 @@ c4_register_callback(C4Client *client, const char *tbl_name,
     WorkItem *wi = client->wi;
 
     wi->kind = WI_CALLBACK;
-    wi->callback_tbl_name = tbl_name;
-    wi->callback = callback;
-    wi->callback_data = data;
+    wi->cb_tbl_name = tbl_name;
+    wi->cb_func = callback;
+    wi->cb_data = data;
     runtime_enqueue_work(client->runtime, wi);
 
     return C4_OK;
