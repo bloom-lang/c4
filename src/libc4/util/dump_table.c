@@ -20,4 +20,6 @@ dump_table(C4Runtime *c4, const char *tbl_name, StrBuf *buf)
         tuple_to_str_buf(scan_tuple, buf);
         sbuf_append_char(buf, '\n');
     }
+
+    sbuf_append_char(buf, '\0');
 }
