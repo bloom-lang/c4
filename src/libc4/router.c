@@ -9,6 +9,7 @@
 #include "planner/installer.h"
 #include "planner/planner.h"
 #include "router.h"
+#include "runtime.h"
 #include "storage/sqlite.h"
 #include "storage/table.h"
 #include "types/catalog.h"
@@ -33,39 +34,6 @@ struct C4Router
     /* Pending network output tuples computed within current fixpoint */
     TupleBuf *net_buf;
 };
-
-typedef enum WorkItemKind
-{
-    WI_TUPLE,
-    WI_PROGRAM,
-    WI_DUMP_TABLE,
-    WI_CALLBACK,
-    WI_SHUTDOWN
-} WorkItemKind;
-
-typedef struct WorkItem
-{
-    WorkItemKind kind;
-
-    /* WI_TUPLE: */
-    Tuple *tuple;
-    TableDef *tbl_def;
-
-    /* WI_PROGRAM: */
-    char *program_src;
-
-    /* WI_DUMP_TABLE: */
-    char *tbl_name;
-    apr_thread_cond_t *cond;
-    apr_thread_mutex_t *lock;
-    StrBuf *buf;
-    bool is_done;
-
-    /* WI_CALLBACK */
-    char *callback_tbl_name;
-    C4TupleCallback callback;
-    void *callback_data;
-} WorkItem;
 
 static void router_enqueue(C4Router *router, WorkItem *wi);
 static bool drain_queue(C4Router *router);
@@ -188,48 +156,6 @@ route_program(C4Router *router, const char *src)
     install_plan(plan, c4->tmp_pool, c4);
 }
 
-static void
-route_dump_table(C4Router *router, WorkItem *wi)
-{
-    apr_thread_mutex_lock(wi->lock);
-
-    dump_table(router->c4, wi->tbl_name, wi->buf);
-    wi->is_done = true;
-    apr_thread_cond_signal(wi->cond);
-    apr_thread_mutex_unlock(wi->lock);
-}
-
-static void
-workitem_destroy(WorkItem *wi)
-{
-    switch (wi->kind)
-    {
-        case WI_TUPLE:
-            tuple_unpin(wi->tuple);
-            break;
-
-        case WI_PROGRAM:
-            ol_free(wi->program_src);
-            break;
-
-        /* XXX: hack. Let the client free the WorkItem */
-        case WI_DUMP_TABLE:
-            return;
-
-        case WI_CALLBACK:
-            ol_free(wi->callback_tbl_name);
-            break;
-
-        case WI_SHUTDOWN:
-            break;
-
-        default:
-            ERROR("Unrecognized WorkItem kind: %d", (int) wi->kind);
-    }
-
-    ol_free(wi);
-}
-
 void
 router_main_loop(C4Router *router)
 {
@@ -270,7 +196,7 @@ drain_queue(C4Router *router)
                 break;
 
             case WI_DUMP_TABLE:
-                route_dump_table(router, wi);
+                dump_table(router->c4, wi->tbl_name, wi->buf);
                 break;
 
             case WI_CALLBACK:
@@ -287,102 +213,18 @@ drain_queue(C4Router *router)
         }
 
         router_do_fixpoint(router);
-        workitem_destroy(wi);
+        thread_sync_signal(wi->sync);
         if (do_shutdown)
             return false;
     }
 }
 
 void
-runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple, TableDef *tbl_def)
+runtime_enqueue_work(C4Runtime *c4, WorkItem *wi)
 {
-    WorkItem *wi;
-
-    /* The tuple is unpinned when the router is finished with it */
-    tuple_pin(tuple);
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_TUPLE;
-    wi->tuple = tuple;
-    wi->tbl_def = tbl_def;
-
+    thread_sync_prepare(wi->sync);
     router_enqueue(c4->router, wi);
-}
-
-void
-runtime_enqueue_program(C4Runtime *c4, const char *src)
-{
-    WorkItem *wi;
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_PROGRAM;
-    wi->program_src = ol_strdup(src);
-
-    router_enqueue(c4->router, wi);
-}
-
-char *
-runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
-                           apr_pool_t *pool)
-{
-    WorkItem *wi;
-    char *result;
-    apr_status_t s;
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_DUMP_TABLE;
-    wi->is_done = false;
-    wi->tbl_name = ol_strdup(tbl_name);
-    wi->buf = sbuf_make(pool);
-
-    s = apr_thread_mutex_create(&wi->lock, APR_THREAD_MUTEX_DEFAULT, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-    s = apr_thread_cond_create(&wi->cond, pool);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
-    apr_thread_mutex_lock(wi->lock);
-
-    router_enqueue(c4->router, wi);
-
-    /* may not make sense to do this here, but for now... */
-    do {
-        apr_thread_cond_wait(wi->cond, wi->lock);
-    } while (!wi->is_done);
-
-    result = wi->buf->data;
-    apr_thread_mutex_unlock(wi->lock);
-    apr_thread_cond_destroy(wi->cond);
-    apr_thread_mutex_destroy(wi->lock);
-    ol_free(wi->tbl_name);
-    ol_free(wi);
-    return result;
-}
-
-void
-runtime_enqueue_callback(C4Runtime *c4, const char *tbl_name,
-                         C4TupleCallback callback, void *data)
-{
-    WorkItem *wi;
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_CALLBACK;
-    wi->callback_tbl_name = ol_strdup(tbl_name);
-    wi->callback = callback;
-    wi->callback_data = data;
-
-    router_enqueue(c4->router, wi);
-}
-
-void
-runtime_enqueue_shutdown(C4Runtime *c4)
-{
-    WorkItem *wi;
-
-    wi = ol_alloc0(sizeof(*wi));
-    wi->kind = WI_SHUTDOWN;
-
-    router_enqueue(c4->router, wi);
+    thread_sync_wait(wi->sync);
 }
 
 /*
@@ -398,7 +240,6 @@ router_enqueue(C4Router *router, WorkItem *wi)
     {
         apr_status_t s = apr_queue_push(router->queue, wi);
 
-        /* XXX: should propagate APR_EOF failure back to client */
         if (s == APR_EINTR)
             continue;
         if (s == APR_SUCCESS)

@@ -16,9 +16,14 @@
 struct C4Client
 {
     apr_pool_t *pool;
-    C4ThreadSync *thread_sync;
+    /* Reset after each API command */
+    apr_pool_t *tmp_pool;
+    /* Runtime state */
     C4Runtime *runtime;
     apr_thread_t *runtime_thread;
+    /* State for passing messages => runtime */
+    WorkItem *wi;
+    C4ThreadSync *thread_sync;
 };
 
 void
@@ -44,19 +49,25 @@ c4_make(int port)
     pool = make_subpool(NULL);
     client = apr_pcalloc(pool, sizeof(*client));
     client->pool = pool;
+    client->tmp_pool = make_subpool(client->pool);
     client->thread_sync = thread_sync_make(client->pool);
     client->runtime = c4_runtime_start(port, client->thread_sync, client->pool,
                                        &client->runtime_thread);
+    client->wi = apr_palloc(client->pool, sizeof(WorkItem));
+    client->wi->sync = client->thread_sync;
+
     return client;
 }
 
 C4Status
 c4_destroy(C4Client *client)
 {
+    WorkItem *wi = client->wi;
     apr_status_t s;
     apr_status_t thread_status;
 
-    runtime_enqueue_shutdown(client->runtime);
+    wi->kind = WI_SHUTDOWN;
+    runtime_enqueue_work(client->runtime, wi);
 
     s = apr_thread_join(&thread_status, client->runtime_thread);
     if (s != APR_SUCCESS)
@@ -85,15 +96,13 @@ c4_install_file(C4Client *client, const char *path)
 {
     apr_status_t s;
     apr_file_t *file;
-    apr_pool_t *file_pool;
     apr_finfo_t finfo;
     char *buf;
     apr_size_t file_size;
     C4Status result;
 
-    file_pool = make_subpool(client->pool);
     s = apr_file_open(&file, path, APR_READ | APR_BUFFERED,
-                      APR_OS_DEFAULT, file_pool);
+                      APR_OS_DEFAULT, client->tmp_pool);
     if (s != APR_SUCCESS)
     {
         result = C4_ERROR;
@@ -109,7 +118,7 @@ c4_install_file(C4Client *client, const char *path)
         FAIL_APR(s);
 
     file_size = (apr_size_t) finfo.size;
-    buf = apr_palloc(file_pool, file_size + 1);
+    buf = apr_palloc(client->tmp_pool, file_size + 1);
 
     s = apr_file_read(file, buf, &file_size);
     if (s != APR_SUCCESS)
@@ -121,7 +130,7 @@ c4_install_file(C4Client *client, const char *path)
     result = c4_install_str(client, buf);
 
 done:
-    apr_pool_destroy(file_pool);
+    apr_pool_clear(client->tmp_pool);
     return result;
 }
 
@@ -135,7 +144,11 @@ done:
 C4Status
 c4_install_str(C4Client *client, const char *str)
 {
-    runtime_enqueue_program(client->runtime, str);
+    WorkItem *wi = client->wi;
+
+    wi->kind = WI_PROGRAM;
+    wi->program_src = str;
+    runtime_enqueue_work(client->runtime, wi);
 
     return C4_OK;
 }
@@ -143,14 +156,27 @@ c4_install_str(C4Client *client, const char *str)
 char *
 c4_dump_table(C4Client *client, const char *tbl_name)
 {
-    return runtime_enqueue_dump_table(client->runtime, tbl_name, client->pool);
+    WorkItem *wi = client->wi;
+
+    wi->kind = WI_DUMP_TABLE;
+    wi->tbl_name = tbl_name;
+    wi->buf = sbuf_make(client->pool);
+    runtime_enqueue_work(client->runtime, wi);
+
+    return wi->buf->data;
 }
 
 C4Status
 c4_register_callback(C4Client *client, const char *tbl_name,
                      C4TupleCallback callback, void *data)
 {
-    runtime_enqueue_callback(client->runtime, tbl_name, callback, data);
+    WorkItem *wi = client->wi;
+
+    wi->kind = WI_CALLBACK;
+    wi->callback_tbl_name = tbl_name;
+    wi->callback = callback;
+    wi->callback_data = data;
+    runtime_enqueue_work(client->runtime, wi);
 
     return C4_OK;
 }

@@ -12,14 +12,8 @@ C4Router *router_make(C4Runtime *c4);
 void router_main_loop(C4Router *router);
 
 /* Public APIs */
-void runtime_enqueue_program(C4Runtime *c4, const char *src);
-void runtime_enqueue_tuple(C4Runtime *c4, Tuple *tuple,
-                           TableDef *tbl_def);
 char *runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
                                  apr_pool_t *pool);
-void runtime_enqueue_callback(C4Runtime *c4, const char *tbl_name,
-                              C4TupleCallback callback, void *data);
-void runtime_enqueue_shutdown(C4Runtime *c4);
 
 /* Internal APIs: XXX: clearer naming */
 void router_do_fixpoint(C4Router *router);
