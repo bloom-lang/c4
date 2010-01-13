@@ -7,9 +7,9 @@ class TestTuple < Test::Unit::TestCase
     attr_reader :program, :commands, :witness
     def initialize(name)
       @commands = []
-      @program = file_to_str("test/" + name)
+      @program = file_to_str("input/" + name)
       # sort the records on both sides.  this is ugly.
-      @witness = file_to_str("witness/" + name).split("\n").sort.join("\n")
+      @witness = file_to_str("expected/" + name).split("\n").sort.join("\n")
     end
 
     def file_to_str(file)
@@ -37,7 +37,7 @@ class TestTuple < Test::Unit::TestCase
   end
 
   def test_loop
-    tests = Dir.entries("test").reject { |i| i.match(/^\./) }
+    tests = Dir.entries("input").reject { |i| i.match(/^\./) }
     tests.each { |t| puts "test= #{t}" }
     tests.each do |test|
       tp = TestPair.new(test)
