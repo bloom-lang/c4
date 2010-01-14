@@ -30,7 +30,6 @@ Planner:
 Executor/Router/Operators:
 
 * Implement aggregation
-* Don't copy WorkItem in the router: have the queue store kind + pointer directly
 * More efficient joins: the existing approach to joins essentially
   re-materializes intermediate join results. Stems and stairs from
   earlier Eddies work might point toward a better way of doing this.

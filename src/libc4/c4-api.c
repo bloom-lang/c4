@@ -137,9 +137,6 @@ done:
 /*
  * Install the program contained in the specified string into the C4
  * runtime.
- *
- * XXX: Note that this is asynchronous; should we provide a convenient means
- * for the caller to wait until the program has been installed?
  */
 C4Status
 c4_install_str(C4Client *client, const char *str)
