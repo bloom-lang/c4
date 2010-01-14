@@ -56,7 +56,9 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     apr_pool_t *chain_pool;
     OpChain *op_chain;
 
+#if 0
     print_op_chain(chain_plan);
+#endif
 
     chain_pool = make_subpool(istate->c4->pool);
 
@@ -82,7 +84,9 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
         Operator *op;
 
         ASSERT(list_length(plan->quals) == list_length(plan->qual_exprs));
+#if 0
         print_plan_info(plan, istate->tmp_pool);
+#endif
 
         switch (plan->node.kind)
         {
@@ -112,7 +116,9 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     op_chain->chain_start = prev_op;
 
     router_add_op_chain(istate->c4->router, op_chain);
+#if 0
     printf("================\n");
+#endif
 }
 
 static void
