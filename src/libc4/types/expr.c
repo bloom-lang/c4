@@ -134,7 +134,7 @@ eval_op_neq(ExprState *state)
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
-    result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? true : false;
+    result.b = datum_equal(lhs, rhs, state->lhs->expr->type) ? false : true;
     return result;
 }
 

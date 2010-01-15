@@ -1,0 +1,11 @@
+define(c, keys(0), {string, string});
+define(d, keys(0), {string, string});
+
+d("a", "a");
+d("x", "y");
+d("a", "aaa");
+d("y", "y");
+
+c(X, Y) :- d(X, Y), X != Y;
+
+\dump c
