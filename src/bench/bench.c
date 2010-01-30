@@ -103,7 +103,6 @@ do_net_bench(apr_pool_t *pool)
     net_install_program(c2);
 
     sync = thread_sync_make(pool);
-    thread_sync_prepare(sync);
     c4_register_callback(c1, "done", done_table_cb, sync);
 
     ping_fact = apr_psprintf(pool, "ping(\"tcp:localhost:%d\", \"tcp:localhost:%d\", 0);",

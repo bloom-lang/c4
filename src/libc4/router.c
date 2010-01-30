@@ -222,7 +222,6 @@ drain_queue(C4Router *router)
 void
 runtime_enqueue_work(C4Runtime *c4, WorkItem *wi)
 {
-    thread_sync_prepare(wi->sync);
     router_enqueue(c4->router, wi);
     thread_sync_wait(wi->sync);
 }

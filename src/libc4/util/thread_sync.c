@@ -11,7 +11,6 @@ struct C4ThreadSync
     enum
     {
         SYNC_IDLE,
-        SYNC_PREPARED,
         SYNC_WAITING,
         SYNC_SIGNALED
     } state;
@@ -38,13 +37,8 @@ thread_sync_make(apr_pool_t *pool)
     return ts;
 }
 
-/*
- * Prepare a ThreadSync to be waited-upon. This should occur shortly before the
- * _wait() call, and also before another thread might potentially signal the
- * ThreadSync().
- */
 void
-thread_sync_prepare(C4ThreadSync *ts)
+thread_sync_wait(C4ThreadSync *ts)
 {
     apr_status_t s;
 
@@ -52,25 +46,19 @@ thread_sync_prepare(C4ThreadSync *ts)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    ASSERT(ts->state == SYNC_IDLE);
-    ts->state = SYNC_PREPARED;
-    /* We continue to hold the lock */
-}
+    ASSERT(ts->state != SYNC_WAITING);
 
-void
-thread_sync_wait(C4ThreadSync *ts)
-{
-    apr_status_t s;
+    /* If we've already been signaled, no need to wait() */
+    if (ts->state == SYNC_IDLE)
+    {
+        ts->state = SYNC_WAITING;
 
-    /* Lock is held on entry */
-    ASSERT(ts->state == SYNC_PREPARED);
-    ts->state = SYNC_WAITING;
-
-    do {
-        s = apr_thread_cond_wait(ts->cond, ts->lock);
-        if (s != APR_SUCCESS)
-            FAIL_APR(s);
-    } while (ts->state != SYNC_SIGNALED);
+        do {
+            s = apr_thread_cond_wait(ts->cond, ts->lock);
+            if (s != APR_SUCCESS)
+                FAIL_APR(s);
+        } while (ts->state != SYNC_SIGNALED);
+    }
 
     ts->state = SYNC_IDLE;
     s = apr_thread_mutex_unlock(ts->lock);
@@ -87,12 +75,15 @@ thread_sync_signal(C4ThreadSync *ts)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    ASSERT(ts->state == SYNC_WAITING);
-    ts->state = SYNC_SIGNALED;
-    s = apr_thread_cond_signal(ts->cond);
-    if (s != APR_SUCCESS)
-        FAIL_APR(s);
+    ASSERT(ts->state != SYNC_SIGNALED);
 
+    if (ts->state == SYNC_WAITING)
+    {
+        s = apr_thread_cond_signal(ts->cond);
+        if (s != APR_SUCCESS)
+            FAIL_APR(s);
+    }
+    ts->state = SYNC_SIGNALED;
     s = apr_thread_mutex_unlock(ts->lock);
     if (s != APR_SUCCESS)
         FAIL_APR(s);

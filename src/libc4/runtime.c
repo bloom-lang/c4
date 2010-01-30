@@ -125,8 +125,6 @@ c4_runtime_start(int port, C4ThreadSync *thread_sync,
     init_data->port = port;
     init_data->thread_sync = thread_sync;
 
-    thread_sync_prepare(init_data->thread_sync);
-
     s = apr_threadattr_create(&thread_attr, pool);
     if (s != APR_SUCCESS)
         FAIL_APR(s);
