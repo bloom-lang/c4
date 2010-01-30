@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include "c4-api.h"
+#include "util/thread_sync.h"
 
 static void usage(void);
 static void do_net_bench(apr_pool_t *pool);
@@ -72,19 +73,12 @@ usage(void)
     exit(1);
 }
 
-typedef struct NetCallbackData
-{
-    bool is_done;
-    apr_thread_mutex_t *lock;
-    apr_thread_cond_t *cond;
-} NetCallbackData;
-
 static void
 do_net_bench(apr_pool_t *pool)
 {
     C4Client *c1;
     C4Client *c2;
-    NetCallbackData cb_data;
+    C4ThreadSync *sync;
     char *ping_fact;
 
     c1 = c4_make(0);
@@ -93,21 +87,16 @@ do_net_bench(apr_pool_t *pool)
     net_install_program(c1);
     net_install_program(c2);
 
-    cb_data.is_done = false;
-    (void) apr_thread_mutex_create(&cb_data.lock, APR_THREAD_MUTEX_DEFAULT, pool);
-    (void) apr_thread_cond_create(&cb_data.cond, pool);
-    c4_register_callback(c1, "done", net_done_cb, &cb_data);
+    sync = thread_sync_make(pool);
+    thread_sync_prepare(sync);
+    c4_register_callback(c1, "done", net_done_cb, sync);
 
     ping_fact = apr_psprintf(pool, "ping(\"tcp:localhost:%d\", \"tcp:localhost:%d\", 0);",
                              c4_get_port(c1), c4_get_port(c2));
 
     c4_install_str(c1, ping_fact);
+    thread_sync_wait(sync);
 
-    do {
-        apr_thread_cond_wait(cb_data.cond, cb_data.lock);
-    } while (!cb_data.is_done);
-
-    apr_thread_mutex_unlock(cb_data.lock);
     c4_destroy(c1);
     c4_destroy(c2);
 }
@@ -115,14 +104,10 @@ do_net_bench(apr_pool_t *pool)
 static void
 net_done_cb(struct Tuple *tuple, struct TableDef *tbl_def, void *data)
 {
-    NetCallbackData *cb_data = (NetCallbackData *) data;
+    C4ThreadSync *sync = (C4ThreadSync *) data;
 
     printf("%s invoked!\n", __func__);
-
-    apr_thread_mutex_lock(cb_data->lock);
-    cb_data->is_done = true;
-    apr_thread_cond_signal(cb_data->cond);
-    apr_thread_mutex_unlock(cb_data->lock);
+    thread_sync_signal(sync);
 }
 
 static void
@@ -137,5 +122,9 @@ net_install_program(C4Client *c)
 static void
 do_perf_bench(apr_pool_t *pool)
 {
-    ;
+    C4Client *c;
+
+    c = c4_make(0);
+
+    c4_destroy(c);
 }
