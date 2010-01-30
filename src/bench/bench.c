@@ -119,8 +119,8 @@ do_net_bench(apr_pool_t *pool)
 static void
 perf_install_program(C4Client *c)
 {
-    c4_install_str(c, "define(t, keys(0), {int8, int8});");
-    c4_install_str(c, "t(A, B + 1) :- t(A, B), B < 10000000;");
+    c4_install_str(c, "define(t, keys(0), {int8});");
+    c4_install_str(c, "t(A + 1) :- t(A), A < 10000000;");
 }
 
 static void
@@ -130,7 +130,7 @@ do_perf_bench(apr_pool_t *pool)
 
     c = c4_make(0);
     perf_install_program(c);
-    c4_install_str(c, "t(0, 0);");
+    c4_install_str(c, "t(0);");
 
     c4_destroy(c);
 }
