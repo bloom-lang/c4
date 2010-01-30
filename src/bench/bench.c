@@ -14,9 +14,6 @@
 static void usage(void);
 static void do_net_bench(apr_pool_t *pool);
 static void do_perf_bench(apr_pool_t *pool);
-static void net_done_cb(struct Tuple *tuple, struct TableDef *tbl_def,
-                        void *data);
-static void net_install_program(C4Client *c);
 
 int
 main(int argc, const char *argv[])
@@ -74,35 +71,7 @@ usage(void)
 }
 
 static void
-do_net_bench(apr_pool_t *pool)
-{
-    C4Client *c1;
-    C4Client *c2;
-    C4ThreadSync *sync;
-    char *ping_fact;
-
-    c1 = c4_make(0);
-    c2 = c4_make(0);
-
-    net_install_program(c1);
-    net_install_program(c2);
-
-    sync = thread_sync_make(pool);
-    thread_sync_prepare(sync);
-    c4_register_callback(c1, "done", net_done_cb, sync);
-
-    ping_fact = apr_psprintf(pool, "ping(\"tcp:localhost:%d\", \"tcp:localhost:%d\", 0);",
-                             c4_get_port(c1), c4_get_port(c2));
-
-    c4_install_str(c1, ping_fact);
-    thread_sync_wait(sync);
-
-    c4_destroy(c1);
-    c4_destroy(c2);
-}
-
-static void
-net_done_cb(struct Tuple *tuple, struct TableDef *tbl_def, void *data)
+done_table_cb(struct Tuple *tuple, struct TableDef *tbl_def, void *data)
 {
     C4ThreadSync *sync = (C4ThreadSync *) data;
 
@@ -120,11 +89,48 @@ net_install_program(C4Client *c)
 }
 
 static void
+do_net_bench(apr_pool_t *pool)
+{
+    C4Client *c1;
+    C4Client *c2;
+    C4ThreadSync *sync;
+    char *ping_fact;
+
+    c1 = c4_make(0);
+    c2 = c4_make(0);
+
+    net_install_program(c1);
+    net_install_program(c2);
+
+    sync = thread_sync_make(pool);
+    thread_sync_prepare(sync);
+    c4_register_callback(c1, "done", done_table_cb, sync);
+
+    ping_fact = apr_psprintf(pool, "ping(\"tcp:localhost:%d\", \"tcp:localhost:%d\", 0);",
+                             c4_get_port(c1), c4_get_port(c2));
+
+    c4_install_str(c1, ping_fact);
+    thread_sync_wait(sync);
+
+    c4_destroy(c1);
+    c4_destroy(c2);
+}
+
+static void
+perf_install_program(C4Client *c)
+{
+    c4_install_str(c, "define(t, keys(0), {int8, int8});");
+    c4_install_str(c, "t(A, B + 1) :- t(A, B), B < 10000000;");
+}
+
+static void
 do_perf_bench(apr_pool_t *pool)
 {
     C4Client *c;
 
     c = c4_make(0);
+    perf_install_program(c);
+    c4_install_str(c, "t(0, 0);");
 
     c4_destroy(c);
 }
