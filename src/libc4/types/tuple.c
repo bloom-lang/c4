@@ -1,5 +1,3 @@
-#include <apr_atomic.h>
-
 #include "c4-internal.h"
 #include "types/catalog.h"
 #include "types/tuple.h"
@@ -46,14 +44,17 @@ tuple_make_from_strings(Schema *s, char **values)
 void
 tuple_pin(Tuple *tuple)
 {
-    apr_uint32_t old_count = apr_atomic_inc32(&tuple->refcount);
-    ASSERT(old_count > 0);
+    ASSERT(tuple->refcount > 0);
+    tuple->refcount++;
 }
 
 void
 tuple_unpin(Tuple *tuple)
 {
-    if (apr_atomic_dec32(&tuple->refcount) == 0)
+    ASSERT(tuple->refcount > 0);
+    tuple->refcount--;
+
+    if (tuple->refcount == 0)
     {
         Schema *s = tuple_get_schema(tuple);
         int i;
