@@ -1,8 +1,6 @@
 #include <apr_general.h>
 #include <apr_getopt.h>
 #include <apr_strings.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_mutex.h>
 
 #include <stdbool.h>
 #include <stdio.h>
