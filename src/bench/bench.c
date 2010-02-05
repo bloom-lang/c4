@@ -1,6 +1,7 @@
 #include <apr_general.h>
 #include <apr_getopt.h>
 #include <apr_strings.h>
+#include <apr_time.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -27,6 +28,7 @@ main(int argc, const char *argv[])
     const char *optarg;
     apr_status_t s;
     bool net_bench = false;
+    apr_time_t start_time;
 
     c4_initialize();
 
@@ -51,12 +53,21 @@ main(int argc, const char *argv[])
     if (s != APR_EOF)
         usage();
 
+    start_time = apr_time_now();
+
     if (net_bench)
         do_net_bench(pool);
     else
         do_perf_bench(pool);
 
+    printf("Benchmark duration: %" APR_TIME_T_FMT " usec\n",
+           (apr_time_now() - start_time));
+
+    start_time = apr_time_now();
     apr_pool_destroy(pool);
+    printf("Shutdown duration: %" APR_TIME_T_FMT " usec\n",
+           (apr_time_now() - start_time));
+
     c4_terminate();
     return 0;
 }
