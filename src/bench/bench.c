@@ -125,7 +125,9 @@ static void
 perf_install_program(C4Client *c)
 {
     c4_install_str(c, "define(t, keys(0), {int8});");
+    c4_install_str(c, "define(s, keys(0), {int8});");
     c4_install_str(c, "t(A + 1) :- t(A), A < 10000000;");
+    c4_install_str(c, "s(A) :- t(A);");
 }
 
 static void
