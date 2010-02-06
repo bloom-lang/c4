@@ -10,7 +10,7 @@ class C4
     extend FFI::Library
     ffi_lib 'c4'
     attach_function 'c4_initialize', [], :void
-    attach_function 'c4_make', [:int], :pointer
+    attach_function 'c4_make', [:pointer, :int], :pointer
     attach_function 'c4_install_file', [:pointer, :string], :int
     attach_function 'c4_install_str', [:pointer, :string], :int
     attach_function 'c4_dump_table', [:pointer, :string], :string
@@ -20,7 +20,7 @@ class C4
 
   def initialize(port=0)
     C4Lib.c4_initialize
-    @c4 = C4Lib.c4_make(port)
+    @c4 = C4Lib.c4_make(nil, port)
   end
 
   # TODO: check status
