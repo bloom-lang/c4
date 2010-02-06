@@ -26,6 +26,8 @@ struct C4Client
     C4ThreadSync *thread_sync;
 };
 
+static apr_status_t c4_client_cleanup(void *data);
+
 void
 c4_initialize(void)
 {
@@ -41,14 +43,14 @@ c4_terminate(void)
 }
 
 C4Client *
-c4_make(int port)
+c4_make(apr_pool_t *pool, int port)
 {
-    apr_pool_t *pool;
+    apr_pool_t *client_pool;
     C4Client *client;
 
-    pool = make_subpool(NULL);
-    client = apr_pcalloc(pool, sizeof(*client));
-    client->pool = pool;
+    client_pool = make_subpool(pool);
+    client = apr_pcalloc(client_pool, sizeof(*client));
+    client->pool = client_pool;
     client->tmp_pool = make_subpool(client->pool);
     client->thread_sync = thread_sync_make(client->pool);
     client->runtime = c4_runtime_start(port, client->thread_sync, client->pool,
@@ -56,12 +58,16 @@ c4_make(int port)
     client->wi = apr_palloc(client->pool, sizeof(WorkItem));
     client->wi->sync = client->thread_sync;
 
+    apr_pool_pre_cleanup_register(client->pool, client, c4_client_cleanup);
+
     return client;
 }
 
-C4Status
-c4_destroy(C4Client *client)
+static apr_status_t
+c4_client_cleanup(void *data)
 {
+    C4Client *client = (C4Client *) data;
+
     WorkItem *wi = client->wi;
     apr_status_t s;
     apr_status_t thread_status;
@@ -75,6 +81,12 @@ c4_destroy(C4Client *client)
     if (thread_status != APR_SUCCESS)
         FAIL_APR(thread_status);
 
+    return APR_SUCCESS;
+}
+
+C4Status
+c4_destroy(C4Client *client)
+{
     apr_pool_destroy(client->pool);
     return C4_OK;
 }

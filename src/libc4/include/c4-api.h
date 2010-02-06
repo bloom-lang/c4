@@ -28,7 +28,12 @@ typedef enum C4Status
 void c4_initialize(void);
 void c4_terminate(void);
 
-C4Client *c4_make(int port);
+/*
+ * Create/destroy an instance of C4. The lifetime of this instance is tied to
+ * the given pool; it can be destroyed earlier by manually invoking
+ * c4_destroy().
+ */
+C4Client *c4_make(apr_pool_t *pool, int port);
 C4Status c4_destroy(C4Client *c4);
 int c4_get_port(C4Client *c4);
 

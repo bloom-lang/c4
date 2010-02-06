@@ -105,8 +105,8 @@ do_net_bench(apr_pool_t *pool)
     C4ThreadSync *sync;
     char *ping_fact;
 
-    c1 = c4_make(0);
-    c2 = c4_make(0);
+    c1 = c4_make(pool, 0);
+    c2 = c4_make(pool, 0);
 
     net_install_program(c1);
     net_install_program(c2);
@@ -119,9 +119,6 @@ do_net_bench(apr_pool_t *pool)
 
     c4_install_str(c1, ping_fact);
     thread_sync_wait(sync);
-
-    c4_destroy(c1);
-    c4_destroy(c2);
 }
 
 static void
@@ -136,9 +133,7 @@ do_perf_bench(apr_pool_t *pool)
 {
     C4Client *c;
 
-    c = c4_make(0);
+    c = c4_make(pool, 0);
     perf_install_program(c);
     c4_install_str(c, "t(0);");
-
-    c4_destroy(c);
 }

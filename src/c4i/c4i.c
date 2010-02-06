@@ -10,7 +10,8 @@
 #include "c4-api.h"
 
 static void usage(void);
-static C4Client *setup_c4(apr_int16_t port, const char *srcfile);
+static C4Client *setup_c4(apr_pool_t *pool, apr_int16_t port,
+                          const char *srcfile);
 
 int
 main(int argc, const char *argv[])
@@ -72,14 +73,12 @@ main(int argc, const char *argv[])
     if (opt->ind + 1 != argc)
         usage();
 
-    c = setup_c4((apr_int16_t) port, argv[opt->ind]);
+    c = setup_c4(pool, (apr_int16_t) port, argv[opt->ind]);
     if (src_string != NULL)
         c4_install_str(c, src_string);
 
     while (true)
         sleep(1);
-
-    c4_destroy(c);
 
     apr_pool_destroy(pool);
     c4_terminate();
@@ -94,12 +93,12 @@ usage(void)
 }
 
 static C4Client *
-setup_c4(apr_int16_t port, const char *srcfile)
+setup_c4(apr_pool_t *pool, apr_int16_t port, const char *srcfile)
 {
     C4Client *c;
     C4Status s;
 
-    c = c4_make(port);
+    c = c4_make(pool, port);
     s = c4_install_file(c, srcfile);
     if (s)
         printf("Failed to install file \"%s\": %d\n", srcfile, (int) s);
