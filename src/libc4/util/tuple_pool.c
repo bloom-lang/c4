@@ -9,7 +9,6 @@ TuplePool *
 make_tuple_pool(Schema *schema, apr_pool_t *pool)
 {
     TuplePool *tpool;
-    apr_status_t s;
 
     tpool = apr_palloc(pool, sizeof(*tpool));
     tpool->pool = pool;
@@ -30,7 +29,6 @@ Tuple *
 tuple_pool_loan(TuplePool *tpool)
 {
     Tuple *result;
-    apr_status_t s;
 
     /*
      * Use the free list if there are any tuples in it. We return the
