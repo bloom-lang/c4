@@ -1,4 +1,3 @@
-#include <apr_atomic.h>
 #include <apr_hash.h>
 
 #include "c4-internal.h"
@@ -250,13 +249,15 @@ string_hash(Datum d)
 static void
 string_pin(C4String *s)
 {
-    apr_atomic_inc32(&s->refcount);
+    s->refcount++;
 }
 
 static void
 string_unpin(C4String *s)
 {
-    if (apr_atomic_dec32(&s->refcount) == 0)
+    ASSERT(s->refcount >= 1);
+    s->refcount--;
+    if (s->refcount == 0)
         ol_free(s);
 }
 

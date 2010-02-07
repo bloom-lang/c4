@@ -22,7 +22,7 @@ typedef struct C4String
 {
     /* The number of bytes in "data"; XXX: including NUL terminator? */
     apr_uint32_t len;
-    apr_uint32_t refcount;
+    apr_uint16_t refcount;
     char data[1];       /* Variable-sized */
 } C4String;
 
