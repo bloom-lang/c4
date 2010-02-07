@@ -201,46 +201,6 @@ unsigned int c4_hash_count(c4_hash_t *ht);
 void c4_hash_clear(c4_hash_t *ht);
 
 /**
- * Merge two hash tables into one new hash table. The values of the overlay
- * hash override the values of the base if both have the same key.  Both
- * hash tables must use the same hash function.
- * @param p The pool to use for the new hash table
- * @param overlay The table to add to the initial table
- * @param base The table that represents the initial values of the new table
- * @return A new hash table containing all of the data from the two passed in,
- *         or NULL if memory allocation failed
- */
-c4_hash_t *c4_hash_overlay(apr_pool_t *p,
-                             const c4_hash_t *overlay, 
-                             const c4_hash_t *base);
-
-/**
- * Merge two hash tables into one new hash table. If the same key
- * is present in both tables, call the supplied merge function to
- * produce a merged value for the key in the new table.  Both
- * hash tables must use the same hash function.
- * @param p The pool to use for the new hash table
- * @param h1 The first of the tables to merge
- * @param h2 The second of the tables to merge
- * @param merger A callback function to merge values, or NULL to
- *  make values from h1 override values from h2 (same semantics as
- *  c4_hash_overlay())
- * @param data Client data to pass to the merger function
- * @return A new hash table containing all of the data from the two passed in,
- *         or NULL if memory allocation failed.
- */
-c4_hash_t *c4_hash_merge(apr_pool_t *p,
-                           const c4_hash_t *h1,
-                           const c4_hash_t *h2,
-                           void * (*merger)(apr_pool_t *p,
-                                            const void *key,
-                                            apr_ssize_t klen,
-                                            const void *h1_val,
-                                            const void *h2_val,
-                                            const void *data),
-                           const void *data);
-
-/**
  * Declaration prototype for the iterator callback function of c4_hash_do().
  *
  * @param rec The data passed as the first argument to c4_hash_[v]do()
