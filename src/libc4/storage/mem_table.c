@@ -7,8 +7,8 @@ static bool mem_table_insert(AbstractTable *a_tbl, Tuple *t);
 static ScanCursor *mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
 static void mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
 static Tuple *mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
-static int mem_table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen);
-static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t *klen);
+static int mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen);
+static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t klen);
 
 MemTable *
 mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
@@ -22,7 +22,7 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = c4_hash_make(pool,
+    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *),
                                mem_table_hash_tuple,
                                mem_table_cmp_tuple);
 
@@ -43,7 +43,7 @@ mem_table_cleanup(AbstractTable *a_tbl)
     {
         Tuple *t;
 
-        c4_hash_this(hi, (const void **) &t, NULL, NULL);
+        c4_hash_this(hi, (const void **) &t, NULL);
         tuple_unpin(t);
     }
 }
@@ -54,19 +54,18 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
     MemTable *tbl = (MemTable *) a_tbl;
     Tuple *val;
 
-    val = c4_hash_set_if_new(tbl->tuples, t, sizeof(t), t);
+    val = c4_hash_set_if_new(tbl->tuples, t, t);
     tuple_pin(val);
     return (bool) (t == val);
 }
 
 static int
-mem_table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
+mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen)
 {
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
 
     ASSERT(klen == sizeof(Tuple *));
-
     if (tuple_equal(t1, t2))
         return 0;
     else
@@ -74,11 +73,11 @@ mem_table_cmp_tuple(const void *k1, const void *k2, apr_size_t klen)
 }
 
 static unsigned int
-mem_table_hash_tuple(const char *key, apr_ssize_t *klen)
+mem_table_hash_tuple(const char *key, apr_ssize_t klen)
 {
     Tuple *t = (Tuple *) key;
 
-    ASSERT(*klen == sizeof(Tuple *));
+    ASSERT(klen == sizeof(Tuple *));
     return tuple_hash(t);
 }
 
@@ -109,6 +108,6 @@ mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
     if (!c4_hash_iter_next(cur->hash_iter))
         return NULL;
 
-    c4_hash_this(cur->hash_iter, (const void **) &ret_tuple, NULL, NULL);
+    c4_hash_this(cur->hash_iter, (const void **) &ret_tuple, NULL);
     return ret_tuple;
 }

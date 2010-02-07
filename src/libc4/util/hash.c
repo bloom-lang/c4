@@ -39,7 +39,6 @@ struct c4_hash_entry_t {
     c4_hash_entry_t *next;
     unsigned int      hash;
     const void       *key;
-    apr_ssize_t       klen;
     const void       *val;
 };
 
@@ -71,7 +70,8 @@ struct c4_hash_t {
     apr_pool_t          *array_pool;
     c4_hash_entry_t   **array;
     c4_hash_index_t     iterator;  /* For c4_hash_first(NULL, ...) */
-    unsigned int         count, max;
+    unsigned int        count, max;
+    apr_ssize_t          key_len;
     c4_hashfunc_t       hash_func;
     c4_keycomp_func_t   cmp_func;
     c4_hash_entry_t    *free;  /* List of recycled entries */
@@ -89,8 +89,8 @@ static c4_hash_entry_t **alloc_array(c4_hash_t *ht, unsigned int max)
    return apr_pcalloc(ht->array_pool, sizeof(*ht->array) * (max + 1));
 }
 
-c4_hash_t *c4_hash_make(apr_pool_t *pool, c4_hashfunc_t hash_func,
-                        c4_keycomp_func_t cmp_func)
+c4_hash_t *c4_hash_make(apr_pool_t *pool, apr_ssize_t key_len,
+                        c4_hashfunc_t hash_func, c4_keycomp_func_t cmp_func)
 {
     apr_pool_t *array_pool;
     c4_hash_t *ht;
@@ -105,6 +105,7 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool, c4_hashfunc_t hash_func,
     ht->count = 0;
     ht->max = INITIAL_MAX;
     ht->array = alloc_array(ht, ht->max);
+    ht->key_len = key_len;
     ht->hash_func = hash_func;
     ht->cmp_func = cmp_func;
     return ht;
@@ -173,15 +174,13 @@ int c4_hash_iter_next(c4_hash_index_t *hi)
 }
 
 void c4_hash_this(c4_hash_index_t *hi,
-                   const void **key,
-                   apr_ssize_t *klen,
-                   void **val)
+                  const void **key,
+                  void **val)
 {
     if (hi->at_end)
         FAIL();
 
     if (key)  *key  = hi->this->key;
-    if (klen) *klen = hi->this->klen;
     if (val)  *val  = (void *)hi->this->val;
 }
 
@@ -216,11 +215,10 @@ static void expand_array(c4_hash_t *ht)
     apr_pool_destroy(old_array_pool);
 }
 
-unsigned int c4_hashfunc_default(const char *char_key,
-                                  apr_ssize_t *klen)
+unsigned int c4_hashfunc_default(const char *char_key, apr_ssize_t klen)
 {
     unsigned int hash = 0;
-    const unsigned char *key = (const unsigned char *)char_key;
+    const unsigned char *key = (const unsigned char *) char_key;
     const unsigned char *p;
     apr_ssize_t i;
     
@@ -261,17 +259,8 @@ unsigned int c4_hashfunc_default(const char *char_key,
      *
      *                  -- Ralf S. Engelschall <rse@engelschall.com>
      */
-     
-    if (*klen == C4_HASH_KEY_STRING) {
-        for (p = key; *p; p++) {
-            hash = hash * 33 + *p;
-        }
-        *klen = p - key;
-    }
-    else {
-        for (p = key, i = *klen; i; i--, p++) {
-            hash = hash * 33 + *p;
-        }
+    for (p = key, i = klen; i; i--, p++) {
+        hash = hash * 33 + *p;
     }
 
     return hash;
@@ -288,21 +277,19 @@ unsigned int c4_hashfunc_default(const char *char_key,
  */
 
 static c4_hash_entry_t **find_entry(c4_hash_t *ht,
-                                     const void *key,
-                                     apr_ssize_t klen,
-                                     const void *val)
+                                    const void *key,
+                                    const void *val)
 {
     c4_hash_entry_t **hep, *he;
     unsigned int hash;
 
-    hash = ht->hash_func(key, &klen);
+    hash = ht->hash_func(key, ht->key_len);
 
     /* scan linked list */
     for (hep = &ht->array[hash & ht->max], he = *hep;
          he; hep = &he->next, he = *hep) {
         if (he->hash == hash
-            && he->klen == klen
-            && ht->cmp_func(he->key, key, klen) == 0)
+            && ht->cmp_func(he->key, key, ht->key_len) == 0)
             break;
     }
     if (he || !val)
@@ -316,15 +303,13 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
     he->next = NULL;
     he->hash = hash;
     he->key  = key;
-    he->klen = klen;
     he->val  = val;
     *hep = he;
     ht->count++;
     return hep;
 }
 
-c4_hash_t *c4_hash_copy(apr_pool_t *pool,
-                          const c4_hash_t *orig)
+c4_hash_t *c4_hash_copy(apr_pool_t *pool, const c4_hash_t *orig)
 {
     apr_pool_t *array_pool;
     c4_hash_t *ht;
@@ -341,6 +326,7 @@ c4_hash_t *c4_hash_copy(apr_pool_t *pool,
     ht->free = NULL;
     ht->count = orig->count;
     ht->max = orig->max;
+    ht->key_len = orig->key_len;
     ht->hash_func = orig->hash_func;
     ht->cmp_func = orig->cmp_func;
     ht->array = alloc_array(ht, ht->max);
@@ -354,7 +340,6 @@ c4_hash_t *c4_hash_copy(apr_pool_t *pool,
             *new_entry = &new_vals[j++];
             (*new_entry)->hash = orig_entry->hash;
             (*new_entry)->key = orig_entry->key;
-            (*new_entry)->klen = orig_entry->klen;
             (*new_entry)->val = orig_entry->val;
             new_entry = &((*new_entry)->next);
             orig_entry = orig_entry->next;
@@ -364,21 +349,20 @@ c4_hash_t *c4_hash_copy(apr_pool_t *pool,
     return ht;
 }
 
-void *c4_hash_get(c4_hash_t *ht, const void *key, apr_ssize_t klen)
+void *c4_hash_get(c4_hash_t *ht, const void *key)
 {
     c4_hash_entry_t *he;
-    he = *find_entry(ht, key, klen, NULL);
+    he = *find_entry(ht, key, NULL);
     if (he)
-        return (void *)he->val;
+        return (void *) he->val;
     else
         return NULL;
 }
 
-void c4_hash_set(c4_hash_t *ht, const void *key,
-                  apr_ssize_t klen, const void *val)
+void c4_hash_set(c4_hash_t *ht, const void *key, const void *val)
 {
     c4_hash_entry_t **hep;
-    hep = find_entry(ht, key, klen, val);
+    hep = find_entry(ht, key, val);
     if (*hep) {
         if (!val) {
             /* delete entry */
@@ -400,15 +384,12 @@ void c4_hash_set(c4_hash_t *ht, const void *key,
     /* else key not present and val==NULL */
 }
 
-void *c4_hash_set_if_new(c4_hash_t *ht,
-                          const void *key,
-                          apr_ssize_t klen,
-                          const void *val)
+void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val)
 {
     c4_hash_entry_t *he;
 
     ASSERT(val != NULL);
-    he = *find_entry(ht, key, klen, val);
+    he = *find_entry(ht, key, val);
     /* if new key, check that the collision rate isn't too high */
     if (he->val == val && ht->count > ht->max) {
         expand_array(ht);
@@ -425,7 +406,7 @@ void c4_hash_clear(c4_hash_t *ht)
 {
     c4_hash_index_t *hi;
     for (hi = c4_hash_first(NULL, ht); hi; hi = c4_hash_next(hi))
-        c4_hash_set(ht, hi->this->key, hi->this->klen, NULL);
+        c4_hash_set(ht, hi->this->key, NULL);
 }
 
 /* This is basically the following...
@@ -436,8 +417,7 @@ void c4_hash_clear(c4_hash_t *ht)
  * Like with apr_table_do, the comp callback is called for each and every
  * element of the hash table.
  */
-int c4_hash_do(c4_hash_do_callback_fn_t *comp,
-                void *rec, const c4_hash_t *ht)
+int c4_hash_do(c4_hash_do_callback_fn_t *comp, void *rec, const c4_hash_t *ht)
 {
     c4_hash_index_t  hix;
     c4_hash_index_t *hi;
@@ -449,7 +429,7 @@ int c4_hash_do(c4_hash_do_callback_fn_t *comp,
     if ((hi = c4_hash_next(&hix))) {
         /* Scan the entire table */
         do {
-            rv = (*comp)(rec, hi->this->key, hi->this->klen, hi->this->val);
+            rv = (*comp)(rec, hi->this->key, hi->this->val);
         } while (rv && (hi = c4_hash_next(hi)));
 
         if (rv == 0) {
