@@ -72,22 +72,15 @@ typedef int (*c4_keycomp_func_t)(const void *k1, const void *k2,
 unsigned int c4_hashfunc_default(const char *key, apr_ssize_t *klen);
 
 /**
- * Create a hash table.
- * @param pool The pool to allocate the hash table out of
- * @return The hash table just created, or NULL if memory allocation failed
- */
-c4_hash_t *c4_hash_make(apr_pool_t *pool);
-
-/**
- * Create a hash table with a custom hash function
+ * Create a hash table
  * @param pool The pool to allocate the hash table out of
  * @param hash_func A custom hash function
  * @param cmp_func A custom key comparison function
  * @return The hash table just created, or NULL if memory allocation failed
  */
-c4_hash_t *c4_hash_make_custom(apr_pool_t *pool, 
-                                 c4_hashfunc_t hash_func,
-                                 c4_keycomp_func_t cmp_func);
+c4_hash_t *c4_hash_make(apr_pool_t *pool, 
+                        c4_hashfunc_t hash_func,
+                        c4_keycomp_func_t cmp_func);
 
 /**
  * Make a copy of a hash table
@@ -215,7 +208,7 @@ typedef int (c4_hash_do_callback_fn_t)(void *rec, const void *key,
                                         apr_ssize_t klen,
                                         const void *value);
 
-/** 
+/**
  * Iterate over a hash table running the provided function once for every
  * element in the hash table. The @param comp function will be invoked for
  * every element in the hash table.

@@ -89,7 +89,8 @@ static c4_hash_entry_t **alloc_array(c4_hash_t *ht, unsigned int max)
    return apr_pcalloc(ht->array_pool, sizeof(*ht->array) * (max + 1));
 }
 
-c4_hash_t *c4_hash_make(apr_pool_t *pool)
+c4_hash_t *c4_hash_make(apr_pool_t *pool, c4_hashfunc_t hash_func,
+                        c4_keycomp_func_t cmp_func)
 {
     apr_pool_t *array_pool;
     c4_hash_t *ht;
@@ -104,21 +105,10 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool)
     ht->count = 0;
     ht->max = INITIAL_MAX;
     ht->array = alloc_array(ht, ht->max);
-    ht->hash_func = c4_hashfunc_default;
-    ht->cmp_func = memcmp;
-    return ht;
-}
-
-c4_hash_t *c4_hash_make_custom(apr_pool_t *pool,
-                                 c4_hashfunc_t hash_func,
-                                 c4_keycomp_func_t cmp_func)
-{
-    c4_hash_t *ht = c4_hash_make(pool);
     ht->hash_func = hash_func;
     ht->cmp_func = cmp_func;
     return ht;
 }
-
 
 /*
  * Hash iteration functions.

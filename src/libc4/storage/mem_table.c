@@ -22,9 +22,9 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = c4_hash_make_custom(pool,
-                                      mem_table_hash_tuple,
-                                      mem_table_cmp_tuple);
+    tbl->tuples = c4_hash_make(pool,
+                               mem_table_hash_tuple,
+                               mem_table_cmp_tuple);
 
     return tbl;
 }
