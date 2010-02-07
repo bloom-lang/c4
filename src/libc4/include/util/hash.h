@@ -37,24 +37,27 @@ typedef struct c4_hash_index_t c4_hash_index_t;
  * Callback functions for calculating hash values.
  * @param key The key.
  * @param klen The length of the key.
+ * @param user_data User-specified opaque callback data
  */
-typedef unsigned int (*c4_hashfunc_t)(const char *key, apr_ssize_t klen);
+typedef unsigned int (*c4_hashfunc_t)(const char *key, apr_ssize_t klen,
+                                      void *user_data);
 
 /**
  * Callback functions for determining whether two hash table keys are equal.
  * @param k1 First key
  * @param k2 Second key
  * @param klen The length of both keys.
+ * @param user_data User-specified opaque callback data
  * @return Zero if the two keys should be considered equal, non-zero otherwise.
- * @remark The default key comparison function is memcmp().
  */
 typedef int (*c4_keycomp_func_t)(const void *k1, const void *k2,
-                                 apr_ssize_t klen);
+                                 apr_ssize_t klen, void *user_data);
 
 /**
  * The default hash function.
  */
-unsigned int c4_hashfunc_default(const char *key, apr_ssize_t klen);
+unsigned int c4_hashfunc_default(const char *key, apr_ssize_t klen,
+                                 void *user_data);
 
 /**
  * Create a hash table
@@ -62,10 +65,12 @@ unsigned int c4_hashfunc_default(const char *key, apr_ssize_t klen);
  * @param key_len The length of keys in the table (must be fixed)
  * @param hash_func A custom hash function
  * @param cmp_func A custom key comparison function
+ * @param cb_data Opaque user data that is passed to hash and cmp functions
  * @return The hash table just created, or NULL if memory allocation failed
  */
 c4_hash_t *c4_hash_make(apr_pool_t *pool,
                         apr_ssize_t key_len,
+                        void *cb_data,
                         c4_hashfunc_t hash_func,
                         c4_keycomp_func_t cmp_func);
 

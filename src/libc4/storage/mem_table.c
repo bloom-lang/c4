@@ -7,8 +7,8 @@ static bool mem_table_insert(AbstractTable *a_tbl, Tuple *t);
 static ScanCursor *mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
 static void mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
 static Tuple *mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
-static int mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen);
-static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t klen);
+static int mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen, void *user_data);
+static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t klen, void *user_data);
 
 MemTable *
 mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
@@ -22,7 +22,7 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *),
+    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *), tbl,
                                mem_table_hash_tuple,
                                mem_table_cmp_tuple);
 
@@ -60,7 +60,8 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
 }
 
 static int
-mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen)
+mem_table_cmp_tuple(const void *k1, const void *k2,
+                    apr_ssize_t klen, void *user_data)
 {
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
@@ -73,7 +74,7 @@ mem_table_cmp_tuple(const void *k1, const void *k2, apr_ssize_t klen)
 }
 
 static unsigned int
-mem_table_hash_tuple(const char *key, apr_ssize_t klen)
+mem_table_hash_tuple(const char *key, apr_ssize_t klen, void *user_data)
 {
     Tuple *t = (Tuple *) key;
 

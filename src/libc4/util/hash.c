@@ -72,6 +72,7 @@ struct c4_hash_t {
     c4_hash_index_t     iterator;  /* For c4_hash_first(NULL, ...) */
     unsigned int        count, max;
     apr_ssize_t          key_len;
+    void               *user_data;
     c4_hashfunc_t       hash_func;
     c4_keycomp_func_t   cmp_func;
     c4_hash_entry_t    *free;  /* List of recycled entries */
@@ -89,7 +90,7 @@ static c4_hash_entry_t **alloc_array(c4_hash_t *ht, unsigned int max)
    return apr_pcalloc(ht->array_pool, sizeof(*ht->array) * (max + 1));
 }
 
-c4_hash_t *c4_hash_make(apr_pool_t *pool, apr_ssize_t key_len,
+c4_hash_t *c4_hash_make(apr_pool_t *pool, apr_ssize_t key_len, void *cb_data,
                         c4_hashfunc_t hash_func, c4_keycomp_func_t cmp_func)
 {
     apr_pool_t *array_pool;
@@ -106,6 +107,7 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool, apr_ssize_t key_len,
     ht->max = INITIAL_MAX;
     ht->array = alloc_array(ht, ht->max);
     ht->key_len = key_len;
+    ht->user_data = cb_data;
     ht->hash_func = hash_func;
     ht->cmp_func = cmp_func;
     return ht;
@@ -215,7 +217,8 @@ static void expand_array(c4_hash_t *ht)
     apr_pool_destroy(old_array_pool);
 }
 
-unsigned int c4_hashfunc_default(const char *char_key, apr_ssize_t klen)
+unsigned int c4_hashfunc_default(const char *char_key, apr_ssize_t klen,
+                                 void *user_data)
 {
     unsigned int hash = 0;
     const unsigned char *key = (const unsigned char *) char_key;
@@ -283,13 +286,13 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
     c4_hash_entry_t **hep, *he;
     unsigned int hash;
 
-    hash = ht->hash_func(key, ht->key_len);
+    hash = ht->hash_func(key, ht->key_len, ht->user_data);
 
     /* scan linked list */
     for (hep = &ht->array[hash & ht->max], he = *hep;
          he; hep = &he->next, he = *hep) {
         if (he->hash == hash
-            && ht->cmp_func(he->key, key, ht->key_len) == 0)
+            && ht->cmp_func(he->key, key, ht->key_len, ht->user_data) == 0)
             break;
     }
     if (he || !val)
