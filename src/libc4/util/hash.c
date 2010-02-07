@@ -309,46 +309,6 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
     return hep;
 }
 
-c4_hash_t *c4_hash_copy(apr_pool_t *pool, const c4_hash_t *orig)
-{
-    apr_pool_t *array_pool;
-    c4_hash_t *ht;
-    c4_hash_entry_t *new_vals;
-    unsigned int i, j;
-
-    if (apr_pool_create(&array_pool, pool) != APR_SUCCESS)
-        return NULL;
-
-    ht = apr_palloc(pool, sizeof(c4_hash_t) +
-                    sizeof(c4_hash_entry_t) * orig->count);
-    ht->pool = pool;
-    ht->array_pool = array_pool;
-    ht->free = NULL;
-    ht->count = orig->count;
-    ht->max = orig->max;
-    ht->key_len = orig->key_len;
-    ht->hash_func = orig->hash_func;
-    ht->cmp_func = orig->cmp_func;
-    ht->array = alloc_array(ht, ht->max);
-
-    new_vals = (c4_hash_entry_t *)((char *)(ht) + sizeof(c4_hash_t));
-    j = 0;
-    for (i = 0; i <= ht->max; i++) {
-        c4_hash_entry_t **new_entry = &(ht->array[i]);
-        c4_hash_entry_t *orig_entry = orig->array[i];
-        while (orig_entry) {
-            *new_entry = &new_vals[j++];
-            (*new_entry)->hash = orig_entry->hash;
-            (*new_entry)->key = orig_entry->key;
-            (*new_entry)->val = orig_entry->val;
-            new_entry = &((*new_entry)->next);
-            orig_entry = orig_entry->next;
-        }
-        *new_entry = NULL;
-    }
-    return ht;
-}
-
 void *c4_hash_get(c4_hash_t *ht, const void *key)
 {
     c4_hash_entry_t *he;

@@ -70,15 +70,6 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool,
                         c4_keycomp_func_t cmp_func);
 
 /**
- * Make a copy of a hash table
- * @param pool The pool from which to allocate the new hash table
- * @param h The hash table to clone
- * @return The hash table just created, or NULL if memory allocation failed
- * @remark Makes a shallow copy
- */
-c4_hash_t *c4_hash_copy(apr_pool_t *pool, const c4_hash_t *h);
-
-/**
  * Associate a value with a key in a hash table.
  * @param ht The hash table
  * @param key Pointer to the key
