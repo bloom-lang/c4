@@ -98,6 +98,8 @@ void int4_to_str(Datum d, StrBuf *buf);
 void int8_to_str(Datum d, StrBuf *buf);
 void string_to_str(Datum d, StrBuf *buf);
 
+char *string_to_text(Datum d, apr_pool_t *pool);
+
 bool datum_equal(Datum d1, Datum d2, DataType type);
 int datum_cmp(Datum d1, Datum d2, DataType type);
 Datum datum_copy(Datum d, DataType type);

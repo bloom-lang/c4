@@ -2,6 +2,7 @@
 
 #include "c4-internal.h"
 #include "types/datum.h"
+#include "util/hash.h"
 
 bool
 bool_equal(Datum d1, Datum d2)
@@ -192,14 +193,14 @@ apr_uint32_t
 bool_hash(Datum d)
 {
     apr_ssize_t len = sizeof(bool);
-    return apr_hashfunc_default((char *) &(d.b), &len);
+    return c4_hashfunc_default((char *) &(d.b), len, NULL);
 }
 
 apr_uint32_t
 char_hash(Datum d)
 {
     apr_ssize_t len = sizeof(unsigned char);
-    return apr_hashfunc_default((char *) &(d.c), &len);
+    return c4_hashfunc_default((char *) &(d.c), len, NULL);
 }
 
 apr_uint32_t
@@ -215,35 +216,35 @@ double_hash(Datum d)
     if (d.d8 == 0)
         return 0;
 
-    return apr_hashfunc_default((char *) &(d.d8), &len);
+    return c4_hashfunc_default((char *) &(d.d8), len, NULL);
 }
 
 apr_uint32_t
 int2_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int16_t);
-    return apr_hashfunc_default((char *) &(d.i2), &len);
+    return c4_hashfunc_default((char *) &(d.i2), len, NULL);
 }
 
 apr_uint32_t
 int4_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int32_t);
-    return apr_hashfunc_default((char *) &(d.i4), &len);
+    return c4_hashfunc_default((char *) &(d.i4), len, NULL);
 }
 
 apr_uint32_t
 int8_hash(Datum d)
 {
     apr_ssize_t len = sizeof(apr_int64_t);
-    return apr_hashfunc_default((char *) &(d.i8), &len);
+    return c4_hashfunc_default((char *) &(d.i8), len, NULL);
 }
 
 apr_uint32_t
 string_hash(Datum d)
 {
     apr_ssize_t len = d.s->len;
-    return apr_hashfunc_default(d.s->data, &len);
+    return c4_hashfunc_default(d.s->data, len, NULL);
 }
 
 static void
@@ -459,6 +460,18 @@ string_to_str(Datum d, StrBuf *buf)
 {
     C4String *s = d.s;
     sbuf_append_data(buf, s->data, s->len);
+}
+
+/*
+ * XXX: This is asymmetric with the rest of the APIs, but it is useful to
+ * convert a C4String to a C-style string without needing to use a temporary
+ * StrBuf. Flesh this out into a generic API?
+ */
+char *
+string_to_text(Datum d, apr_pool_t *pool)
+{
+    C4String *s = d.s;
+    return apr_pstrmemdup(pool, s->data, s->len);
 }
 
 Datum

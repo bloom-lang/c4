@@ -1,4 +1,3 @@
-#include <apr_hash.h>
 #include <apr_network_io.h>
 #include <apr_poll.h>
 #include <apr_thread_proc.h>
@@ -6,6 +5,7 @@
 #include "c4-internal.h"
 #include "router.h"
 #include "net/network.h"
+#include "util/hash.h"
 #include "util/socket.h"
 #include "util/strbuf.h"
 #include "util/tuple_buf.h"
@@ -29,13 +29,7 @@ struct C4Network
      * don't bother adding the new client to the table, although we
      * allow the incoming connection to proceed.
      */
-    apr_hash_t *client_tbl;
-
-    /*
-     * XXX: Used to convert loc spec datums into C-style strings. This is a
-     * hack.
-     */
-    StrBuf *tmp_buf;
+    c4_hash_t *client_tbl;
 };
 
 /* XXX: Rename */
@@ -58,7 +52,8 @@ typedef struct ClientState
 {
     apr_pool_t *pool;
     C4Runtime *c4;
-    char *loc_spec;
+    Datum loc_spec;       /* Pre-formatted for hash table lookups */
+    char *loc_spec_str;
     apr_sockaddr_t *remote_addr;
 
     bool connected;
@@ -85,6 +80,10 @@ static apr_status_t network_cleanup(void *data);
 static apr_socket_t *server_sock_make(int port, apr_pool_t *pool);
 static apr_pollfd_t *pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
                                  apr_int16_t reqevents, void *data);
+static unsigned int client_tbl_hash(const char *key, apr_ssize_t klen,
+                                    void *user_data);
+static int client_tbl_cmp(const void *k1, const void *k2, apr_ssize_t klen,
+                          void *user_data);
 static void accept_new_client(C4Network *net);
 static void update_client_state(const apr_pollfd_t *fd);
 static void update_recv_state(ClientState *client);
@@ -94,7 +93,7 @@ static ClientState *client_make(C4Network *net);
 static apr_status_t client_cleanup(void *data);
 static ClientState *get_client_for_loc_spec(C4Network *net, Tuple *tuple,
                                             TableDef *tbl_def);
-static ClientState *connect_new_client(C4Network *net, const char *loc_spec);
+static ClientState *connect_new_client(C4Network *net, Datum loc_spec);
 static void client_try_connect(ClientState *client);
 static void update_client_interest(ClientState *client, int reqevents);
 static apr_socket_t *create_send_socket(ClientState *client,
@@ -114,8 +113,8 @@ network_make(C4Runtime *c4, int port)
     net = apr_pcalloc(c4->pool, sizeof(*net));
     net->c4 = c4;
     net->pool = c4->pool;
-    net->client_tbl = apr_hash_make(net->pool);
-    net->tmp_buf = sbuf_make(net->pool);
+    net->client_tbl = c4_hash_make(net->pool, sizeof(Datum), NULL,
+                                   client_tbl_hash, client_tbl_cmp);
     net->serv_sock = server_sock_make(port, net->pool);
 
     s = apr_socket_addr_get(&net->local_addr, APR_LOCAL, net->serv_sock);
@@ -146,7 +145,7 @@ network_cleanup(void *data)
     C4Network *net = (C4Network *) data;
 
     /* Sanity check: no more clients in table */
-    if (apr_hash_count(net->client_tbl) != 0)
+    if (c4_hash_count(net->client_tbl) != 0)
         FAIL();
 
     return APR_SUCCESS;
@@ -200,6 +199,32 @@ pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
     result->client_data = data;
 
     return result;
+}
+
+static unsigned int
+client_tbl_hash(const char *key, apr_ssize_t klen, void *user_data)
+{
+    Datum d;
+
+    ASSERT(klen == sizeof(Datum));
+    /* Ugly workaround: C99 does not allow casting pointer to union type */
+    d.s = (C4String *) key;
+    return string_hash(d);
+}
+
+static int
+client_tbl_cmp(const void *k1, const void *k2, apr_ssize_t klen, void *user_data)
+{
+    Datum d1;
+    Datum d2;
+
+    ASSERT(klen == sizeof(Datum));
+    d1.s = (C4String *) k1;
+    d2.s = (C4String *) k2;
+    if (string_equal(d1, d2))
+        return 0;
+    else
+        return 1;
 }
 
 int
@@ -270,7 +295,7 @@ accept_new_client(C4Network *net)
 
     socket_set_non_block(client->sock);
     client->connected = true;
-    client->loc_spec = socket_get_remote_loc(client->sock, client->pool);
+    client->loc_spec_str = socket_get_remote_loc(client->sock, client->pool);
     client->remote_addr = socket_get_remote_addr(client->sock);
     client->pollfd = pollfd_make(client->pool, client->sock,
                                  APR_POLLIN, client);
@@ -278,15 +303,14 @@ accept_new_client(C4Network *net)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
+    client->loc_spec = string_from_str(client->loc_spec_str);
+    pool_track_datum(client->pool, client->loc_spec, TYPE_STRING);
     /*
      * Enter the new client's loc_spec into the client_table. If
      * there's already a ClientState for the loc spec, don't try to
      * replace it.
      */
-    if (apr_hash_get(net->client_tbl, client->loc_spec,
-                     APR_HASH_KEY_STRING) != NULL)
-        apr_hash_set(net->client_tbl, client->loc_spec,
-                     APR_HASH_KEY_STRING, client);
+    c4_hash_set_if_new(net->client_tbl, client->loc_spec.s, client);
 }
 
 static ClientState *
@@ -328,20 +352,19 @@ client_cleanup(void *data)
 
     if (!tuple_buf_is_empty(client->pending_tuples))
         c4_log(client->c4, "Destroying client @ %s with %d unsent messages",
-               client->loc_spec, tuple_buf_size(client->pending_tuples));
+               client->loc_spec_str, tuple_buf_size(client->pending_tuples));
 
     s = apr_pollset_remove(net->pollset, client->pollfd);
     if (s != APR_SUCCESS)
         c4_warn_apr(client->c4, s, "Failed to remove client @ %s from pollset",
-                    client->loc_spec);
+                    client->loc_spec_str);
 
     s = apr_socket_close(client->sock);
     if (s != APR_SUCCESS)
         c4_warn_apr(client->c4, s, "Close on client socket @ %s failed",
-                    client->loc_spec);
+                    client->loc_spec_str);
 
-    apr_hash_set(net->client_tbl, client->loc_spec,
-                 APR_HASH_KEY_STRING, NULL);
+    c4_hash_set(net->client_tbl, client->loc_spec.s, NULL);
 
     return APR_SUCCESS;
 }
@@ -426,7 +449,7 @@ saw_eof:
     if (client->recv_state != RECV_TABLE_NAME_LEN ||
         sbuf_data_avail(client->recv_name_buf))
         c4_log(client->c4, "Unexpected EOF from client @ %s",
-               client->loc_spec);
+               client->loc_spec_str);
 
     apr_pool_destroy(client->pool);
 }
@@ -547,37 +570,30 @@ get_client_for_loc_spec(C4Network *net, Tuple *tuple, TableDef *tbl_def)
 {
     ClientState *client;
     Datum loc_spec;
-    char *tmp_loc_spec;
 
     loc_spec = tuple_get_val(tuple, tbl_def->ls_colno);
-    /*
-     * XXX: Convert tuple address in Datum format into a C-style
-     * string. This is hacky.
-     */
-    sbuf_reset(net->tmp_buf);
-    string_to_str(loc_spec, net->tmp_buf);
-    sbuf_append_char(net->tmp_buf, '\0');
-    tmp_loc_spec = net->tmp_buf->data;
-
-    client = apr_hash_get(net->client_tbl, tmp_loc_spec, APR_HASH_KEY_STRING);
+    client = c4_hash_get(net->client_tbl, loc_spec.s);
     if (client == NULL)
     {
-        client = connect_new_client(net, tmp_loc_spec);
-        apr_hash_set(net->client_tbl, client->loc_spec,
-                     APR_HASH_KEY_STRING, client);
+        client = connect_new_client(net, loc_spec);
+        c4_hash_set(net->client_tbl, client->loc_spec.s, client);
     }
 
     return client;
 }
 
 static ClientState *
-connect_new_client(C4Network *net, const char *loc_spec)
+connect_new_client(C4Network *net, Datum loc_spec)
 {
     ClientState *client;
     apr_status_t s;
 
     client = client_make(net);
-    client->loc_spec = apr_pstrdup(client->pool, loc_spec);
+    client->loc_spec = datum_copy(loc_spec, TYPE_STRING);
+    pool_track_datum(client->pool, client->loc_spec, TYPE_STRING);
+    client->loc_spec_str = string_to_text(client->loc_spec,
+                                          client->pool);
+
     client->sock = create_send_socket(client, &client->remote_addr);
     client->pollfd = pollfd_make(client->pool, client->sock,
                                  APR_POLLOUT, client);
@@ -613,7 +629,7 @@ client_try_connect(ClientState *client)
     if (s != APR_SUCCESS)
     {
         c4_log(client->c4, "Failed to connect to remote host @ %s",
-               client->loc_spec);
+               client->loc_spec_str);
         FAIL_APR(s);
     }
 
@@ -659,7 +675,7 @@ create_send_socket(ClientState *client, apr_sockaddr_t **remote_addr)
     char host[APRMAXHOSTLEN];
     int port_num;
 
-    parse_loc_spec(client->loc_spec, host, &port_num);
+    parse_loc_spec(client->loc_spec_str, host, &port_num);
 
     s = apr_sockaddr_info_get(&addr, host, APR_INET, port_num, 0, client->pool);
     if (s != APR_SUCCESS)
