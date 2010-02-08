@@ -52,9 +52,9 @@ c4_warn_apr(C4Runtime *c4, apr_status_t s, const char *fmt, ...)
 }
 
 char *
-log_tuple(C4Runtime *c4, Tuple *tuple)
+log_tuple(C4Runtime *c4, Tuple *tuple, Schema *s)
 {
-    char *tuple_str = tuple_to_str(tuple, c4->log->tmp_pool);
+    char *tuple_str = tuple_to_str(tuple, s, c4->log->tmp_pool);
     return apr_pstrcat(c4->log->tmp_pool, "{", tuple_str, "}", NULL);
 }
 

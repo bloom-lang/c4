@@ -15,7 +15,7 @@ insert_invoke(Operator *op, Tuple *t)
 
     proj_tuple = operator_do_project(op);
     router_install_tuple(c4->router, proj_tuple, insert_op->tbl_def, true);
-    tuple_unpin(proj_tuple);
+    tuple_unpin(proj_tuple, op->proj_schema);
 }
 
 static void

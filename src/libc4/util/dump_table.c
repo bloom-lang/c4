@@ -17,7 +17,7 @@ dump_table(C4Runtime *c4, const char *tbl_name, StrBuf *buf)
     table->scan_reset(table, cursor);
     while ((scan_tuple = table->scan_next(table, cursor)) != NULL)
     {
-        tuple_to_str_buf(scan_tuple, buf);
+        tuple_to_str_buf(scan_tuple, table->def->schema, buf);
         sbuf_append_char(buf, '\n');
     }
 

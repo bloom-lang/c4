@@ -28,9 +28,10 @@ tuple_buf_cleanup(void *data)
     while (!tuple_buf_is_empty(buf))
     {
         Tuple *tuple;
+        TableDef *tbl_def;
 
-        tuple_buf_shift(buf, &tuple, NULL);
-        tuple_unpin(tuple);
+        tuple_buf_shift(buf, &tuple, &tbl_def);
+        tuple_unpin(tuple, tbl_def->schema);
     }
 
     ol_free(buf->entries);

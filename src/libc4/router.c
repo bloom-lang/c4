@@ -85,7 +85,7 @@ router_do_fixpoint(C4Router *router)
             op_chain = op_chain->next;
         }
 
-        tuple_unpin(tuple);
+        tuple_unpin(tuple, tbl_def->schema);
     }
 
     /* If we modified persistent storage, commit to disk */
@@ -102,7 +102,7 @@ router_do_fixpoint(C4Router *router)
 
         tuple_buf_shift(net_buf, &tuple, &tbl_def);
         network_send(router->c4->net, tuple, tbl_def);
-        tuple_unpin(tuple);
+        tuple_unpin(tuple, tbl_def->schema);
     }
 
     /* Sending network messages should not cause more routing work */
@@ -128,7 +128,8 @@ router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
 {
 #if 0
     c4_log(router->c4, "%s: %s (=> %s)",
-           __func__, log_tuple(router->c4, tuple), tbl_def->name);
+           __func__, log_tuple(router->c4, tuple, tbl_def->schema),
+           tbl_def->name);
 #endif
     if (check_remote && tuple_is_remote(tuple, tbl_def, router->c4))
     {

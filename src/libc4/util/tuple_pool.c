@@ -38,11 +38,10 @@ tuple_pool_loan(TuplePool *tpool)
     if (tpool->nfree > 0)
     {
         result = tpool->free_head;
-        tpool->free_head = result->ptr.next_free;
+        tpool->free_head = result->u.next_free;
         tpool->nfree--;
 
-        result->ptr.schema = tpool->schema;
-        result->refcount = 1;
+        result->u.refcount = 1;
         return result;
     }
 
@@ -65,8 +64,7 @@ tuple_pool_loan(TuplePool *tpool)
     }
 
     result = (Tuple *) tpool->raw_alloc;
-    result->ptr.schema = tpool->schema;
-    result->refcount = 1;
+    result->u.refcount = 1;
     tpool->raw_alloc += tpool->tuple_size;
     tpool->nalloc_unused--;
 
@@ -76,10 +74,9 @@ tuple_pool_loan(TuplePool *tpool)
 void
 tuple_pool_return(TuplePool *tpool, Tuple *tuple)
 {
-    ASSERT(tuple_get_schema(tuple) == tpool->schema);
-    ASSERT(tuple->refcount == 0);
+    ASSERT(tuple->u.refcount == 0);
 
     tpool->nfree++;
-    tuple->ptr.next_free = tpool->free_head;
+    tuple->u.next_free = tpool->free_head;
     tpool->free_head = tuple;
 }

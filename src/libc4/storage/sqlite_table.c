@@ -120,7 +120,7 @@ sqlite_table_insert(AbstractTable *a_tbl, Tuple *t)
         char stmt[1024];
         int stmt_len;
 
-        param_str = schema_to_sql_param_str(tuple_get_schema(t),
+        param_str = schema_to_sql_param_str(a_tbl->def->schema,
                                             a_tbl->c4->tmp_pool);
 
         /* XXX: need to escape SQL string */
