@@ -11,3 +11,10 @@ q("bar", "baz");
 q("bar", "bam");
 
 \dump r
+
+define(later, keys(0), {string, string});
+
+later(A, B) :- p(A, B);
+later(A, B) :- q(A, B);
+
+\dump later

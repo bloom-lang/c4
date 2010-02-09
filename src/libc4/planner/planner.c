@@ -328,8 +328,13 @@ plan_rule(AstRule *rule, PlannerState *state)
 
         chain_plan = plan_op_chain(delta_tbl, rule, state);
         list_append(rplan->chains, chain_plan);
+
+        /* We currently use the first join for the bootstrap table */
+        if (rplan->bootstrap_tbl == NULL)
+            rplan->bootstrap_tbl = delta_tbl->ref;
     }
 
+    ASSERT(rplan->bootstrap_tbl != NULL);
     return rplan;
 }
 

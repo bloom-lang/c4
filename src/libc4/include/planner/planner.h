@@ -15,6 +15,13 @@ typedef struct ProgramPlan
 typedef struct RulePlan
 {
     List *chains;
+    /*
+     * When a rule is installed, we need to trigger deltas for facts that
+     * existed prior to the rule's definition. We do this by picking an
+     * arbitrary "bootstrap" table from the rule's body terms, and re-inserting
+     * the entire content of that table after installing the plan.
+     */
+    AstTableRef *bootstrap_tbl;
 } RulePlan;
 
 typedef struct OpChainPlan

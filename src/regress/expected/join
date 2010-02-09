@@ -1,2 +1,5 @@
 foo,bam
 foo,baz
+bar,bam
+bar,baz
+foo,bar

@@ -181,6 +181,30 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
     }
 }
 
+static void
+plan_bootstrap_rules(ProgramPlan *plan, InstallState *istate)
+{
+    ListCell *lc;
+
+    foreach (lc, plan->rules)
+    {
+        RulePlan *rplan = (RulePlan *) lc_ptr(lc);
+        AbstractTable *table;
+        ScanCursor *cursor;
+        Tuple *tuple;
+
+        table = cat_get_table_impl(istate->c4->cat,
+                                   rplan->bootstrap_tbl->name);
+        cursor = table->scan_make(table, istate->tmp_pool);
+
+        while ((tuple = table->scan_next(table, cursor)) != NULL)
+        {
+            router_install_tuple(istate->c4->router, tuple,
+                                 table->def, false);
+        }
+    }
+}
+
 static InstallState *
 istate_make(apr_pool_t *pool, C4Runtime *c4)
 {
@@ -202,4 +226,6 @@ install_plan(ProgramPlan *plan, apr_pool_t *pool, C4Runtime *c4)
     plan_install_defines(plan, istate);
     plan_install_rules(plan, istate);
     plan_install_facts(plan, istate);
+
+    plan_bootstrap_rules(plan, istate);
 }
