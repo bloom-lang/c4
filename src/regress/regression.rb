@@ -24,6 +24,7 @@ class TestTuple < Test::Unit::TestCase
       File.open("#{INPUT_DIR}/#{test}").each_line do |line|
         if line =~ /^\\dump (.+)/
           @c4.install_str(input) unless input == ""
+          output << "**** \\dump \"#{$1}\" ****\n"
           output << @c4.dump_table($1).split("\n").sort.join("\n")
           output << "\n"
           input = ""

@@ -1,5 +1,7 @@
+**** \dump "r" ****
 foo,bam
 foo,baz
+**** \dump "later" ****
 bar,bam
 bar,baz
 foo,bar
