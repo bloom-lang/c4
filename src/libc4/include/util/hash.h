@@ -90,11 +90,14 @@ void c4_hash_set(c4_hash_t *ht, const void *key, const void *val);
  * @param key Pointer to the key
  * @param val Value to associate with the key, if the key is not already in
  *            the hash table. Cannot be NULL.
+ * @param is_new Output parameter; set to true iff key was not previously
+ *               in hash table
  * @return The value associated with the key. If key is new, this is "val";
  *         otherwise, the hash table is unmodified, and the result is
  *         equivalent to c4_hash_get(ht, key).
  */
-void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val);
+void *c4_hash_set_if_new(c4_hash_t *ht, const void *key,
+                         const void *val, bool *is_new);
 
 
 /**

@@ -281,10 +281,14 @@ unsigned int c4_hashfunc_default(const char *char_key, apr_ssize_t klen,
 
 static c4_hash_entry_t **find_entry(c4_hash_t *ht,
                                     const void *key,
-                                    const void *val)
+                                    const void *val,
+                                    bool *is_new)
 {
     c4_hash_entry_t **hep, *he;
     unsigned int hash;
+
+    if (is_new)
+        *is_new = false;
 
     hash = ht->hash_func(key, ht->key_len, ht->user_data);
 
@@ -299,6 +303,9 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
         return hep;
 
     /* add a new entry for non-NULL values */
+    if (is_new)
+        *is_new = true;
+
     if ((he = ht->free) != NULL)
         ht->free = he->next;
     else
@@ -315,7 +322,7 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
 void *c4_hash_get(c4_hash_t *ht, const void *key)
 {
     c4_hash_entry_t *he;
-    he = *find_entry(ht, key, NULL);
+    he = *find_entry(ht, key, NULL, NULL);
     if (he)
         return (void *) he->val;
     else
@@ -325,7 +332,7 @@ void *c4_hash_get(c4_hash_t *ht, const void *key)
 void c4_hash_set(c4_hash_t *ht, const void *key, const void *val)
 {
     c4_hash_entry_t **hep;
-    hep = find_entry(ht, key, val);
+    hep = find_entry(ht, key, val, NULL);
     if (*hep) {
         if (!val) {
             /* delete entry */
@@ -347,16 +354,20 @@ void c4_hash_set(c4_hash_t *ht, const void *key, const void *val)
     /* else key not present and val==NULL */
 }
 
-void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val)
+void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val,
+                         bool *is_new_p)
 {
     c4_hash_entry_t *he;
+    bool is_new;
 
     ASSERT(val != NULL);
-    he = *find_entry(ht, key, val);
+    he = *find_entry(ht, key, val, &is_new);
     /* if new key, check that the collision rate isn't too high */
-    if (he->val == val && ht->count > ht->max) {
+    if (is_new && ht->count > ht->max) {
         expand_array(ht);
     }
+    if (is_new_p)
+        *is_new_p = is_new;
     return (void *)he->val;
 }
 

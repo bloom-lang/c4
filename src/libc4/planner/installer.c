@@ -199,8 +199,8 @@ plan_bootstrap_rules(ProgramPlan *plan, InstallState *istate)
 
         while ((tuple = table->scan_next(table, cursor)) != NULL)
         {
-            router_install_tuple(istate->c4->router, tuple,
-                                 table->def, false);
+            router_enqueue_internal(istate->c4->router, tuple,
+                                    table->def);
         }
     }
 }

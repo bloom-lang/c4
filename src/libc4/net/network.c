@@ -310,7 +310,7 @@ accept_new_client(C4Network *net)
      * there's already a ClientState for the loc spec, don't try to
      * replace it.
      */
-    c4_hash_set_if_new(net->client_tbl, client->loc_spec.s, client);
+    c4_hash_set_if_new(net->client_tbl, client->loc_spec.s, client, NULL);
 }
 
 static ClientState *

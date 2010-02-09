@@ -55,10 +55,11 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
 {
     MemTable *tbl = (MemTable *) a_tbl;
     Tuple *val;
+    bool is_new;
 
-    val = c4_hash_set_if_new(tbl->tuples, t, t);
+    val = c4_hash_set_if_new(tbl->tuples, t, t, &is_new);
     tuple_pin(val);
-    return (bool) (t == val);
+    return is_new;
 }
 
 static int
