@@ -25,6 +25,7 @@ class TestTuple < Test::Unit::TestCase
         if line =~ /^\\dump (.+)/
           @c4.install_str(input) unless input == ""
           output << @c4.dump_table($1).split("\n").sort.join("\n")
+          output << "\n"
           input = ""
         else
           input << line
