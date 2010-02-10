@@ -101,10 +101,7 @@ join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
             AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc2);
             AstVarExpr *column_var;
 
-            /* XXX: we shouldn't actually see this post-analysis, right? */
-            if (cref->expr->kind != AST_VAR_EXPR)
-                continue;
-
+            ASSERT(cref->expr->kind == AST_VAR_EXPR);
             column_var = (AstVarExpr *) cref->expr;
             if (strcmp(var->name, column_var->name) == 0)
                 return true;
