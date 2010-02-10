@@ -30,18 +30,28 @@ typedef struct AnalyzeState
     int tmp_varno;
 } AnalyzeState;
 
+/*
+ * In what location does an expression appear? Certain constructs (e.g. don't
+ * care variables) are legal in join clauses but not elsewhere, for example.
+ */
+typedef enum ExprLocation
+{
+    EXPR_LOC_HEAD,
+    EXPR_LOC_JOIN,
+    EXPR_LOC_QUAL
+} ExprLocation;
 
-static void analyze_table_ref(AstTableRef *ref, AnalyzeState *state);
+static void analyze_table_ref(AstTableRef *ref, ExprLocation loc, AnalyzeState *state);
 static void analyze_join_clause(AstJoinClause *join, AstRule *rule,
                                 AnalyzeState *state);
 static void analyze_qualifier(AstQualifier *qual, AnalyzeState *state);
-static void analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state);
-static void analyze_op_expr(AstOpExpr *op_expr, bool inside_qual,
+static void analyze_expr(C4Node *node, ExprLocation loc, AnalyzeState *state);
+static void analyze_op_expr(AstOpExpr *op_expr, ExprLocation loc,
                             AnalyzeState *state);
-static void analyze_var_expr(AstVarExpr *var_expr, bool inside_qual,
+static void analyze_var_expr(AstVarExpr *var_expr, ExprLocation loc,
                              AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
-static void analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state);
+static void analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state);
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
@@ -176,15 +186,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     }
 
     /* Check the rule head */
-    analyze_table_ref(rule->head, state);
-    foreach (lc, rule->head->cols)
-    {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
-
-        if (is_dont_care_var(col->expr))
-            ERROR("Don't care variables (\"_\") cannot "
-                  "appear in the head of a rule");
-    }
+    analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
 
     make_var_eq_table(rule, state);
     make_implied_quals(rule, state);
@@ -354,8 +356,7 @@ table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
     if (tbl_def != NULL)
         return tbl_def->ls_colno;
 
-    define = apr_hash_get(state->define_tbl, tbl_name,
-                          APR_HASH_KEY_STRING);
+    define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
 
     colno = 0;
     foreach (lc, define->schema)
@@ -547,7 +548,7 @@ done:
         colno++;
     }
 
-    analyze_table_ref(join->ref, state);
+    analyze_table_ref(join->ref, EXPR_LOC_JOIN, state);
 }
 
 static void
@@ -571,7 +572,7 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 {
     DataType type;
 
-    analyze_expr(qual->expr, true, state);
+    analyze_expr(qual->expr, EXPR_LOC_QUAL, state);
 
     type = expr_get_type(qual->expr);
     if (type != TYPE_BOOL)
@@ -580,16 +581,16 @@ analyze_qualifier(AstQualifier *qual, AnalyzeState *state)
 }
 
 static void
-analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state)
+analyze_expr(C4Node *node, ExprLocation loc, AnalyzeState *state)
 {
     switch (node->kind)
     {
         case AST_OP_EXPR:
-            analyze_op_expr((AstOpExpr *) node, inside_qual, state);
+            analyze_op_expr((AstOpExpr *) node, loc, state);
             break;
 
         case AST_VAR_EXPR:
-            analyze_var_expr((AstVarExpr *) node, inside_qual, state);
+            analyze_var_expr((AstVarExpr *) node, loc, state);
             break;
 
         case AST_CONST_EXPR:
@@ -597,7 +598,7 @@ analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state)
             break;
 
         case AST_AGG_EXPR:
-            analyze_agg_expr((AstAggExpr *) node, state);
+            analyze_agg_expr((AstAggExpr *) node, loc, state);
             break;
 
         default:
@@ -606,12 +607,12 @@ analyze_expr(C4Node *node, bool inside_qual, AnalyzeState *state)
 }
 
 static void
-analyze_op_expr(AstOpExpr *op_expr, bool inside_qual, AnalyzeState *state)
+analyze_op_expr(AstOpExpr *op_expr, ExprLocation loc, AnalyzeState *state)
 {
     DataType lhs_type;
     DataType rhs_type;
 
-    analyze_expr(op_expr->lhs, inside_qual, state);
+    analyze_expr(op_expr->lhs, loc, state);
     lhs_type = expr_get_type(op_expr->lhs);
 
     /* Unary operators are simple */
@@ -623,7 +624,7 @@ analyze_op_expr(AstOpExpr *op_expr, bool inside_qual, AnalyzeState *state)
         return;
     }
 
-    analyze_expr(op_expr->rhs, inside_qual, state);
+    analyze_expr(op_expr->rhs, loc, state);
     rhs_type = expr_get_type(op_expr->rhs);
 
     /* XXX: type compatibility check is far too strict */
@@ -648,18 +649,21 @@ analyze_op_expr(AstOpExpr *op_expr, bool inside_qual, AnalyzeState *state)
 }
 
 static void
-analyze_var_expr(AstVarExpr *var_expr, bool inside_qual, AnalyzeState *state)
+analyze_var_expr(AstVarExpr *var_expr, ExprLocation loc, AnalyzeState *state)
 {
     if (is_dont_care_var((C4Node *) var_expr))
     {
-        if (inside_qual)
+        if (loc == EXPR_LOC_QUAL)
             ERROR("Don't care variables (\"_\") cannot be "
                   "referenced in qualifiers");
+        if (loc == EXPR_LOC_HEAD)
+            ERROR("Don't care variables (\"_\") cannot appear "
+                  "in the head of a rule");
 
         /*
-         * If we're not inside a qual, we're done: we don't want to lookup
-         * the variable's name, and don't care variables in join clauses or
-         * rule heads have already had their type computed.
+         * For don't care variables in join clauses, we're done: we don't want
+         * to lookup the variable's name, and we should have already computed
+         * the variable's type.
          */
         ASSERT(var_expr->type != TYPE_INVALID);
         return;
@@ -692,9 +696,9 @@ analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state)
 }
 
 static void
-analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state)
+analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state)
 {
-    analyze_expr(a_expr->expr, false, state);
+    analyze_expr(a_expr->expr, loc, state);
 
     if (a_expr->agg_kind == AST_AGG_SUM &&
         expr_get_type(a_expr->expr) != TYPE_INT8)
@@ -707,7 +711,7 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
     AstTableRef *target = fact->head;
     ListCell *lc;
 
-    analyze_table_ref(target, state);
+    analyze_table_ref(target, EXPR_LOC_HEAD, state);
 
     foreach (lc, target->cols)
     {
@@ -719,7 +723,7 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
 }
 
 static void
-analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
+analyze_table_ref(AstTableRef *ref, ExprLocation loc, AnalyzeState *state)
 {
     int num_cols;
     ListCell *lc;
@@ -747,7 +751,7 @@ analyze_table_ref(AstTableRef *ref, AnalyzeState *state)
         DataType expr_type;
         DataType schema_type;
 
-        analyze_expr(col->expr, false, state);
+        analyze_expr(col->expr, loc, state);
         expr_type = expr_get_type(col->expr);
         schema_type = table_get_col_type(ref->name, colno, state);
 
