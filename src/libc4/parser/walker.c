@@ -74,3 +74,31 @@ expr_tree_walker(C4Node *node, expr_callback fn, void *data)
 
     return fn(node, data);
 }
+
+typedef struct VarWalkerContext
+{
+    var_expr_callback fn;
+    void *user_data;
+} VarWalkerContext;
+
+static bool
+var_walker_callback(C4Node *node, void *data)
+{
+    VarWalkerContext *cxt = (VarWalkerContext *) data;
+
+    if (node->kind == AST_VAR_EXPR)
+        return cxt->fn((AstVarExpr *) node, cxt->user_data);
+
+    return true;
+}
+
+bool
+expr_tree_var_walker(C4Node *node, var_expr_callback fn, void *data)
+{
+    VarWalkerContext cxt;
+
+    cxt.fn = fn;
+    cxt.user_data = data;
+
+    return expr_tree_walker(node, var_walker_callback, &cxt);
+}

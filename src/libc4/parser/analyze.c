@@ -236,23 +236,13 @@ analyze_rule_location(AstRule *rule, AnalyzeState *state)
         rule->is_network = true;
 }
 
-typedef struct
-{
-    apr_hash_t *var_seen;
-} UnusedVarContext;
-
 static bool
-unused_var_walker(C4Node *n, void *data)
+unused_var_walker(AstVarExpr *var, void *data)
 {
-    UnusedVarContext *cxt = (UnusedVarContext *) data;
+    apr_hash_t *var_seen = (apr_hash_t *) data;
 
-    if (n->kind == AST_VAR_EXPR)
-    {
-        AstVarExpr *var = (AstVarExpr *) n;
-
-        apr_hash_set(cxt->var_seen, var->name,
-                     APR_HASH_KEY_STRING, var->name);
-    }
+    apr_hash_set(cxt->var_seen, var->name,
+                 APR_HASH_KEY_STRING, var->name);
 
     return true;
 }
@@ -265,19 +255,20 @@ unused_var_walker(C4Node *n, void *data)
 static void
 find_unused_vars(AstRule *rule, AnalyzeState *state)
 {
+    apr_hash_t *var_seen;
     UnusedVarContext cxt;
     ListCell *lc;
     apr_hash_index_t *hi;
 
-    cxt.var_seen = apr_hash_make(state->pool);
+    var_seen = apr_hash_make(state->pool);
 
-    expr_tree_walker((C4Node *) rule->head, unused_var_walker, &cxt);
+    expr_tree_var_walker((C4Node *) rule->head, unused_var_walker, var_seen);
 
     foreach (lc, rule->quals)
     {
         C4Node *qual = (C4Node *) lc_ptr(lc);
 
-        expr_tree_walker(qual, unused_var_walker, &cxt);
+        expr_tree_var_walker(qual, unused_var_walker, var_seen);
     }
 
     for (hi = apr_hash_first(state->pool, state->var_tbl);
@@ -296,33 +287,26 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
 }
 
 static bool
-check_negation_walker(C4Node *n, void *data)
+check_negation_walker(AstVarExpr *var, void *data)
 {
     AnalyzeState *state = (AnalyzeState *) data;
+    List *eq_list;
+    ListCell *lc;
 
-    if (n->kind == AST_VAR_EXPR)
+    eq_list = get_eq_list(var->name, false, state);
+    foreach (lc, eq_list)
     {
-        AstVarExpr *var = (AstVarExpr *) n;
-        List *eq_list;
-        ListCell *lc;
+        char *eq_var_name = lc_ptr(lc);
+        AstJoinClause *join;
 
-        eq_list = get_eq_list(var->name, false, state);
-        foreach (lc, eq_list)
-        {
-            char *eq_var_name = lc_ptr(lc);
-            AstJoinClause *join;
-
-            join = apr_hash_get(state->var_join_tbl, eq_var_name,
-                                APR_HASH_KEY_STRING);
-            if (!join->not)
-                return true;
-        }
-
-        ERROR("Variable \"%s\" in head appears only in negated body terms",
-              var->name);
+        join = apr_hash_get(state->var_join_tbl, eq_var_name,
+                            APR_HASH_KEY_STRING);
+        if (!join->not)
+            return true;
     }
 
-    return true;
+    ERROR("Variable \"%s\" in head appears only in negated body terms",
+          var->name);
 }
 
 /*
@@ -339,7 +323,7 @@ check_negation(AstRule *rule, AnalyzeState *state)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
-        expr_tree_walker(col->expr, check_negation_walker, state);
+        expr_tree_var_walker(col->expr, check_negation_walker, state);
     }
 }
 
