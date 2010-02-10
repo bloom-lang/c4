@@ -162,38 +162,34 @@ typedef struct ProjListContext
 } ProjListContext;
 
 static bool
-make_proj_list_walker(C4Node *n, void *data)
+make_proj_list_walker(AstVarExpr *var, void *data)
 {
-    if (n->kind == AST_VAR_EXPR)
+    ProjListContext *cxt = (ProjListContext *) data;
+    int var_idx;
+    bool is_outer = false;
+
+    if (cxt->state->current_plist == NULL)
+        var_idx = get_var_index_from_join(var->name, cxt->delta_tbl);
+    else
+        var_idx = get_var_index_from_plist(var->name, cxt->state->current_plist);
+
+    if (var_idx == -1 && cxt->outer_rel != NULL)
     {
-        AstVarExpr *var = (AstVarExpr *) n;
-        ProjListContext *cxt = (ProjListContext *) data;
-        int var_idx;
-        bool is_outer = false;
+        var_idx = get_var_index_from_join(var->name, cxt->outer_rel);
+        is_outer = true;
+    }
 
-        if (cxt->state->current_plist == NULL)
-            var_idx = get_var_index_from_join(var->name, cxt->delta_tbl);
-        else
-            var_idx = get_var_index_from_plist(var->name, cxt->state->current_plist);
-
-        if (var_idx == -1 && cxt->outer_rel != NULL)
+    if (var_idx != -1)
+    {
+        /* Don't add to proj list if it already contains this var */
+        if (get_var_index_from_plist(var->name, cxt->wip_plist) == -1)
         {
-            var_idx = get_var_index_from_join(var->name, cxt->outer_rel);
-            is_outer = true;
-        }
+            ExprVar *expr_var;
 
-        if (var_idx != -1)
-        {
-            /* Don't add to proj list if it already contains this var */
-            if (get_var_index_from_plist(var->name, cxt->wip_plist) == -1)
-            {
-                ExprVar *expr_var;
-
-                expr_var = make_expr_var(expr_get_type((C4Node *) var),
-                                         var_idx, is_outer, var->name,
-                                         cxt->state->plan_pool);
-                list_append(cxt->wip_plist, expr_var);
-            }
+            expr_var = make_expr_var(expr_get_type((C4Node *) var),
+                                     var_idx, is_outer, var->name,
+                                     cxt->state->plan_pool);
+            list_append(cxt->wip_plist, expr_var);
         }
     }
 
@@ -284,15 +280,15 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
         {
             C4Node *qual = (C4Node *) lc_ptr(lc2);
 
-            expr_tree_walker(qual, make_proj_list_walker, &cxt);
+            expr_tree_var_walker(qual, make_proj_list_walker, &cxt);
         }
 
         if (plan->node.kind == PLAN_INSERT)
         {
             InsertPlan *iplan = (InsertPlan *) plan;
 
-            expr_tree_walker((C4Node *) iplan->head,
-                             make_proj_list_walker, &cxt);
+            expr_tree_var_walker((C4Node *) iplan->head,
+                                 make_proj_list_walker, &cxt);
         }
     }
 

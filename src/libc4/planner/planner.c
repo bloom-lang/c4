@@ -112,13 +112,11 @@ join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
 }
 
 static bool
-get_var_callback(C4Node *n, void *data)
+get_var_callback(AstVarExpr *var, void *data)
 {
     List *var_list = (List *) data;
 
-    if (n->kind == AST_VAR_EXPR)
-        list_append(var_list, n);
-
+    list_append(var_list, var);
     return true;
 }
 
@@ -128,7 +126,7 @@ expr_get_vars(C4Node *expr, apr_pool_t *pool)
     List *var_list;
 
     var_list = list_make(pool);
-    expr_tree_walker(expr, get_var_callback, var_list);
+    expr_tree_var_walker(expr, get_var_callback, var_list);
     return var_list;
 }
 
