@@ -161,8 +161,7 @@ make_filter_plan(const char *tbl_name, List *quals,
 }
 
 InsertPlan *
-make_insert_plan(AstTableRef *head, List *proj_list,
-                 bool is_network, apr_pool_t *p)
+make_insert_plan(AstTableRef *head, List *proj_list, apr_pool_t *p)
 {
     InsertPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_INSERT;
@@ -170,7 +169,6 @@ make_insert_plan(AstTableRef *head, List *proj_list,
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
     result->head = copy_node(head, p);
-    result->is_network = is_network;
     return result;
 }
 

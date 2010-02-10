@@ -53,7 +53,6 @@ typedef struct InsertPlan
 {
     PlanNode plan;
     AstTableRef *head;
-    bool is_network;
 } InsertPlan;
 
 typedef struct ScanPlan
