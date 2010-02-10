@@ -241,7 +241,7 @@ unused_var_walker(AstVarExpr *var, void *data)
 {
     apr_hash_t *var_seen = (apr_hash_t *) data;
 
-    apr_hash_set(cxt->var_seen, var->name,
+    apr_hash_set(var_seen, var->name,
                  APR_HASH_KEY_STRING, var->name);
 
     return true;
@@ -256,7 +256,6 @@ static void
 find_unused_vars(AstRule *rule, AnalyzeState *state)
 {
     apr_hash_t *var_seen;
-    UnusedVarContext cxt;
     ListCell *lc;
     apr_hash_index_t *hi;
 
@@ -278,7 +277,7 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
 
         apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
 
-        if (apr_hash_get(cxt.var_seen, var_name,
+        if (apr_hash_get(var_seen, var_name,
                          APR_HASH_KEY_STRING) == NULL)
         {
             printf("Unused variable name: %s\n", var_name);
@@ -309,22 +308,38 @@ check_negation_walker(AstVarExpr *var, void *data)
           var->name);
 }
 
-/*
- * For each variable in the rule head, check that there is at least one variable
- * it is equal to that appears in a non-negated join clause. Otherwise, the rule
- * could produce unbounded input: "foo(A) :- notin bar(A);" is unsafe.
- */
 static void
 check_negation(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
 
+    /*
+     * For each variable in the rule head, check that there is at least one
+     * variable it is equal to that appears in a non-negated join clause.
+     * Otherwise, the rule could produce unbounded output: "x(A) :- notin y(A);"
+     * is unsafe.
+     */
     foreach (lc, rule->head->cols)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
         expr_tree_var_walker(col->expr, check_negation_walker, state);
     }
+
+    /*
+     * Check that there is at least one non-negated join clause in the
+     * body. This is almost a subset of the previous check, except that a rule
+     * might contain only constant values in its head.
+     */
+    foreach (lc, rule->joins)
+    {
+        AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
+
+        if (!join->not)
+            return;
+    }
+
+    ERROR("Rule body must contain at least one non-negated join clause");
 }
 
 static int
