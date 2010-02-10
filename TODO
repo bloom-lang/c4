@@ -71,6 +71,7 @@ Tables and storage:
   * Also do output to external format
 * Optimize the hash table implementation
 * Consider using Judy trees/arrays instead of hash tables
+* Import red-black tree code
 * Support for secondary indexes, index scans on PK
   * Push predicates down to SQLite table scan
 
