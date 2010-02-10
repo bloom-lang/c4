@@ -20,9 +20,11 @@ typedef struct AnalyzeState
     int tmp_ruleno;
 
     /* Per-clause state: */
-    /* Map from variable name => AstVarExpr */
+    /* Map from var name => AstVarExpr */
     apr_hash_t *var_tbl;
-    /* Map from variable name => list of equal variable names */
+    /* Map from var name => AstJoinClause in which it is defined */
+    apr_hash_t *var_join_tbl;
+    /* Map from var name => list of equal variable names */
     apr_hash_t *eq_tbl;
     /* Current index for system-generated variable names */
     int tmp_varno;
@@ -43,6 +45,7 @@ static void analyze_agg_expr(AstAggExpr *a_expr, AnalyzeState *state);
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
+static void check_negation(AstRule *rule, AnalyzeState *state);
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2,
@@ -51,7 +54,7 @@ static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
 static AstVarExpr *lookup_var(const char *name, AnalyzeState *state);
-static void define_var(AstVarExpr *var, AnalyzeState *state);
+static void define_var(AstVarExpr *var, AstJoinClause *join, AnalyzeState *state);
 static bool is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state);
 static char *make_anon_var_name(const char *prefix, AnalyzeState *state);
 static void add_qual(char *lhs_name, C4Node *rhs, AstOperKind op_kind,
@@ -187,6 +190,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     make_implied_quals(rule, state);
     analyze_rule_location(rule, state);
     find_unused_vars(rule, state);
+    check_negation(rule, state);
 }
 
 /*
@@ -291,6 +295,54 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
     }
 }
 
+static bool
+check_negation_walker(C4Node *n, void *data)
+{
+    AnalyzeState *state = (AnalyzeState *) data;
+
+    if (n->kind == AST_VAR_EXPR)
+    {
+        AstVarExpr *var = (AstVarExpr *) n;
+        List *eq_list;
+        ListCell *lc;
+
+        eq_list = get_eq_list(var->name, false, state);
+        foreach (lc, eq_list)
+        {
+            char *eq_var_name = lc_ptr(lc);
+            AstJoinClause *join;
+
+            join = apr_hash_get(state->var_join_tbl, eq_var_name,
+                                APR_HASH_KEY_STRING);
+            if (!join->not)
+                return true;
+        }
+
+        ERROR("Variable \"%s\" in head appears only in negated body terms",
+              var->name);
+    }
+
+    return true;
+}
+
+/*
+ * For each variable in the rule head, check that there is at least one variable
+ * it is equal to that appears in a non-negated join clause. Otherwise, the rule
+ * could produce unbounded input: "foo(A) :- notin bar(A);" is unsafe.
+ */
+static void
+check_negation(AstRule *rule, AnalyzeState *state)
+{
+    ListCell *lc;
+
+    foreach (lc, rule->head->cols)
+    {
+        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+
+        expr_tree_walker(col->expr, check_negation_walker, state);
+    }
+}
+
 static int
 table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
 {
@@ -384,12 +436,14 @@ lookup_var(const char *name, AnalyzeState *state)
 }
 
 static void
-define_var(AstVarExpr *var, AnalyzeState *state)
+define_var(AstVarExpr *var, AstJoinClause *join, AnalyzeState *state)
 {
     ASSERT(!is_dont_care_var((C4Node *) var));
     ASSERT(!is_var_defined(var->name, state));
     apr_hash_set(state->var_tbl, var->name,
                  APR_HASH_KEY_STRING, var);
+    apr_hash_set(state->var_join_tbl, var->name,
+                 APR_HASH_KEY_STRING, join);
 }
 
 static bool
@@ -487,10 +541,10 @@ done:
         ASSERT(cref->expr->kind == AST_VAR_EXPR);
         var = (AstVarExpr *) cref->expr;
 
-        /* Fill-in variable's type, add to variable table (unless don't care) */
+        /* Fill-in variable's type, add to variable tables (unless don't care) */
         var->type = table_get_col_type(join->ref->name, colno, state);
         if (!is_dont_care_var((C4Node *) var))
-            define_var(var, state);
+            define_var(var, join, state);
         colno++;
     }
 
@@ -725,6 +779,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
     state->define_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
+    state->var_join_tbl = apr_hash_make(pool);
     state->eq_tbl = apr_hash_make(pool);
     state->tmp_ruleno = 0;
 
@@ -743,6 +798,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
 
         /* Reset per-clause state */
         apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->var_join_tbl);
         apr_hash_clear(state->eq_tbl);
         state->tmp_varno = 0;
 
@@ -755,6 +811,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
 
         /* Reset per-clause state */
         apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->var_join_tbl);
         apr_hash_clear(state->eq_tbl);
         state->tmp_varno = 0;
 
