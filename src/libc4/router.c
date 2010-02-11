@@ -132,8 +132,8 @@ router_do_fixpoint(C4Router *router)
  * node address, we can easily get into an infinite loop.
  */
 void
-router_install_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
-                     bool check_remote)
+router_insert_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
+                    bool check_remote)
 {
 #if 0
     c4_log(router->c4, "%s: %s (=> %s)",
@@ -198,7 +198,7 @@ drain_queue(C4Router *router)
         switch (wi->kind)
         {
             case WI_TUPLE:
-                router_install_tuple(router, wi->tuple, wi->tbl_def, true);
+                router_insert_tuple(router, wi->tuple, wi->tbl_def, true);
                 break;
 
             case WI_PROGRAM:

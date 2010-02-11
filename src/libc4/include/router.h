@@ -17,8 +17,8 @@ char *runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
 
 /* Internal APIs: XXX: clearer naming */
 void router_do_fixpoint(C4Router *router);
-void router_install_tuple(C4Router *router, Tuple *tuple,
-                          TableDef *tbl_def, bool check_remote);
+void router_insert_tuple(C4Router *router, Tuple *tuple,
+                         TableDef *tbl_def, bool check_remote);
 void router_enqueue_internal(C4Router *router, Tuple *tuple,
                              TableDef *tbl_def);
 void router_enqueue_net(C4Router *router, Tuple *tuple,
