@@ -1,0 +1,18 @@
+define(neg_t1, keys(0), {string, string});
+define(neg_t2, keys(0), {string, string});
+define(neg_t3, keys(0), {string, string});
+define(neg_t4, keys(0), {string, string});
+
+neg_t1("xxx1", "a");
+neg_t1("xxx2", "b");
+neg_t2("xxx1", "a");
+neg_t2("xxx2", "bbbbbbb");
+
+neg_t3(A, B) :- neg_t1(A, B), notin neg_t2(A, B);
+
+\dump neg_t3
+
+neg_t1("xxx3", "foo");
+
+\dump neg_t3
+

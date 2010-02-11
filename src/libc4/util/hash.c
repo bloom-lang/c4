@@ -354,6 +354,24 @@ void c4_hash_set(c4_hash_t *ht, const void *key, const void *val)
     /* else key not present and val==NULL */
 }
 
+bool c4_hash_remove(c4_hash_t *ht, const void *key)
+{
+    c4_hash_entry_t **hep;
+    c4_hash_entry_t *old;
+
+    hep = find_entry(ht, key, NULL, NULL);
+    if (*hep == NULL)
+        return false;
+
+    /* Delete entry */
+    old = *hep;
+    *hep = (*hep)->next;
+    old->next = ht->free;
+    ht->free = old;
+    --ht->count;
+    return true;
+}
+
 void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val,
                          bool *is_new_p)
 {

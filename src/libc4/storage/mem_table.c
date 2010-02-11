@@ -29,14 +29,21 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
     bool is_new;
 
     val = c4_hash_set_if_new(tbl->tuples, t, t, &is_new);
-    tuple_pin(val);
+    if (is_new)
+        tuple_pin(val);
     return is_new;
 }
 
 static bool
 mem_table_delete(AbstractTable *a_tbl, Tuple *t)
 {
-    return false;
+    MemTable *tbl = (MemTable *) a_tbl;
+    bool found;
+
+    found = c4_hash_remove(tbl->tuples, t);
+    if (found)
+        tuple_unpin(t, a_tbl->def->schema);
+    return found;
 }
 
 static int
