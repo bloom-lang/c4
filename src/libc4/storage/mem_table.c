@@ -2,37 +2,6 @@
 #include "operator/scancursor.h"
 #include "storage/mem_table.h"
 
-static void mem_table_cleanup(AbstractTable *a_tbl);
-static bool mem_table_insert(AbstractTable *a_tbl, Tuple *t);
-static bool mem_table_delete(AbstractTable *a_tbl, Tuple *t);
-static ScanCursor *mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
-static void mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
-static Tuple *mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
-static int mem_table_cmp_tuple(const void *k1, const void *k2,
-                               apr_ssize_t klen, void *user_data);
-static unsigned int mem_table_hash_tuple(const char *key, apr_ssize_t klen,
-                                         void *user_data);
-
-MemTable *
-mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
-{
-    MemTable *tbl;
-
-    tbl = (MemTable *) table_make_super(sizeof(*tbl), def, c4,
-                                        mem_table_insert,
-                                        mem_table_delete,
-                                        mem_table_cleanup,
-                                        mem_table_scan_make,
-                                        mem_table_scan_reset,
-                                        mem_table_scan_next,
-                                        pool);
-    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *), tbl,
-                               mem_table_hash_tuple,
-                               mem_table_cmp_tuple);
-
-    return tbl;
-}
-
 /*
  * Unpin the tuples contained in this table.
  */
@@ -125,3 +94,24 @@ mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
     c4_hash_this(cur->hash_iter, (const void **) &ret_tuple, NULL);
     return ret_tuple;
 }
+
+MemTable *
+mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
+{
+    MemTable *tbl;
+
+    tbl = (MemTable *) table_make_super(sizeof(*tbl), def, c4,
+                                        mem_table_insert,
+                                        mem_table_delete,
+                                        mem_table_cleanup,
+                                        mem_table_scan_make,
+                                        mem_table_scan_reset,
+                                        mem_table_scan_next,
+                                        pool);
+    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *), tbl,
+                               mem_table_hash_tuple,
+                               mem_table_cmp_tuple);
+
+    return tbl;
+}
+

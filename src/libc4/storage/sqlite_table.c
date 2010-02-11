@@ -4,33 +4,6 @@
 #include "storage/sqlite.h"
 #include "storage/sqlite_table.h"
 
-static void sqlite_table_create_sql(SQLiteTable *tbl);
-static void sqlite_table_cleanup(AbstractTable *a_tbl);
-static bool sqlite_table_insert(AbstractTable *a_tbl, Tuple *t);
-static bool sqlite_table_delete(AbstractTable *a_tbl, Tuple *t);
-static ScanCursor *sqlite_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
-static void sqlite_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
-static Tuple *sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
-
-SQLiteTable *
-sqlite_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
-{
-    SQLiteTable *tbl;
-
-    tbl = (SQLiteTable *) table_make_super(sizeof(*tbl), def, c4,
-                                           sqlite_table_insert,
-                                           sqlite_table_delete,
-                                           sqlite_table_cleanup,
-                                           sqlite_table_scan_make,
-                                           sqlite_table_scan_reset,
-                                           sqlite_table_scan_next,
-                                           pool);
-
-    sqlite_table_create_sql(tbl);
-
-    return tbl;
-}
-
 static void
 sqlite_table_create_sql(SQLiteTable *tbl)
 {
@@ -277,4 +250,23 @@ sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *scan)
     }
 
     return tuple;
+}
+
+SQLiteTable *
+sqlite_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
+{
+    SQLiteTable *tbl;
+
+    tbl = (SQLiteTable *) table_make_super(sizeof(*tbl), def, c4,
+                                           sqlite_table_insert,
+                                           sqlite_table_delete,
+                                           sqlite_table_cleanup,
+                                           sqlite_table_scan_make,
+                                           sqlite_table_scan_reset,
+                                           sqlite_table_scan_next,
+                                           pool);
+
+    sqlite_table_create_sql(tbl);
+
+    return tbl;
 }
