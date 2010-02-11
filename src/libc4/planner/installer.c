@@ -98,7 +98,8 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
             case PLAN_INSERT:
                 /* Should be the last op in the chain */
                 ASSERT(prev_op == NULL);
-                op = (Operator *) insert_op_make((InsertPlan *) plan, op_chain);
+                op = (Operator *) insert_op_make((InsertPlan *) plan,
+                                                 op_chain);
                 break;
 
             case PLAN_SCAN:

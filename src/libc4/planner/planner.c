@@ -211,7 +211,8 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
 
-    iplan = make_insert_plan(rule->head, NULL, state->plan_pool);
+    iplan = make_insert_plan(rule->head, NULL, chain_plan->delta_tbl->not,
+                             state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 

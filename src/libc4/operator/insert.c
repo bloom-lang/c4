@@ -40,6 +40,7 @@ insert_op_make(InsertPlan *plan, OpChain *chain)
                                                  insert_destroy);
 
     insert_op->tbl_def = cat_get_table(chain->c4->cat, plan->head->name);
+    insert_op->do_delete = plan->do_delete;
 
     return insert_op;
 }
