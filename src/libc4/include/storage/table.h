@@ -16,6 +16,13 @@ struct ScanCursor;
  * contained by this table.
  */
 typedef bool (*table_insert_f)(AbstractTable *tbl, Tuple *t);
+
+/*
+ * Delete the tuple from this table. Returns "true" if the tuple was deleted;
+ * returns false if the tuple was not found in the table.
+ */
+typedef bool (*table_delete_f)(AbstractTable *tbl, Tuple *t);
+
 typedef void (*table_cleanup_f)(AbstractTable *tbl);
 typedef struct ScanCursor *(*table_scan_make_f)(AbstractTable *tbl, apr_pool_t *pool);
 typedef void (*table_scan_reset_f)(AbstractTable *tbl, struct ScanCursor *scan);
@@ -29,6 +36,7 @@ struct AbstractTable
 
     /* Table API */
     table_insert_f insert;
+    table_delete_f delete;
     table_cleanup_f cleanup;
     table_scan_make_f scan_make;
     table_scan_reset_f scan_reset;
@@ -36,8 +44,9 @@ struct AbstractTable
 };
 
 AbstractTable *table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool);
-AbstractTable *table_make_super(apr_size_t sz, TableDef *def,
-                                C4Runtime *c4, table_insert_f insert_f,
+AbstractTable *table_make_super(apr_size_t sz, TableDef *def, C4Runtime *c4,
+                                table_insert_f insert_f,
+                                table_delete_f delete_f,
                                 table_cleanup_f cleanup_f,
                                 table_scan_make_f scan_make_f,
                                 table_scan_reset_f scan_reset_f,

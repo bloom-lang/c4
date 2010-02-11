@@ -4,6 +4,7 @@
 
 static void mem_table_cleanup(AbstractTable *a_tbl);
 static bool mem_table_insert(AbstractTable *a_tbl, Tuple *t);
+static bool mem_table_delete(AbstractTable *a_tbl, Tuple *t);
 static ScanCursor *mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool);
 static void mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan);
 static Tuple *mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur);
@@ -19,6 +20,7 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 
     tbl = (MemTable *) table_make_super(sizeof(*tbl), def, c4,
                                         mem_table_insert,
+                                        mem_table_delete,
                                         mem_table_cleanup,
                                         mem_table_scan_make,
                                         mem_table_scan_reset,
@@ -60,6 +62,12 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
     val = c4_hash_set_if_new(tbl->tuples, t, t, &is_new);
     tuple_pin(val);
     return is_new;
+}
+
+static bool
+mem_table_delete(AbstractTable *a_tbl, Tuple *t)
+{
+    return false;
 }
 
 static int

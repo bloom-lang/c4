@@ -19,10 +19,9 @@ char *runtime_enqueue_dump_table(C4Runtime *c4, const char *tbl_name,
 void router_do_fixpoint(C4Router *router);
 void router_insert_tuple(C4Router *router, Tuple *tuple,
                          TableDef *tbl_def, bool check_remote);
-void router_enqueue_internal(C4Router *router, Tuple *tuple,
-                             TableDef *tbl_def);
-void router_enqueue_net(C4Router *router, Tuple *tuple,
-                        TableDef *tbl_def);
+void router_delete_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def);
+void router_enqueue_internal(C4Router *router, Tuple *tuple, TableDef *tbl_def);
+void router_enqueue_net(C4Router *router, Tuple *tuple, TableDef *tbl_def);
 
 OpChainList *router_get_opchain_list(C4Router *router, const char *tbl_name);
 void router_add_op_chain(C4Router *router, OpChain *op_chain);

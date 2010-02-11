@@ -64,7 +64,7 @@ Schema *cat_get_schema(C4Catalog *cat, const char *name);
 
 void cat_register_callback(C4Catalog *cat, const char *tbl_name,
                            C4TupleCallback callback, void *data);
-void table_invoke_callbacks(TableDef *tbl, struct Tuple *tuple);
+void table_invoke_callbacks(struct Tuple *tuple, TableDef *tbl, bool is_delete);
 
 bool is_numeric_type(DataType type_id);
 bool is_valid_type_name(const char *type_name);

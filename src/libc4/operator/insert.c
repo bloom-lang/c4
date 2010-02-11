@@ -14,7 +14,10 @@ insert_invoke(Operator *op, Tuple *t)
     exec_cxt->inner = t;
 
     proj_tuple = operator_do_project(op);
-    router_insert_tuple(c4->router, proj_tuple, insert_op->tbl_def, true);
+    if (insert_op->do_delete)
+        router_delete_tuple(c4->router, proj_tuple, insert_op->tbl_def);
+    else
+        router_insert_tuple(c4->router, proj_tuple, insert_op->tbl_def, true);
     tuple_unpin(proj_tuple, op->proj_schema);
 }
 

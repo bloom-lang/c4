@@ -29,8 +29,9 @@ table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 }
 
 AbstractTable *
-table_make_super(apr_size_t sz, TableDef *def,
-                 C4Runtime *c4, table_insert_f insert_f,
+table_make_super(apr_size_t sz, TableDef *def, C4Runtime *c4,
+                 table_insert_f insert_f,
+                 table_delete_f delete_f,
                  table_cleanup_f cleanup_f,
                  table_scan_make_f scan_make_f,
                  table_scan_reset_f scan_reset_f,
@@ -44,6 +45,7 @@ table_make_super(apr_size_t sz, TableDef *def,
     tbl->c4 = c4;
     tbl->def = def;
     tbl->insert = insert_f;
+    tbl->delete = delete_f;
     tbl->cleanup = cleanup_f;
     tbl->scan_make = scan_make_f;
     tbl->scan_reset = scan_reset_f;

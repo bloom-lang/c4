@@ -139,13 +139,13 @@ cat_register_callback(C4Catalog *cat, const char *tbl_name,
 }
 
 void
-table_invoke_callbacks(TableDef *tbl_def, Tuple *tuple)
+table_invoke_callbacks(Tuple *tuple, TableDef *tbl_def, bool is_delete)
 {
     CallbackRecord *cb_rec = tbl_def->cb;
 
     while (cb_rec != NULL)
     {
-        cb_rec->callback(tuple, tbl_def, cb_rec->data);
+        cb_rec->callback(tuple, tbl_def, is_delete, cb_rec->data);
         cb_rec = cb_rec->next;
     }
 }

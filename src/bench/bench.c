@@ -80,7 +80,8 @@ usage(void)
 }
 
 static void
-done_table_cb(struct Tuple *tuple, struct TableDef *tbl_def, void *data)
+done_table_cb(struct Tuple *tuple, struct TableDef *tbl_def,
+              bool is_delete, void *data)
 {
     C4ThreadSync *sync = (C4ThreadSync *) data;
 
