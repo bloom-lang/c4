@@ -1,7 +1,7 @@
+/* Basic negation */
 define(neg_t1, keys(0), {string, string});
 define(neg_t2, keys(0), {string, string});
 define(neg_t3, keys(0), {string, string});
-define(neg_t4, keys(0), {string, string});
 
 neg_t1("xxx1", "a");
 neg_t1("xxx2", "b");
@@ -24,3 +24,26 @@ neg_t2("xxx4", "ggggg");
 neg_t2("xxx2", "b");
 
 \dump neg_t3
+
+/* Deletion and its consequences */
+define(neg_t4, keys(0), {string, string});
+define(neg_t5, keys(0), {string, string});
+define(neg_t6, keys(0), {string, string});
+define(neg_t7, keys(0), {string, string});
+
+neg_t6("xxx", "1");
+neg_t6("yyy", "2");
+neg_t7("yyy", "100");
+neg_t7("zzz", "200");
+
+neg_t4(A, B) :- neg_t5(A, B);
+
+neg_t5(A, B) :- neg_t6(A, B), notin neg_t7(A, _);
+
+\dump neg_t4
+\dump neg_t5
+
+neg_t7("xxx", "300");
+
+\dump neg_t4
+\dump neg_t5

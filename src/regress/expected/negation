@@ -7,3 +7,11 @@ xxx3,foo
 xxx2,b
 **** \dump "neg_t3" ****
 
+**** \dump "neg_t4" ****
+xxx,1
+**** \dump "neg_t5" ****
+xxx,1
+**** \dump "neg_t4" ****
+xxx,1
+**** \dump "neg_t5" ****
+
