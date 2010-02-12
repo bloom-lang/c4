@@ -16,3 +16,11 @@ neg_t1("xxx3", "foo");
 
 \dump neg_t3
 
+neg_t2("xxx3", "foo");
+neg_t2("xxx4", "ggggg");
+
+\dump neg_t3
+
+neg_t2("xxx2", "b");
+
+\dump neg_t3

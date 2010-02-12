@@ -3,3 +3,7 @@ xxx2,b
 **** \dump "neg_t3" ****
 xxx2,b
 xxx3,foo
+**** \dump "neg_t3" ****
+xxx2,b
+**** \dump "neg_t3" ****
+
