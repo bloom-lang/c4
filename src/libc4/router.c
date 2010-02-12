@@ -32,6 +32,8 @@ struct C4Router
     /* Inserts and deletes computed within current fixpoint; to-be-routed */
     TupleBuf *insert_buf;
     TupleBuf *delete_buf;
+    bool routing_deletes;       /* Are we currently routing from delete_buf? */
+
     /* Pending network output tuples computed within current fixpoint */
     TupleBuf *net_buf;
 };
@@ -51,6 +53,7 @@ router_make(C4Runtime *c4)
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->insert_buf = tuple_buf_make(4096, router->pool);
     router->delete_buf = tuple_buf_make(512, router->pool);
+    router->routing_deletes = false;
     router->net_buf = tuple_buf_make(512, router->pool);
     s = apr_queue_create(&router->queue, 512, router->pool);
     if (s != APR_SUCCESS)
@@ -64,8 +67,10 @@ router_make(C4Runtime *c4)
  * the only choice.
  */
 static void
-route_tuple_buf(TupleBuf *buf)
+route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
 {
+    router->routing_deletes = is_delete;
+
     while (!tuple_buf_is_empty(buf))
     {
         Tuple *tuple;
@@ -93,8 +98,8 @@ router_do_fixpoint(C4Router *router)
 
     ASSERT(tuple_buf_is_empty(net_buf));
 
-    route_tuple_buf(router->insert_buf);
-    route_tuple_buf(router->delete_buf);
+    route_tuple_buf(router, router->insert_buf, false);
+    route_tuple_buf(router, router->delete_buf, true);
 
     /* If we modified persistent storage, commit to disk */
     if (router->c4->sql->xact_in_progress)
@@ -329,4 +334,10 @@ router_enqueue_net(C4Router *router, Tuple *tuple, TableDef *tbl_def)
     ASSERT(tbl_def->ls_colno != -1);
 
     tuple_buf_push(router->net_buf, tuple, tbl_def);
+}
+
+bool
+router_is_deleting(C4Router *router)
+{
+    return router->routing_deletes;
 }

@@ -25,5 +25,6 @@ void router_enqueue_net(C4Router *router, Tuple *tuple, TableDef *tbl_def);
 
 OpChainList *router_get_opchain_list(C4Router *router, const char *tbl_name);
 void router_add_op_chain(C4Router *router, OpChain *op_chain);
+bool router_is_deleting(C4Router *router);
 
 #endif  /* ROUTER_H */
