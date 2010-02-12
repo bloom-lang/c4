@@ -30,20 +30,29 @@ define(neg_t4, keys(0), {string, string});
 define(neg_t5, keys(0), {string, string});
 define(neg_t6, keys(0), {string, string});
 define(neg_t7, keys(0), {string, string});
+define(neg_t8, keys(0), {string, string});
+define(neg_t9, keys(0), {string, string});
+define(neg_t10, keys(0), {string, string});
 
 neg_t6("xxx", "1");
 neg_t6("yyy", "2");
 neg_t7("yyy", "100");
 neg_t7("zzz", "200");
-
-neg_t4(A, B) :- neg_t5(A, B);
+neg_t9("xxx", "1");
 
 neg_t5(A, B) :- neg_t6(A, B), notin neg_t7(A, _);
+neg_t4(A, B) :- neg_t5(A, B);
+neg_t8(A, B) :- neg_t9(A, B), notin neg_t4(A, B);
+neg_t10(A, B) :- neg_t9(A, B), notin neg_t8(A, B);
 
 \dump neg_t4
 \dump neg_t5
+\dump neg_t8
+\dump neg_t10
 
 neg_t7("xxx", "300");
 
 \dump neg_t4
 \dump neg_t5
+\dump neg_t8
+\dump neg_t10

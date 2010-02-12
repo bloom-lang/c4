@@ -11,7 +11,15 @@ xxx2,b
 xxx,1
 **** \dump "neg_t5" ****
 xxx,1
+**** \dump "neg_t8" ****
+
+**** \dump "neg_t10" ****
+xxx,1
 **** \dump "neg_t4" ****
 
 **** \dump "neg_t5" ****
+
+**** \dump "neg_t8" ****
+xxx,1
+**** \dump "neg_t10" ****
 
