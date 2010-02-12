@@ -53,7 +53,7 @@ struct c4_hash_index_t {
     c4_hash_t         *ht;
     c4_hash_entry_t   *this, *next;
     unsigned int        index;
-    int                 at_end;
+    bool                at_end;
 };
 
 /*
@@ -71,7 +71,7 @@ struct c4_hash_t {
     c4_hash_entry_t   **array;
     c4_hash_index_t     iterator;  /* For c4_hash_first(NULL, ...) */
     unsigned int        count, max;
-    apr_ssize_t          key_len;
+    int                 key_len;
     void               *user_data;
     c4_hashfunc_t       hash_func;
     c4_keycomp_func_t   cmp_func;
@@ -90,7 +90,7 @@ static c4_hash_entry_t **alloc_array(c4_hash_t *ht, unsigned int max)
    return apr_pcalloc(ht->array_pool, sizeof(*ht->array) * (max + 1));
 }
 
-c4_hash_t *c4_hash_make(apr_pool_t *pool, apr_ssize_t key_len, void *cb_data,
+c4_hash_t *c4_hash_make(apr_pool_t *pool, int key_len, void *cb_data,
                         c4_hashfunc_t hash_func, c4_keycomp_func_t cmp_func)
 {
     apr_pool_t *array_pool;
@@ -154,25 +154,25 @@ void c4_hash_iter_reset(c4_hash_index_t *hi)
     hi->index = 0;
     hi->this = NULL;
     hi->next = NULL;
-    hi->at_end = 0;
+    hi->at_end = false;
 }
 
-int c4_hash_iter_next(c4_hash_index_t *hi)
+bool c4_hash_iter_next(c4_hash_index_t *hi)
 {
     if (hi->at_end)
-        return 0;
+        return false;
 
     hi->this = hi->next;
     while (!hi->this) {
         if (hi->index > hi->ht->max) {
-            hi->at_end = 1;
-            return 0;
+            hi->at_end = true;
+            return false;
         }
 
         hi->this = hi->ht->array[hi->index++];
     }
     hi->next = hi->this->next;
-    return 1;
+    return true;
 }
 
 void c4_hash_this(c4_hash_index_t *hi,
@@ -183,7 +183,7 @@ void c4_hash_this(c4_hash_index_t *hi,
         FAIL();
 
     if (key)  *key  = hi->this->key;
-    if (val)  *val  = (void *)hi->this->val;
+    if (val)  *val  = (void *) hi->this->val;
 }
 
 
@@ -217,13 +217,13 @@ static void expand_array(c4_hash_t *ht)
     apr_pool_destroy(old_array_pool);
 }
 
-unsigned int c4_hashfunc_default(const char *char_key, apr_ssize_t klen,
+unsigned int c4_hashfunc_default(const char *char_key, int klen,
                                  void *user_data)
 {
-    unsigned int hash = 0;
     const unsigned char *key = (const unsigned char *) char_key;
     const unsigned char *p;
-    apr_ssize_t i;
+    unsigned int hash = 0;
+    int i;
     
     /*
      * This is the popular `times 33' hash algorithm which is used by
@@ -296,7 +296,7 @@ static c4_hash_entry_t **find_entry(c4_hash_t *ht,
     for (hep = &ht->array[hash & ht->max], he = *hep;
          he; hep = &he->next, he = *hep) {
         if (he->hash == hash
-            && ht->cmp_func(he->key, key, ht->key_len, ht->user_data) == 0)
+            && ht->cmp_func(he->key, key, ht->key_len, ht->user_data))
             break;
     }
     if (he || !val)
@@ -386,7 +386,7 @@ void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val,
     }
     if (is_new_p)
         *is_new_p = is_new;
-    return (void *)he->val;
+    return (void *) he->val;
 }
 
 unsigned int c4_hash_count(c4_hash_t *ht)
@@ -398,7 +398,7 @@ void c4_hash_clear(c4_hash_t *ht)
 {
     c4_hash_index_t *hi;
     for (hi = c4_hash_first(NULL, ht); hi; hi = c4_hash_next(hi))
-        c4_hash_set(ht, hi->this->key, NULL);
+        c4_hash_remove(ht, hi->this->key);
 }
 
 /* This is basically the following...

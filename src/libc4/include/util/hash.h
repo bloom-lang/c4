@@ -39,7 +39,7 @@ typedef struct c4_hash_index_t c4_hash_index_t;
  * @param klen The length of the key.
  * @param user_data User-specified opaque callback data
  */
-typedef unsigned int (*c4_hashfunc_t)(const char *key, apr_ssize_t klen,
+typedef unsigned int (*c4_hashfunc_t)(const char *key, int klen,
                                       void *user_data);
 
 /**
@@ -50,14 +50,13 @@ typedef unsigned int (*c4_hashfunc_t)(const char *key, apr_ssize_t klen,
  * @param user_data User-specified opaque callback data
  * @return Zero if the two keys should be considered equal, non-zero otherwise.
  */
-typedef int (*c4_keycomp_func_t)(const void *k1, const void *k2,
-                                 apr_ssize_t klen, void *user_data);
+typedef bool (*c4_keycomp_func_t)(const void *k1, const void *k2,
+                                  int klen, void *user_data);
 
 /**
  * The default hash function.
  */
-unsigned int c4_hashfunc_default(const char *key, apr_ssize_t klen,
-                                 void *user_data);
+unsigned int c4_hashfunc_default(const char *key, int klen, void *user_data);
 
 /**
  * Create a hash table
@@ -68,9 +67,7 @@ unsigned int c4_hashfunc_default(const char *key, apr_ssize_t klen,
  * @param cb_data Opaque user data that is passed to hash and cmp functions
  * @return The hash table just created, or NULL if memory allocation failed
  */
-c4_hash_t *c4_hash_make(apr_pool_t *pool,
-                        apr_ssize_t key_len,
-                        void *cb_data,
+c4_hash_t *c4_hash_make(apr_pool_t *pool, int key_len, void *cb_data,
                         c4_hashfunc_t hash_func,
                         c4_keycomp_func_t cmp_func);
 
@@ -137,9 +134,9 @@ void c4_hash_iter_reset(c4_hash_index_t *hi);
 /**
  * Continue iterating over the entries in a hash table.
  * @param hi The iteration state. This is written-through (modified).
- * @return 1 if there are any entries remaining in the hash table, 0 otherwise.
+ * @return true if there are any entries remaining in the hash table, false otherwise.
  */
-int c4_hash_iter_next(c4_hash_index_t *hi);
+bool c4_hash_iter_next(c4_hash_index_t *hi);
 
 /**
  * APR-style API to start iterating over the entries of a hash table.

@@ -46,23 +46,20 @@ mem_table_delete(AbstractTable *a_tbl, Tuple *t)
     return found;
 }
 
-static int
+static bool
 mem_table_cmp_tuple(const void *k1, const void *k2,
-                    apr_ssize_t klen, void *user_data)
+                    int klen, void *user_data)
 {
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
     AbstractTable *tbl = (AbstractTable *) user_data;
 
     ASSERT(klen == sizeof(Tuple *));
-    if (tuple_equal(t1, t2, tbl->def->schema))
-        return 0;
-    else
-        return 1;
+    return tuple_equal(t1, t2, tbl->def->schema);
 }
 
 static unsigned int
-mem_table_hash_tuple(const char *key, apr_ssize_t klen, void *user_data)
+mem_table_hash_tuple(const char *key, int klen, void *user_data)
 {
     Tuple *t = (Tuple *) key;
     AbstractTable *tbl = (AbstractTable *) user_data;

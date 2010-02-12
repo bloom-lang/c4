@@ -80,10 +80,9 @@ static apr_status_t network_cleanup(void *data);
 static apr_socket_t *server_sock_make(int port, apr_pool_t *pool);
 static apr_pollfd_t *pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
                                  apr_int16_t reqevents, void *data);
-static unsigned int client_tbl_hash(const char *key, apr_ssize_t klen,
-                                    void *user_data);
-static int client_tbl_cmp(const void *k1, const void *k2, apr_ssize_t klen,
-                          void *user_data);
+static unsigned int client_tbl_hash(const char *key, int klen, void *user_data);
+static bool client_tbl_cmp(const void *k1, const void *k2, int klen,
+                           void *user_data);
 static void accept_new_client(C4Network *net);
 static void update_client_state(const apr_pollfd_t *fd);
 static void update_recv_state(ClientState *client);
@@ -202,7 +201,7 @@ pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
 }
 
 static unsigned int
-client_tbl_hash(const char *key, apr_ssize_t klen, void *user_data)
+client_tbl_hash(const char *key, int klen, void *user_data)
 {
     Datum d;
 
@@ -212,8 +211,8 @@ client_tbl_hash(const char *key, apr_ssize_t klen, void *user_data)
     return string_hash(d);
 }
 
-static int
-client_tbl_cmp(const void *k1, const void *k2, apr_ssize_t klen, void *user_data)
+static bool
+client_tbl_cmp(const void *k1, const void *k2, int klen, void *user_data)
 {
     Datum d1;
     Datum d2;
@@ -221,10 +220,7 @@ client_tbl_cmp(const void *k1, const void *k2, apr_ssize_t klen, void *user_data
     ASSERT(klen == sizeof(Datum));
     d1.s = (C4String *) k1;
     d2.s = (C4String *) k2;
-    if (string_equal(d1, d2))
-        return 0;
-    else
-        return 1;
+    return string_equal(d1, d2);
 }
 
 int
