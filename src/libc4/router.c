@@ -12,6 +12,7 @@
 #include "runtime.h"
 #include "storage/sqlite.h"
 #include "storage/table.h"
+#include "timer.h"
 #include "types/catalog.h"
 #include "util/dump_table.h"
 #include "util/list.h"
@@ -22,6 +23,7 @@ struct C4Router
 {
     C4Runtime *c4;
     apr_pool_t *pool;
+    C4Timer *timer;
 
     /* Map from table name => OpChainList */
     apr_hash_t *op_chain_tbl;
@@ -50,6 +52,7 @@ router_make(C4Runtime *c4)
     router = apr_pcalloc(c4->pool, sizeof(*router));
     router->c4 = c4;
     router->pool = c4->pool;
+    router->timer = c4_timer_start(NULL, router->pool);
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->insert_buf = tuple_buf_make(4096, router->pool);
     router->delete_buf = tuple_buf_make(512, router->pool);
