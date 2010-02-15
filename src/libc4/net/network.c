@@ -3,8 +3,8 @@
 #include <apr_thread_proc.h>
 
 #include "c4-internal.h"
-#include "router.h"
 #include "net/network.h"
+#include "router.h"
 #include "util/hash.h"
 #include "util/socket.h"
 #include "util/strbuf.h"
@@ -230,12 +230,12 @@ network_get_port(C4Network *net)
 }
 
 /*
- * Wait for network activity or network_wakeup(). We only return to the caller
- * if we see a wakeup(); if any incoming tuples arrive, we send them to the
- * router and then compute a fixpoint ourselves.
+ * Block for a new event: network activity, network_wakeup(), or timeout. We
+ * only return to the caller if we see a wakeup(); if any incoming tuples
+ * arrive, we send them to the router and then compute a fixpoint ourselves.
  */
 void
-network_poll(C4Network *net)
+network_poll(C4Network *net, apr_interval_time_t timeout)
 {
     while (true)
     {
@@ -244,9 +244,11 @@ network_poll(C4Network *net)
         const apr_pollfd_t *descriptors;
         int i;
 
-        s = apr_pollset_poll(net->pollset, -1, &num, &descriptors);
+        s = apr_pollset_poll(net->pollset, timeout, &num, &descriptors);
         if (s == APR_EINTR)
             return;         /* network_wakeup() was called */
+        if (s == APR_TIMEUP)
+            return;         /* timeout expired */
         if (s != APR_SUCCESS)
             FAIL_APR(s);
 
