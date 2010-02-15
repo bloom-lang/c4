@@ -55,7 +55,7 @@ static void analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState 
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
-static void check_negation(AstRule *rule, AnalyzeState *state);
+static void check_rule_safety(AstRule *rule, AnalyzeState *state);
 static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
 static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2,
@@ -192,7 +192,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     make_implied_quals(rule, state);
     analyze_rule_location(rule, state);
     find_unused_vars(rule, state);
-    check_negation(rule, state);
+    check_rule_safety(rule, state);
 }
 
 /*
@@ -311,7 +311,7 @@ check_negation_walker(AstVarExpr *var, void *data)
 }
 
 static void
-check_negation(AstRule *rule, AnalyzeState *state)
+check_rule_safety(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
 
