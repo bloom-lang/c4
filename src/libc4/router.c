@@ -52,7 +52,7 @@ router_make(C4Runtime *c4)
     router = apr_pcalloc(c4->pool, sizeof(*router));
     router->c4 = c4;
     router->pool = c4->pool;
-    router->timer = c4_timer_start(NULL, router->pool);
+    router->timer = c4_timer_make(router->pool);
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->insert_buf = tuple_buf_make(4096, router->pool);
     router->delete_buf = tuple_buf_make(512, router->pool);

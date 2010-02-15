@@ -6,7 +6,10 @@ struct C4Timer
 };
 
 C4Timer *
-c4_timer_start(C4ThreadSync *thread_sync, apr_pool_t *pool)
+c4_timer_make(apr_pool_t *pool)
 {
-    return NULL;
+    C4Timer *timer;
+
+    timer = apr_palloc(pool, sizeof(*timer));
+    return timer;
 }
