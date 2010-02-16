@@ -11,6 +11,7 @@ typedef struct AstProgram
 {
     C4Node node;
     List *defines;
+    List *timers;
     List *facts;
     List *rules;
 } AstProgram;
@@ -29,6 +30,13 @@ typedef struct AstDefine
     List *keys;
     List *schema;
 } AstDefine;
+
+typedef struct AstTimer
+{
+    C4Node node;
+    char *name;
+    apr_int64_t period;         /* Timer period in milliseconds */
+} AstTimer;
 
 typedef struct AstSchemaElt
 {

@@ -5,10 +5,12 @@
 #include "planner/planner.h"
 #include "types/expr.h"
 
-AstProgram *make_program(List *defines, List *facts,
+AstProgram *make_program(List *defines, List *timers, List *facts,
                          List *rules, apr_pool_t *p);
 AstDefine *make_define(const char *name, AstStorageKind storage,
                        List *keys, List *schema, apr_pool_t *p);
+AstTimer *make_ast_timer(const char *name, apr_int64_t period,
+                         apr_pool_t *p);
 AstSchemaElt *make_schema_elt(const char *type_name, bool is_loc_spec,
                               apr_pool_t *p);
 AstRule *make_rule(const char *name, bool is_delete, bool is_network,

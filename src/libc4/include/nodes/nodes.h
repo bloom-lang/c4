@@ -6,6 +6,7 @@ typedef enum C4NodeKind
     /* AST nodes */
     AST_PROGRAM,
     AST_DEFINE,
+    AST_TIMER,
     AST_SCHEMA_ELT,
     AST_RULE,
     AST_FACT,

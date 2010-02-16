@@ -9,8 +9,8 @@
 #include "util/list.h"
 
 int yyerror(C4Parser *context, void *scanner, const char *message);
-static void split_program_clauses(List *clauses, List **defines, List **facts,
-                                  List **rules, apr_pool_t *pool);
+static void split_program_clauses(List *clauses, List **defines, List **timers,
+                                  List **facts, List **rules, apr_pool_t *pool);
 static void split_rule_body(List *body, List **joins,
                             List **quals, apr_pool_t *pool);
 %}
@@ -32,7 +32,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN OL_FALSE OL_TRUE
+%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN TIMER OL_FALSE OL_TRUE
        OL_COUNT OL_MAX OL_MIN OL_SUM
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
@@ -42,7 +42,7 @@ static void split_rule_body(List *body, List **joins,
 %left '*' '/' '%'
 %left UMINUS
 
-%type <ptr>        clause define rule table_ref column_ref join_clause
+%type <ptr>        clause define rule timer table_ref column_ref join_clause
 %type <list>       program_body opt_int_list int_list schema_list define_schema
 %type <list>       opt_keys column_ref_list opt_rule_body rule_body
 %type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
@@ -55,11 +55,12 @@ static void split_rule_body(List *body, List **joins,
 %%
 program: program_body {
     List *defines;
+    List *timers;
     List *facts;
     List *rules;
 
-    split_program_clauses($1, &defines, &facts, &rules, context->pool);
-    context->result = make_program(defines, facts, rules, context->pool);
+    split_program_clauses($1, &defines, &timers, &facts, &rules, context->pool);
+    context->result = make_program(defines, timers, facts, rules, context->pool);
 };
 
 program_body:
@@ -69,6 +70,7 @@ program_body:
 
 clause:
   define        { $$ = $1; }
+| timer         { $$ = $1; }
 | rule          { $$ = $1; }
 ;
 
@@ -85,6 +87,11 @@ define:
 }
 | DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
     $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
+}
+;
+
+timer: TIMER '(' TBL_IDENT ',' iconst_ival ')' {
+    $$ = make_ast_timer($3, $5, context->pool);
 }
 ;
 
@@ -270,12 +277,13 @@ yyerror(C4Parser *context, void *scanner, const char *message)
 }
 
 static void
-split_program_clauses(List *clauses, List **defines,
+split_program_clauses(List *clauses, List **defines, List **timers,
                       List **facts, List **rules, apr_pool_t *pool)
 {
     ListCell *lc;
 
     *defines = list_make(pool);
+    *timers = list_make(pool);
     *facts = list_make(pool);
     *rules = list_make(pool);
 
@@ -287,6 +295,10 @@ split_program_clauses(List *clauses, List **defines,
         {
             case AST_DEFINE:
                 list_append(*defines, node);
+                break;
+
+            case AST_TIMER:
+                list_append(*timers, node);
                 break;
 
             case AST_FACT:

@@ -5,13 +5,19 @@
 static AstProgram *
 copy_program(AstProgram *in, apr_pool_t *p)
 {
-    return make_program(in->defines, in->facts, in->rules, p);
+    return make_program(in->defines, in->timers, in->facts, in->rules, p);
 }
 
 static AstDefine *
 copy_define(AstDefine *in, apr_pool_t *p)
 {
     return make_define(in->name, in->storage, in->keys, in->schema, p);
+}
+
+static AstTimer *
+copy_ast_timer(AstTimer *in, apr_pool_t *p)
+{
+    return make_ast_timer(in->name, in->period, p);
 }
 
 static AstSchemaElt *
@@ -134,6 +140,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_DEFINE:
             return copy_define((AstDefine *) n, pool);
+
+        case AST_TIMER:
+            return copy_ast_timer((AstTimer *) n, pool);
 
         case AST_SCHEMA_ELT:
             return copy_schema_elt((AstSchemaElt *) n, pool);

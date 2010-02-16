@@ -146,6 +146,30 @@ analyze_define(AstDefine *def, AnalyzeState *state)
 }
 
 static void
+analyze_timer(AstTimer *timer, AnalyzeState *state)
+{
+    List *keys;
+    List *schema;
+    AstDefine *def;
+
+    if (timer->period <= 0)
+        ERROR("Period of timer %s is %" APR_INT64_T_FMT "; must be positive",
+              timer->name, timer->period);
+
+    if (timer->period > (APR_INT64_MAX / 1000))
+        ERROR("Period of timer %s is too large", timer->name);
+
+    /* Add an AstDefine for the timer table to the AST */
+    keys = list_make1_int(0, state->pool);
+    schema = list_make(state->pool);
+    list_append(schema, make_schema_elt("int8", false, state->pool));
+
+    def = make_define(timer->name, AST_STORAGE_MEMORY, keys, schema, state->pool);
+    list_append(state->program->defines, def);
+    analyze_define(def, state);
+}
+
+static void
 analyze_rule(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
@@ -764,64 +788,6 @@ analyze_table_ref(AstTableRef *ref, ExprLocation loc, AnalyzeState *state)
     }
 }
 
-/*
- * Invoke the semantic analyzer on the specified program. Note that the
- * analysis phase is side-effecting: the input AstProgram is destructively
- * modified.
- */
-void
-analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
-{
-    AnalyzeState *state;
-    ListCell *lc;
-
-    state = apr_palloc(pool, sizeof(*state));
-    state->pool = pool;
-    state->c4 = c4;
-    state->program = program;
-    state->define_tbl = apr_hash_make(pool);
-    state->rule_tbl = apr_hash_make(pool);
-    state->var_tbl = apr_hash_make(pool);
-    state->var_join_tbl = apr_hash_make(pool);
-    state->eq_tbl = apr_hash_make(pool);
-    state->tmp_ruleno = 0;
-
-    /* Phase 1: process table definitions */
-    foreach (lc, program->defines)
-    {
-        AstDefine *def = (AstDefine *) lc_ptr(lc);
-
-        analyze_define(def, state);
-    }
-
-    /* Phase 2: process remaining program clauses */
-    foreach (lc, program->facts)
-    {
-        AstFact *fact = (AstFact *) lc_ptr(lc);
-
-        /* Reset per-clause state */
-        apr_hash_clear(state->var_tbl);
-        apr_hash_clear(state->var_join_tbl);
-        apr_hash_clear(state->eq_tbl);
-        state->tmp_varno = 0;
-
-        analyze_fact(fact, state);
-    }
-
-    foreach (lc, program->rules)
-    {
-        AstRule *rule = (AstRule *) lc_ptr(lc);
-
-        /* Reset per-clause state */
-        apr_hash_clear(state->var_tbl);
-        apr_hash_clear(state->var_join_tbl);
-        apr_hash_clear(state->eq_tbl);
-        state->tmp_varno = 0;
-
-        analyze_rule(rule, state);
-    }
-}
-
 static bool
 is_dont_care_var(C4Node *node)
 {
@@ -1176,5 +1142,71 @@ agg_expr_get_type(AstAggExpr *agg)
 
         default:
             ERROR("Unexpected agg kind: %d", (int) agg->agg_kind);
+    }
+}
+
+/*
+ * Invoke the semantic analyzer on the specified program. Note that the
+ * analysis phase is side-effecting: the input AstProgram is destructively
+ * modified.
+ */
+void
+analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
+{
+    AnalyzeState *state;
+    ListCell *lc;
+
+    state = apr_palloc(pool, sizeof(*state));
+    state->pool = pool;
+    state->c4 = c4;
+    state->program = program;
+    state->define_tbl = apr_hash_make(pool);
+    state->rule_tbl = apr_hash_make(pool);
+    state->var_tbl = apr_hash_make(pool);
+    state->var_join_tbl = apr_hash_make(pool);
+    state->eq_tbl = apr_hash_make(pool);
+    state->tmp_ruleno = 0;
+
+    /* Phase 1: process table definitions */
+    foreach (lc, program->defines)
+    {
+        AstDefine *def = (AstDefine *) lc_ptr(lc);
+
+        analyze_define(def, state);
+    }
+
+    /* Phase 2: process timer definitions */
+    foreach (lc, program->timers)
+    {
+        AstTimer *timer = (AstTimer *) lc_ptr(lc);
+
+        analyze_timer(timer, state);
+    }
+
+    /* Phase 3: process remaining program clauses */
+    foreach (lc, program->facts)
+    {
+        AstFact *fact = (AstFact *) lc_ptr(lc);
+
+        /* Reset per-clause state */
+        apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->var_join_tbl);
+        apr_hash_clear(state->eq_tbl);
+        state->tmp_varno = 0;
+
+        analyze_fact(fact, state);
+    }
+
+    foreach (lc, program->rules)
+    {
+        AstRule *rule = (AstRule *) lc_ptr(lc);
+
+        /* Reset per-clause state */
+        apr_hash_clear(state->var_tbl);
+        apr_hash_clear(state->var_join_tbl);
+        apr_hash_clear(state->eq_tbl);
+        state->tmp_varno = 0;
+
+        analyze_rule(rule, state);
     }
 }

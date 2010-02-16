@@ -117,6 +117,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "memory"                { return MEMORY; }
 "notin"                 { return NOTIN; }
 "sqlite"                { return SQLITE; }
+"timer"                 { return TIMER; }
 "true"                  { return OL_TRUE; }
 
 {integer} {
