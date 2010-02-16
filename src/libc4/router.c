@@ -92,7 +92,7 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
     }
 }
 
-void
+static void
 router_do_fixpoint(C4Router *router)
 {
     TupleBuf *net_buf = router->net_buf;
@@ -196,12 +196,19 @@ router_main_loop(C4Router *router)
 {
     while (true)
     {
-        apr_interval_time_t deadline;
+        apr_interval_time_t timeout;
 
-        deadline = timer_get_deadline(router->c4->timer);
-        network_poll(router->c4->net, deadline);
-        if (!drain_queue(router))
-            break;      /* Saw shutdown request */
+        /* Fire any pending alarms */
+        timer_invoke(router->c4->timer);
+
+        timeout = timer_get_sleep_time(router->c4->timer);
+        if (network_poll(router->c4->net, timeout))
+            router_do_fixpoint(router);
+        else
+        {
+            if (!drain_queue(router))
+                break;      /* Saw shutdown request */
+        }
     }
 }
 

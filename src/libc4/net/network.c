@@ -230,36 +230,35 @@ network_get_port(C4Network *net)
 }
 
 /*
- * Block for a new event: network activity, network_wakeup(), or timeout. We
- * only return to the caller if we see a wakeup(); if any incoming tuples
- * arrive, we send them to the router and then compute a fixpoint ourselves.
+ * Block for a new event: network activity, network_wakeup(), or timeout. If we
+ * saw network activity, returns true (we expect the caller to compute a
+ * fixpoint); otherwise, returns false.
  */
-void
+bool
 network_poll(C4Network *net, apr_interval_time_t timeout)
 {
-    while (true)
+    apr_status_t s;
+    apr_int32_t num;
+    const apr_pollfd_t *descriptors;
+    int i;
+
+    s = apr_pollset_poll(net->pollset, timeout, &num, &descriptors);
+    if (s == APR_EINTR)
+        return false;         /* network_wakeup() was called */
+    if (s == APR_TIMEUP)
+        return false;         /* timeout expired */
+    if (s != APR_SUCCESS)
+        FAIL_APR(s);
+
+    for (i = 0; i < num; i++)
     {
-        apr_status_t s;
-        apr_int32_t num;
-        const apr_pollfd_t *descriptors;
-        int i;
-
-        s = apr_pollset_poll(net->pollset, timeout, &num, &descriptors);
-        if (s == APR_EINTR)
-            return;         /* network_wakeup() was called */
-        if (s == APR_TIMEUP)
-            return;         /* timeout expired */
-        if (s != APR_SUCCESS)
-            FAIL_APR(s);
-
-        for (i = 0; i < num; i++)
-        {
-            if (descriptors[i].desc.s == net->serv_sock)
-                accept_new_client(net);
-            else
-                update_client_state(&descriptors[i]);
-        }
+        if (descriptors[i].desc.s == net->serv_sock)
+            accept_new_client(net);
+        else
+            update_client_state(&descriptors[i]);
     }
+
+    return true;
 }
 
 /*
@@ -467,7 +466,6 @@ deserialize_tuple(ClientState *client)
     tbl_def = cat_get_table(client->c4->cat, tbl_name);
     tuple = tuple_from_buf(client->recv_tuple_buf, tbl_def->schema);
     router_insert_tuple(client->c4->router, tuple, tbl_def, false);
-    router_do_fixpoint(client->c4->router);
     tuple_unpin(tuple, tbl_def->schema);
 }
 
