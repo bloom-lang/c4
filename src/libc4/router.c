@@ -23,7 +23,6 @@ struct C4Router
 {
     C4Runtime *c4;
     apr_pool_t *pool;
-    C4Timer *timer;
 
     /* Map from table name => OpChainList */
     apr_hash_t *op_chain_tbl;
@@ -52,7 +51,6 @@ router_make(C4Runtime *c4)
     router = apr_pcalloc(c4->pool, sizeof(*router));
     router->c4 = c4;
     router->pool = c4->pool;
-    router->timer = timer_make(router->pool);
     router->op_chain_tbl = apr_hash_make(router->pool);
     router->insert_buf = tuple_buf_make(4096, router->pool);
     router->delete_buf = tuple_buf_make(512, router->pool);
@@ -199,7 +197,7 @@ router_main_loop(C4Router *router)
     {
         apr_interval_time_t deadline;
 
-        deadline = timer_get_deadline(router->timer);
+        deadline = timer_get_deadline(router->c4->timer);
         network_poll(router->c4->net, deadline);
         if (!drain_queue(router))
             break;      /* Saw shutdown request */

@@ -344,6 +344,7 @@ plan_program(AstProgram *ast, apr_pool_t *pool, C4Runtime *c4)
     pplan = state->plan;
 
     pplan->defines = list_copy_deep(ast->defines, pplan->pool);
+    pplan->timers = list_copy_deep(ast->timers, pplan->pool);
     pplan->facts = list_copy_deep(ast->facts, pplan->pool);
     pplan->rules = list_make(pplan->pool);
 

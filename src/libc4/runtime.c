@@ -3,6 +3,7 @@
 #include "router.h"
 #include "runtime.h"
 #include "storage/sqlite.h"
+#include "timer.h"
 #include "types/catalog.h"
 
 static void * APR_THREAD_FUNC runtime_thread_main(apr_thread_t *thread,
@@ -82,12 +83,13 @@ c4_runtime_make(int port)
     c4->tmp_pool = make_subpool(c4->pool);
     c4->log = logger_make(c4);
     c4->cat = cat_make(c4);
-    c4->router = router_make(c4);
     c4->net = network_make(c4, port);
+    c4->router = router_make(c4);
+    c4->sql = sqlite_init(c4);
+    c4->timer = timer_make(c4);
     c4->port = network_get_port(c4->net);
     c4->local_addr = get_local_addr(c4->port, c4->tmp_pool);
     c4->base_dir = get_c4_base_dir(c4->port, c4->pool, c4->tmp_pool);
-    c4->sql = sqlite_init(c4);
 
     return c4;
 }

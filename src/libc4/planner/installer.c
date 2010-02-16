@@ -5,6 +5,7 @@
 #include "operator/scan.h"
 #include "planner/installer.h"
 #include "router.h"
+#include "timer.h"
 #include "types/catalog.h"
 
 typedef struct InstallState
@@ -24,6 +25,19 @@ plan_install_defines(ProgramPlan *plan, InstallState *istate)
 
         cat_define_table(istate->c4->cat, def->name, def->storage,
                          def->schema, def->keys);
+    }
+}
+
+static void
+plan_install_timers(ProgramPlan *plan, InstallState *istate)
+{
+    ListCell *lc;
+
+    foreach (lc, plan->timers)
+    {
+        AstTimer *timer = (AstTimer *) lc_ptr(lc);
+
+        timer_add_alarm(istate->c4->timer, timer->name, timer->period);
     }
 }
 
@@ -225,6 +239,7 @@ install_plan(ProgramPlan *plan, apr_pool_t *pool, C4Runtime *c4)
 
     istate = istate_make(pool, c4);
     plan_install_defines(plan, istate);
+    plan_install_timers(plan, istate);
     plan_install_rules(plan, istate);
     plan_install_facts(plan, istate);
 

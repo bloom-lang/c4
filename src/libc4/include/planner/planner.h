@@ -8,6 +8,7 @@ typedef struct ProgramPlan
 {
     apr_pool_t *pool;
     List *defines;
+    List *timers;
     List *facts;
     List *rules;
 } ProgramPlan;

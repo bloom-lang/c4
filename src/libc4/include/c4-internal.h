@@ -35,14 +35,17 @@ struct C4Runtime
      */
     apr_pool_t *tmp_pool;
 
-    struct C4Catalog *cat;
-    struct C4Router *router;
-    struct C4Network *net;
+    /* Various C4 subsystems */
     C4Logger *log;
+    struct C4Catalog *cat;
+    struct C4Network *net;
+    struct C4Router *router;
+    struct SQLiteState *sql;
+    struct C4Timer *timer;
+
     int port;
     Datum local_addr;
     char *base_dir;
-    struct SQLiteState *sql;
 };
 
 /* Utility macros */
