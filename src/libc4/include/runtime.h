@@ -14,7 +14,6 @@ C4Runtime *c4_runtime_start(int port, C4ThreadSync *thread_sync,
 
 typedef enum WorkItemKind
 {
-    WI_TUPLE,
     WI_PROGRAM,
     WI_DUMP_TABLE,
     WI_CALLBACK,
@@ -25,10 +24,6 @@ typedef struct WorkItem
 {
     WorkItemKind kind;
     C4ThreadSync *sync;
-
-    /* WI_TUPLE: */
-    Tuple *tuple;
-    TableDef *tbl_def;
 
     /* WI_PROGRAM: */
     const char *program_src;

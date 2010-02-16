@@ -232,10 +232,6 @@ drain_queue(C4Router *router)
 
         switch (wi->kind)
         {
-            case WI_TUPLE:
-                router_insert_tuple(router, wi->tuple, wi->tbl_def, true);
-                break;
-
             case WI_PROGRAM:
                 route_program(router, wi->program_src);
                 break;
