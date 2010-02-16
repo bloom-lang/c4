@@ -79,6 +79,9 @@ Build system:
 
 * Make use of profile-guided optimization with GCC
 * Support GCC 4.5's interprocedural optimization mode
+* Only export the official C4 client API from the shared library
+  * All symbols prefixed with c4_, etc.
+  * Implement via linker scripts?
 
 APR:
 
