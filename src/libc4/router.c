@@ -27,7 +27,7 @@ struct C4Router
     /* Map from table name => OpChainList */
     apr_hash_t *op_chain_tbl;
 
-    /* Queue of to-be-performed external actions inserted by other threads */
+    /* Queue of to-be-consumed input events inserted by other threads */
     apr_queue_t *queue;
 
     /* Inserts and deletes computed within current fixpoint; to-be-routed */
@@ -99,6 +99,7 @@ router_do_fixpoint(C4Router *router)
 
     ASSERT(tuple_buf_is_empty(net_buf));
 
+    /* XXX: Seems like a loop here ought to be required */
     route_tuple_buf(router, router->insert_buf, false);
     route_tuple_buf(router, router->delete_buf, true);
 
