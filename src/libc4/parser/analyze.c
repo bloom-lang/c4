@@ -179,18 +179,13 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     ListCell *lc;
 
     /*
-     * If the rule has a user-defined name, check that it is unique within
-     * the current program. If no name was provided, generate a unique name.
+     * If no rule name provided, generate a unique name. Otherwise, check that
+     * the rule name is unique within the current program.
      */
-    if (rule->name)
-    {
-        if (is_rule_defined(rule->name, state))
-            ERROR("Duplicate rule name: %s", rule->name);
-    }
-    else
-    {
+    if (!rule->name)
         rule->name = make_anon_rule_name(state);
-    }
+    else if (is_rule_defined(rule->name, state))
+        ERROR("Duplicate rule name: %s", rule->name);
 
     apr_hash_set(state->rule_tbl, rule->name, APR_HASH_KEY_STRING, rule);
 
@@ -222,16 +217,38 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
     check_rule_safety(rule, state);
 }
 
+static bool
+disallow_agg_walker(C4Node *n, void *data)
+{
+    if (n->kind == AST_AGG_EXPR)
+        ERROR("Aggregate used in illegal context");
+
+    return true;
+}
+
 static void
 analyze_rule_head(AstRule *rule, AnalyzeState *state)
 {
+    bool is_agg;
     List *rule_list;
+    ListCell *lc;
 
     analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
+    is_agg = table_is_agg(rule->head->name, state);
 
-    if (table_is_agg(rule->head->name, state))
+    foreach (lc, rule->head->cols)
     {
-        /* XXX */
+        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+
+        /*
+         * We currently only allow aggs to appear in the head of rules for
+         * aggregate tables; we also require that aggs not be nested within
+         * other expressions in the head.
+         */
+        if (is_agg && col->expr->kind == AST_AGG_EXPR)
+            continue;
+
+        expr_tree_walker(col->expr, disallow_agg_walker, NULL);
     }
 
     rule_list = apr_hash_get(state->rule_head_tbl, rule->head->name,
