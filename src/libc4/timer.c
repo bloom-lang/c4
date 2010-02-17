@@ -1,5 +1,6 @@
 #include "c4-internal.h"
 #include "timer.h"
+#include "router.h"
 
 typedef struct AlarmState
 {
@@ -88,7 +89,16 @@ timer_get_sleep_time(C4Timer *timer)
 static void
 fire_alarm(AlarmState *alarm, C4Timer *timer)
 {
-    ;
+    Datum time_val;
+    Tuple *alarm_tuple;
+
+    time_val.i8 = alarm->deadline;
+    alarm_tuple = tuple_make(alarm->tbl_def->schema, &time_val);
+    router_insert_tuple(timer->c4->router, alarm_tuple,
+                        alarm->tbl_def, false);
+    tuple_unpin(alarm_tuple, alarm->tbl_def->schema);
+
+    alarm->deadline += alarm->period;
 }
 
 void
