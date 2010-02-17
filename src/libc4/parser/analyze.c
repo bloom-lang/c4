@@ -1042,9 +1042,9 @@ table_is_agg(const char *tbl_name, AnalyzeState *state)
  * the transitive closure over the simple var-equality quals: that is, given
  * A = B and B = C, we generate A = C.
  *
- * This is useful, because it gives the planner more choice for join
- * options. It is also necessary for counting the number of distinct
- * location specifiers in the rule.
+ * This is useful because it gives the planner more choice for join order. It is
+ * also necessary for counting the number of distinct location specifiers in the
+ * rule.
  *
  * XXX: We currently do this via a braindead algorithm.
  */
