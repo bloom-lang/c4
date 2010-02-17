@@ -1205,22 +1205,30 @@ agg_expr_get_type(AstAggExpr *agg)
     }
 }
 
+/*
+ * Currently, we impose somewhat draconian restrictions on agg usage: an agg
+ * table must be referenced by exactly one rule, and that rule must appear
+ * in the same program as the agg table definition.
+ */
 static void
 check_agg_usage(AnalyzeState *state)
 {
-    apr_hash_index_t *hi;
+    ListCell *lc;
 
-    for (hi = apr_hash_first(state->pool, state->rule_head_tbl);
-         hi != NULL; hi = apr_hash_next(hi))
+    foreach (lc, state->program->defines)
     {
-        const char *tbl_name;
+        AstDefine *def = (AstDefine *) lc_ptr(lc);
         List *rule_list;
 
-        apr_hash_this(hi, (const void **) &tbl_name, NULL,
-                      (void **) &rule_list);
-        ASSERT(list_length(rule_list) > 0);
+        if (!table_is_agg(def->name, state))
+            continue;
 
-        /* XXX */
+        rule_list = apr_hash_get(state->rule_head_tbl, def->name,
+                                 APR_HASH_KEY_STRING);
+
+        if (rule_list == NULL || list_length(rule_list) != 1)
+            ERROR("Aggregate table %s must be referenced by exactly one rule",
+                  def->name);
     }
 }
 
