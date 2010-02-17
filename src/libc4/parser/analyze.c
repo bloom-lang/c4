@@ -76,7 +76,7 @@ static bool is_dont_care_var(C4Node *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void make_implied_quals(AstRule *rule, AnalyzeState *state);
 static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
-static bool is_table_defined(const char *tbl_name, AnalyzeState *state);
+static bool table_is_defined(const char *tbl_name, AnalyzeState *state);
 static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
 static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
 static bool table_is_agg(const char *tbl_name, AnalyzeState *state);
@@ -94,7 +94,7 @@ analyze_define(AstDefine *def, AnalyzeState *state)
     bool seen_loc_spec;
     ListCell *lc;
 
-    if (is_table_defined(def->name, state))
+    if (table_is_defined(def->name, state))
         ERROR("Table %s already exists", def->name);
 
     apr_hash_set(state->define_tbl, def->name,
@@ -527,7 +527,7 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
     int colno;
     ListCell *lc;
 
-    if (!is_table_defined(join->ref->name, state))
+    if (!table_is_defined(join->ref->name, state))
         ERROR("No such table \"%s\"", join->ref->name);
 
     colno = 0;
@@ -784,7 +784,7 @@ analyze_table_ref(AstTableRef *ref, ExprLocation loc, AnalyzeState *state)
     int colno;
 
     /* Check that the referenced table exists */
-    if (!is_table_defined(ref->name, state))
+    if (!table_is_defined(ref->name, state))
         ERROR("No such table \"%s\"", ref->name);
 
     num_cols = table_get_num_cols(ref->name, state);
@@ -970,7 +970,7 @@ add_qual_list(AstVarExpr *target, List *var_list,
  * already exist in the catalog.
  */
 static bool
-is_table_defined(const char *tbl_name, AnalyzeState *state)
+table_is_defined(const char *tbl_name, AnalyzeState *state)
 {
     if (apr_hash_get(state->define_tbl, tbl_name,
                      APR_HASH_KEY_STRING) != NULL)
