@@ -1206,9 +1206,9 @@ agg_expr_get_type(AstAggExpr *agg)
 }
 
 /*
- * Currently, we impose somewhat draconian restrictions on agg usage: an agg
- * table must be referenced by exactly one rule, and that rule must appear
- * in the same program as the agg table definition.
+ * Currently, we impose fairly draconian restrictions on agg usage: an agg table
+ * must be referenced by at most one rule, and that rule must appear in the same
+ * program as the agg table definition.
  */
 static void
 check_agg_usage(AnalyzeState *state)
@@ -1226,9 +1226,9 @@ check_agg_usage(AnalyzeState *state)
         rule_list = apr_hash_get(state->rule_head_tbl, def->name,
                                  APR_HASH_KEY_STRING);
 
-        if (rule_list == NULL || list_length(rule_list) != 1)
-            ERROR("Aggregate table %s must be referenced by exactly one rule",
-                  def->name);
+        if (rule_list != NULL && list_length(rule_list) > 1)
+            ERROR("Aggregate table %s must appear in "
+                  "the head of at most one rule", def->name);
     }
 }
 
