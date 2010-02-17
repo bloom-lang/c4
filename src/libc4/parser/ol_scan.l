@@ -110,6 +110,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "min"                   { return OL_MIN; }
 "sum"                   { return OL_SUM; }
 
+"aggregate"             { return AGGREGATE; }
 "define"                { return DEFINE; }
 "delete"                { return DELETE; }
 "false"                 { return OL_FALSE; }

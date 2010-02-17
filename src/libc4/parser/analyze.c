@@ -13,6 +13,8 @@ typedef struct AnalyzeState
     AstProgram *program;
     /* Map from table name => AstDefine */
     apr_hash_t *define_tbl;
+    /* Map from table name => list of AstRule w/ that table as head */
+    apr_hash_t *rule_head_tbl;
     /* Map from rule name => AstRule */
     apr_hash_t *rule_tbl;
 
@@ -52,6 +54,7 @@ static void analyze_var_expr(AstVarExpr *var_expr, ExprLocation loc,
                              AnalyzeState *state);
 static void analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state);
 static void analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state);
+static void analyze_rule_head(AstRule *rule, AnalyzeState *state);
 static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
@@ -76,6 +79,7 @@ static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *stat
 static bool is_table_defined(const char *tbl_name, AnalyzeState *state);
 static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
 static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
+static bool table_is_agg(const char *tbl_name, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -209,14 +213,37 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
         analyze_qualifier(qual, state);
     }
 
-    /* Check the rule head */
-    analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
+    analyze_rule_head(rule, state);
 
     make_var_eq_table(rule, state);
     make_implied_quals(rule, state);
     analyze_rule_location(rule, state);
     find_unused_vars(rule, state);
     check_rule_safety(rule, state);
+}
+
+static void
+analyze_rule_head(AstRule *rule, AnalyzeState *state)
+{
+    List *rule_list;
+
+    analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
+
+    if (table_is_agg(rule->head->name, state))
+    {
+        /* XXX */
+    }
+
+    rule_list = apr_hash_get(state->rule_head_tbl, rule->head->name,
+                             APR_HASH_KEY_STRING);
+    if (!rule_list)
+    {
+        rule_list = list_make(state->pool);
+        apr_hash_set(state->rule_head_tbl, rule->head->name,
+                     APR_HASH_KEY_STRING, rule_list);
+    }
+
+    list_append(rule_list, rule);
 }
 
 /*
@@ -299,7 +326,7 @@ find_unused_vars(AstRule *rule, AnalyzeState *state)
     for (hi = apr_hash_first(state->pool, state->var_tbl);
          hi != NULL; hi = apr_hash_next(hi))
     {
-        char *var_name;
+        const char *var_name;
 
         apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
 
@@ -722,6 +749,9 @@ analyze_const_expr(AstConstExpr *c_expr, AnalyzeState *state)
 static void
 analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state)
 {
+    if (loc != EXPR_LOC_HEAD)
+        ERROR("Aggregates must be used in rule heads");
+
     analyze_expr(a_expr->expr, loc, state);
 
     if (a_expr->agg_kind == AST_AGG_SUM &&
@@ -991,6 +1021,21 @@ table_get_num_cols(const char *tbl_name, AnalyzeState *state)
     return tbl_def->schema->len;
 }
 
+static bool
+table_is_agg(const char *tbl_name, AnalyzeState *state)
+{
+    AstDefine *define;
+    TableDef *tbl_def;
+
+    define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
+    if (define != NULL)
+        return (define->storage == AST_STORAGE_AGG);
+
+    tbl_def = cat_get_table(state->c4->cat, tbl_name);
+    ASSERT(tbl_def != NULL);
+    return (tbl_def->storage == AST_STORAGE_AGG);
+}
+
 /*
  * Compute qualifiers that are implied by the set of quals explicitly stated
  * in the query. We only try to do this for the trivial case of computing
@@ -1131,17 +1176,34 @@ agg_expr_get_type(AstAggExpr *agg)
     switch (agg->agg_kind)
     {
         case AST_AGG_COUNT:
+        case AST_AGG_SUM:
             return TYPE_INT8;
 
         case AST_AGG_MAX:
         case AST_AGG_MIN:
             return expr_get_type(agg->expr);
 
-        case AST_AGG_SUM:
-            return TYPE_INT8;
-
         default:
             ERROR("Unexpected agg kind: %d", (int) agg->agg_kind);
+    }
+}
+
+static void
+check_agg_usage(AnalyzeState *state)
+{
+    apr_hash_index_t *hi;
+
+    for (hi = apr_hash_first(state->pool, state->rule_head_tbl);
+         hi != NULL; hi = apr_hash_next(hi))
+    {
+        const char *tbl_name;
+        List *rule_list;
+
+        apr_hash_this(hi, (const void **) &tbl_name, NULL,
+                      (void **) &rule_list);
+        ASSERT(list_length(rule_list) > 0);
+
+        /* XXX */
     }
 }
 
@@ -1161,6 +1223,7 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
     state->c4 = c4;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
+    state->rule_head_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
     state->var_join_tbl = apr_hash_make(pool);
@@ -1209,4 +1272,8 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
 
         analyze_rule(rule, state);
     }
+
+    ASSERT(apr_hash_count(state->define_tbl) ==
+           apr_hash_count(state->rule_head_tbl));
+    check_agg_usage(state);
 }
