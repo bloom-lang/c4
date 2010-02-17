@@ -1,6 +1,6 @@
 #include "c4-internal.h"
-#include "timer.h"
 #include "router.h"
+#include "timer.h"
 
 typedef struct AlarmState
 {
@@ -53,8 +53,8 @@ timer_add_alarm(C4Timer *timer, const char *name, apr_int64_t period_msec)
 }
 
 /*
- * Return the approximate time before any timer will fire, or -1 if there are no
- * active timers.
+ * Return the approximate time before the next alarm will fire, or -1 if there
+ * are no active alarms.
  */
 apr_interval_time_t
 timer_get_sleep_time(C4Timer *timer)
