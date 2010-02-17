@@ -75,7 +75,7 @@ make_new_cell(List *list, ListCell *prev, ListCell *next)
 }
 
 bool
-list_member(List *list, void *datum)
+list_member(List *list, const void *datum)
 {
     ListCell *lc;
 
