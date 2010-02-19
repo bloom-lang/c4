@@ -87,6 +87,12 @@ copy_ast_agg_expr(AstAggExpr *in, apr_pool_t *p)
     return make_ast_agg_expr(in->agg_kind, in->expr, p);
 }
 
+static AggPlan *
+copy_agg_plan(AggPlan *in, apr_pool_t *p)
+{
+    return make_agg_plan(in->plan.proj_list, p);
+}
+
 static FilterPlan *
 copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 {
@@ -176,6 +182,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_CONST_EXPR:
             return copy_ast_const_expr((AstConstExpr *) n, pool);
+
+        case PLAN_AGG:
+            return copy_agg_plan((AggPlan *) n, pool);
 
         case PLAN_FILTER:
             return copy_filter_plan((FilterPlan *) n, pool);

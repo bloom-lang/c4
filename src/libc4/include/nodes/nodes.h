@@ -20,11 +20,13 @@ typedef enum C4NodeKind
     AST_AGG_EXPR,
 
     /* Plan nodes */
+    PLAN_AGG,
     PLAN_FILTER,
     PLAN_INSERT,
     PLAN_SCAN,
 
     /* Executor nodes */
+    OPER_AGG,
     OPER_FILTER,
     OPER_INSERT,
     OPER_SCAN,

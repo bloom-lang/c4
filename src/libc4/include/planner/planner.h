@@ -44,6 +44,11 @@ typedef struct PlanNode
     List *proj_list;
 } PlanNode;
 
+typedef struct AggPlan
+{
+    PlanNode plan;
+} AggPlan;
+
 typedef struct FilterPlan
 {
     PlanNode plan;

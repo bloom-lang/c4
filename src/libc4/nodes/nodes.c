@@ -40,6 +40,8 @@ node_get_kind_str(C4Node *node)
         case PLAN_SCAN:
             return "PlanScan";
 
+        case OPER_AGG:
+            return "OperAgg";
         case OPER_FILTER:
             return "OperFilter";
         case OPER_INSERT:

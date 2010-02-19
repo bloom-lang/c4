@@ -156,6 +156,18 @@ make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p)
     return result;
 }
 
+AggPlan *
+make_agg_plan(List *proj_list, apr_pool_t *p)
+{
+    AggPlan *result = apr_pcalloc(p, sizeof(*result));
+    result->plan.node.kind = PLAN_AGG;
+    result->plan.quals = list_make(p);
+
+    if (proj_list)
+        result->plan.proj_list = list_copy_deep(proj_list, p);
+    return result;
+}
+
 FilterPlan *
 make_filter_plan(const char *tbl_name, List *quals,
                  List *qual_exprs, List *proj_list, apr_pool_t *p)
