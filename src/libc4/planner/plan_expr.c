@@ -253,6 +253,11 @@ make_agg_proj_list(AggPlan *aplan, OpChainPlan *chain_plan,
     return make_tbl_ref_proj_list(aplan->head, chain_plan, state);
 }
 
+/*
+ * XXX: The projection list we generate for the last scan op in the chain is
+ * inefficient. We do both projection on the scan result tuple and projection on
+ * the input to the insert op; this is redundnt.
+ */
 static List *
 make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
                OpChainPlan *chain_plan, PlannerState *state)
