@@ -18,7 +18,6 @@ typedef struct AstProgram
 
 typedef enum AstStorageKind
 {
-    AST_STORAGE_AGG,
     AST_STORAGE_MEMORY,
     AST_STORAGE_SQLITE
 } AstStorageKind;

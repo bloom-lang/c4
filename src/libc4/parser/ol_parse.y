@@ -32,7 +32,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token AGGREGATE KEYS DEFINE MEMORY SQLITE DELETE NOTIN TIMER
+%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN TIMER
        OL_FALSE OL_TRUE OL_COUNT OL_MAX OL_MIN OL_SUM
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
@@ -79,10 +79,7 @@ clause:
  * confused by adjacent optional productions. Is there a better fix?
  */
 define:
-  DEFINE '(' TBL_IDENT ',' AGGREGATE ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_AGG, $7, $8, context->pool);
-}
-| DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
+  DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
     $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
 }
 | DEFINE '(' TBL_IDENT ',' SQLITE ',' opt_keys define_schema ')' {

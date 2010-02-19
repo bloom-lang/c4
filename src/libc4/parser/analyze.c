@@ -13,8 +13,6 @@ typedef struct AnalyzeState
     AstProgram *program;
     /* Map from table name => AstDefine */
     apr_hash_t *define_tbl;
-    /* Map from table name => list of AstRule w/ that table as head */
-    apr_hash_t *rule_head_tbl;
     /* Map from rule name => AstRule */
     apr_hash_t *rule_tbl;
 
@@ -79,7 +77,6 @@ static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *stat
 static bool table_is_defined(const char *tbl_name, AnalyzeState *state);
 static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
 static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
-static bool table_is_agg(const char *tbl_name, AnalyzeState *state);
 
 static DataType op_expr_get_type(AstOpExpr *op_expr);
 static DataType const_expr_get_type(AstConstExpr *c_expr);
@@ -229,38 +226,23 @@ disallow_agg_walker(C4Node *n, void *data)
 static void
 analyze_rule_head(AstRule *rule, AnalyzeState *state)
 {
-    bool is_agg;
-    List *rule_list;
     ListCell *lc;
 
     analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
-    is_agg = table_is_agg(rule->head->name, state);
 
     foreach (lc, rule->head->cols)
     {
         AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
 
         /*
-         * We currently only allow aggs to appear in the head of rules for
-         * aggregate tables; we also require that aggs not be nested within
-         * other expressions in the head.
+         * We currently require that aggs not be nested within other expressions
+         * in the rule head.
          */
-        if (is_agg && col->expr->kind == AST_AGG_EXPR)
+        if (col->expr->kind == AST_AGG_EXPR)
             continue;
 
         expr_tree_walker(col->expr, disallow_agg_walker, NULL);
     }
-
-    rule_list = apr_hash_get(state->rule_head_tbl, rule->head->name,
-                             APR_HASH_KEY_STRING);
-    if (!rule_list)
-    {
-        rule_list = list_make(state->pool);
-        apr_hash_set(state->rule_head_tbl, rule->head->name,
-                     APR_HASH_KEY_STRING, rule_list);
-    }
-
-    list_append(rule_list, rule);
 }
 
 /*
@@ -319,8 +301,8 @@ unused_var_walker(AstVarExpr *var, void *data)
 
 /*
  * Search for variables that are defined by a join clause, but are not
- * referenced by a qual or the rule head. Such a variable need not be
- * assigned a name, so we emit a warning.
+ * referenced by a qual or the rule head. Such a variable need not be assigned a
+ * name, so we emit a warning.
  */
 static void
 find_unused_vars(AstRule *rule, AnalyzeState *state)
@@ -1038,21 +1020,6 @@ table_get_num_cols(const char *tbl_name, AnalyzeState *state)
     return tbl_def->schema->len;
 }
 
-static bool
-table_is_agg(const char *tbl_name, AnalyzeState *state)
-{
-    AstDefine *define;
-    TableDef *tbl_def;
-
-    define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
-    if (define != NULL)
-        return (define->storage == AST_STORAGE_AGG);
-
-    tbl_def = cat_get_table(state->c4->cat, tbl_name);
-    ASSERT(tbl_def != NULL);
-    return (tbl_def->storage == AST_STORAGE_AGG);
-}
-
 /*
  * Compute qualifiers that are implied by the set of quals explicitly stated
  * in the query. We only try to do this for the trivial case of computing
@@ -1206,33 +1173,6 @@ agg_expr_get_type(AstAggExpr *agg)
 }
 
 /*
- * Currently, we impose fairly draconian restrictions on agg usage: an agg table
- * must be referenced by at most one rule, and that rule must appear in the same
- * program as the agg table definition.
- */
-static void
-check_agg_usage(AnalyzeState *state)
-{
-    ListCell *lc;
-
-    foreach (lc, state->program->defines)
-    {
-        AstDefine *def = (AstDefine *) lc_ptr(lc);
-        List *rule_list;
-
-        if (!table_is_agg(def->name, state))
-            continue;
-
-        rule_list = apr_hash_get(state->rule_head_tbl, def->name,
-                                 APR_HASH_KEY_STRING);
-
-        if (rule_list != NULL && list_length(rule_list) > 1)
-            ERROR("Aggregate table %s must appear in "
-                  "the head of at most one rule", def->name);
-    }
-}
-
-/*
  * Invoke the semantic analyzer on the specified program. Note that the
  * analysis phase is side-effecting: the input AstProgram is destructively
  * modified.
@@ -1248,7 +1188,6 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
     state->c4 = c4;
     state->program = program;
     state->define_tbl = apr_hash_make(pool);
-    state->rule_head_tbl = apr_hash_make(pool);
     state->rule_tbl = apr_hash_make(pool);
     state->var_tbl = apr_hash_make(pool);
     state->var_join_tbl = apr_hash_make(pool);
@@ -1297,8 +1236,4 @@ analyze_ast(AstProgram *program, apr_pool_t *pool, C4Runtime *c4)
 
         analyze_rule(rule, state);
     }
-
-    ASSERT(apr_hash_count(state->define_tbl) ==
-           apr_hash_count(state->rule_head_tbl));
-    check_agg_usage(state);
 }

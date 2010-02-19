@@ -1,5 +1,4 @@
 #include "c4-internal.h"
-#include "storage/agg_table.h"
 #include "storage/mem_table.h"
 #include "storage/sqlite_table.h"
 #include "storage/table.h"
@@ -14,10 +13,6 @@ table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
 
     switch (def->storage)
     {
-        case AST_STORAGE_AGG:
-            tbl = (AbstractTable *) agg_table_make(def, c4, pool);
-            break;
-
         case AST_STORAGE_MEMORY:
             tbl = (AbstractTable *) mem_table_make(def, c4, pool);
             break;
