@@ -103,7 +103,7 @@ copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 static InsertPlan *
 copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 {
-    return make_insert_plan(in->head, in->plan.proj_list, in->do_delete, p);
+    return make_insert_plan(in->head, in->do_delete, in->plan.proj_list, p);
 }
 
 static ScanPlan *
