@@ -63,7 +63,7 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
 
 /*
  * Convert the AST representation of an expression tree into the Eval
- * representation.
+ * ("runtime") representation.
  *
  * XXX: Terribly ugly. Should use a uniform interface for finding the index
  * associated with a given variable name.
@@ -76,6 +76,21 @@ make_eval_expr(C4Node *ast_expr, AstJoinClause *outer_rel,
 
     switch (ast_expr->kind)
     {
+        /*
+         * XXX: An AggExpr will only appear in the projection list for an
+         * AggPlan. We actually want to IGNORE the agg expr itself, and only
+         * produce a runtime expr for the agg expr's operand. This is because
+         * the AggPlan will apply the agg function(s) itself: projection should
+         * just prepare the input tuple to the agg's transition function.
+         */
+        case AST_AGG_EXPR:
+            {
+                AstAggExpr *ast_agg = (AstAggExpr *) ast_expr;
+                result = make_eval_expr(ast_agg->expr, outer_rel,
+                                        chain_plan, state);
+            }
+            break;
+
         case AST_CONST_EXPR:
             {
                 AstConstExpr *ast_const = (AstConstExpr *) ast_expr;
@@ -232,6 +247,13 @@ make_filter_proj_list(OpChainPlan *chain_plan, PlannerState *state)
 }
 
 static List *
+make_agg_proj_list(AggPlan *aplan, OpChainPlan *chain_plan,
+                   PlannerState *state)
+{
+    return make_tbl_ref_proj_list(aplan->head, chain_plan, state);
+}
+
+static List *
 make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
                OpChainPlan *chain_plan, PlannerState *state)
 {
@@ -239,23 +261,27 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
     ListCell *lc;
 
     /*
-     * We need to handle PLAN_INSERT specially: its projection list is based
-     * on the rule's head clause, not the expressions that appear in the
-     * rest of the chain (chain_rest).
+     * We need to handle PLAN_INSERT and PLAN_AGG specially: their projection
+     * list is based on the rule's head clause, not the expressions that appear
+     * in the rest of the chain (chain_rest).
      */
     if (plan->node.kind == PLAN_INSERT)
     {
         ASSERT(chain_rest == NULL);
-        return make_insert_proj_list((InsertPlan *) plan,
-                                     chain_plan, state);
+        return make_insert_proj_list((InsertPlan *) plan, chain_plan, state);
+    }
+    if (plan->node.kind == PLAN_AGG)
+    {
+        ASSERT(chain_rest == NULL);
+        return make_agg_proj_list((AggPlan *) plan, chain_plan, state);
     }
 
     /*
-     * We also handle PLAN_FILTER specially: we actually skip projection in
-     * this case, because the delta filter doesn't modify its input, so
-     * there is little to be gained by only projecting out the attributes we
-     * need for the rest of the operator chain. Therefore, cookup a
-     * projection list that is equivalent to the filter's input schema.
+     * We also handle PLAN_FILTER specially: the filter operator never does
+     * projection because it does not modify its input, so there is little to be
+     * gained by only projecting out the attributes we need for the rest of the
+     * operator chain. To simplify planning the rest of the OpChainPlan, we just
+     * cookup a projection list that is equivalent to the filter's input schema.
      */
     if (plan->node.kind == PLAN_FILTER)
         return make_filter_proj_list(chain_plan, state);
@@ -288,6 +314,14 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
             InsertPlan *iplan = (InsertPlan *) plan;
 
             expr_tree_var_walker((C4Node *) iplan->head,
+                                 make_proj_list_walker, &cxt);
+        }
+
+        if (plan->node.kind == PLAN_AGG)
+        {
+            AggPlan *aplan = (AggPlan *) plan;
+
+            expr_tree_var_walker((C4Node *) aplan->head,
                                  make_proj_list_walker, &cxt);
         }
     }

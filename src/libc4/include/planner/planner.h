@@ -47,6 +47,8 @@ typedef struct PlanNode
 typedef struct AggPlan
 {
     PlanNode plan;
+    AstTableRef *head;
+    bool do_delete;
 } AggPlan;
 
 typedef struct FilterPlan

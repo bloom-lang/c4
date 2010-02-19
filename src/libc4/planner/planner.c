@@ -207,6 +207,16 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
 }
 
 static void
+add_agg_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
+{
+    AggPlan *aplan;
+
+    aplan = make_agg_plan(rule->head, chain_plan->delta_tbl->not, NULL,
+                          state->plan_pool);
+    list_append(chain_plan->chain, aplan);
+}
+
+static void
 add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
@@ -288,7 +298,10 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
         ERROR("Failed to match %d qualifiers to an operator",
               list_length(state->qual_set_todo));
 
-    add_insert_op(rule, chain_plan, state);
+    if (rule->has_agg)
+        add_agg_op(rule, chain_plan, state);
+    else
+        add_insert_op(rule, chain_plan, state);
 
     /*
      * Compute the projection list required for each operator, and fixup

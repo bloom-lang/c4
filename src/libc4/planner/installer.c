@@ -1,5 +1,6 @@
 #include "c4-internal.h"
 #include "nodes/copyfuncs.h"
+#include "operator/agg.h"
 #include "operator/filter.h"
 #include "operator/insert.h"
 #include "operator/scan.h"
@@ -104,6 +105,13 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
 
         switch (plan->node.kind)
         {
+            case PLAN_AGG:
+                /* Should be the last op in the chain */
+                ASSERT(prev_op == NULL);
+                op = (Operator *) agg_op_make((AggPlan *) plan,
+                                              op_chain);
+                break;
+
             case PLAN_FILTER:
                 op = (Operator *) filter_op_make((FilterPlan *) plan,
                                                  prev_op, op_chain);

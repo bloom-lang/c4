@@ -90,7 +90,7 @@ copy_ast_agg_expr(AstAggExpr *in, apr_pool_t *p)
 static AggPlan *
 copy_agg_plan(AggPlan *in, apr_pool_t *p)
 {
-    return make_agg_plan(in->plan.proj_list, p);
+    return make_agg_plan(in->head, in->do_delete, in->plan.proj_list, p);
 }
 
 static FilterPlan *
