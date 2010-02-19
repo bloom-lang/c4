@@ -298,33 +298,33 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
 
     forrest (lc, chain_rest)
     {
-        PlanNode *plan = (PlanNode *) lc_ptr(lc);
+        PlanNode *sub_plan = (PlanNode *) lc_ptr(lc);
         ListCell *lc2;
 
         /*
-         * For each expression subtree in the plan, add to the WIP
-         * projection list all the variable names that (a) are referenced
-         * (b) are defined by either the current plist or by the scan
-         * relation (c) are not already in WIP projection list.
+         * For each expression subtree in every downstream element in the op
+         * chain, add to the WIP projection list all the variable names that (a)
+         * are referenced (b) are defined by either the current plist or by the
+         * scan relation (c) are not already in WIP projection list.
          */
-        foreach (lc2, plan->quals)
+        foreach (lc2, sub_plan->quals)
         {
             C4Node *qual = (C4Node *) lc_ptr(lc2);
 
             expr_tree_var_walker(qual, make_proj_list_walker, &cxt);
         }
 
-        if (plan->node.kind == PLAN_INSERT)
+        if (sub_plan->node.kind == PLAN_INSERT)
         {
-            InsertPlan *iplan = (InsertPlan *) plan;
+            InsertPlan *iplan = (InsertPlan *) sub_plan;
 
             expr_tree_var_walker((C4Node *) iplan->head,
                                  make_proj_list_walker, &cxt);
         }
 
-        if (plan->node.kind == PLAN_AGG)
+        if (sub_plan->node.kind == PLAN_AGG)
         {
-            AggPlan *aplan = (AggPlan *) plan;
+            AggPlan *aplan = (AggPlan *) sub_plan;
 
             expr_tree_var_walker((C4Node *) aplan->head,
                                  make_proj_list_walker, &cxt);
