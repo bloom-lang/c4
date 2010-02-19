@@ -169,9 +169,9 @@ rule: rule_prefix opt_rule_body {
 };
 
 rule_prefix:
-  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, false, $3, NULL, NULL, context->pool); }
-| DELETE table_ref               { $$ = make_rule(NULL, true, false, $2, NULL, NULL, context->pool); }
-| table_ref                      { $$ = make_rule(NULL, false, false, $1, NULL, NULL, context->pool); }
+  TBL_IDENT opt_delete table_ref { $$ = make_rule($1, $2, false, false, $3, NULL, NULL, context->pool); }
+| DELETE table_ref               { $$ = make_rule(NULL, true, false, false, $2, NULL, NULL, context->pool); }
+| table_ref                      { $$ = make_rule(NULL, false, false, false, $1, NULL, NULL, context->pool); }
 ;
 
 opt_delete:

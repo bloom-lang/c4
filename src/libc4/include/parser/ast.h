@@ -62,6 +62,7 @@ typedef struct AstRule
     bool is_delete;
     /* Filled-in during parse-analysis */
     bool is_network;
+    bool has_agg;
 } AstRule;
 
 struct AstTableRef

@@ -14,8 +14,8 @@ AstTimer *make_ast_timer(const char *name, apr_int64_t period,
 AstSchemaElt *make_schema_elt(const char *type_name, bool is_loc_spec,
                               apr_pool_t *p);
 AstRule *make_rule(const char *name, bool is_delete, bool is_network,
-                   AstTableRef *head, List *joins, List *quals,
-                   apr_pool_t *p);
+                   bool has_agg, AstTableRef *head, List *joins,
+                   List *quals, apr_pool_t *p);
 AstFact *make_fact(AstTableRef *head, apr_pool_t *p);
 AstTableRef *make_table_ref(const char *name, List *cols, apr_pool_t *p);
 AstColumnRef *make_column_ref(C4Node *expr, apr_pool_t *p);

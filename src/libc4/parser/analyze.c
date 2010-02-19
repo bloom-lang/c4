@@ -228,6 +228,7 @@ analyze_rule_head(AstRule *rule, AnalyzeState *state)
 {
     ListCell *lc;
 
+    ASSERT(!rule->has_agg);
     analyze_table_ref(rule->head, EXPR_LOC_HEAD, state);
 
     foreach (lc, rule->head->cols)
@@ -239,7 +240,10 @@ analyze_rule_head(AstRule *rule, AnalyzeState *state)
          * in the rule head.
          */
         if (col->expr->kind == AST_AGG_EXPR)
+        {
+            rule->has_agg = true;
             continue;
+        }
 
         expr_tree_walker(col->expr, disallow_agg_walker, NULL);
     }

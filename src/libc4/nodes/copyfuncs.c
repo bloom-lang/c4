@@ -29,7 +29,7 @@ copy_schema_elt(AstSchemaElt *in, apr_pool_t *p)
 static AstRule *
 copy_rule(AstRule *in, apr_pool_t *p)
 {
-    return make_rule(in->name, in->is_delete, in->is_network,
+    return make_rule(in->name, in->is_delete, in->is_network, in->has_agg,
                      in->head, in->joins, in->quals, p);
 }
 

@@ -49,13 +49,14 @@ make_schema_elt(const char *type_name, bool is_loc_spec, apr_pool_t *p)
 }
 
 AstRule *
-make_rule(const char *name, bool is_delete, bool is_network,
+make_rule(const char *name, bool is_delete, bool is_network, bool has_agg,
           AstTableRef *head, List *joins, List *quals, apr_pool_t *p)
 {
     AstRule *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_RULE;
     result->is_delete = is_delete;
     result->is_network = is_network;
+    result->has_agg = has_agg;
     result->head = copy_node(head, p);
 
     if (name)
