@@ -250,14 +250,13 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
 }
 
 /*
- * Return a plan for an operator chain that begins with the given delta
- * table. We need to select the set of necessary operators and choose their
- * order. We do naive qualifier pushdown (qualifiers are associated with the
- * first node whose output contains all the variables in the qualifier).
+ * Return an operator chain plan that begins with the given delta table. We need
+ * to select the set of necessary operators and choose their order. We do naive
+ * qualifier pushdown (qualifiers are associated with the first node whose
+ * output contains all the variables in the qualifier).
  *
- * The last op in the chain (and the first one created) is an OPER_INSERT,
- * which inserts tuples into the head table (and/or enqueues them to be sent
- * over the network).
+ * The last op in the chain is an OPER_INSERT, which inserts tuples into the
+ * head table (and/or enqueues them to be sent over the network).
  */
 static OpChainPlan *
 plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
