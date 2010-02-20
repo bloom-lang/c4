@@ -5,3 +5,16 @@ foo,baz
 bar,bam
 bar,baz
 foo,bar
+**** \dump "j2" ****
+1
+**** \dump "j2" ****
+1
+**** \dump "j2" ****
+1
+2
+3
+4
+5
+6
+7
+8

@@ -18,3 +18,15 @@ later(A, B) :- p(A, B);
 later(A, B) :- q(A, B);
 
 \dump later
+
+define(j1, keys(0), {int8});
+define(j2, keys(0), {int8});
+
+j2(A + 1) :- j2(A), j1(B), A >= B, A <= 7;
+
+j2(1);
+\dump j2
+j1(5);
+\dump j2
+j1(1);
+\dump j2
