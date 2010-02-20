@@ -429,7 +429,7 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
         case PLAN_SCAN:
             {
                 ScanPlan *splan = (ScanPlan *) plan;
-                sbuf_appendf(sbuf, "  SCAN REL: %s\n ; ANTISCAN: %s",
+                sbuf_appendf(sbuf, "  SCAN REL: %s ; ANTISCAN: %s\n",
                              splan->scan_rel->ref->name,
                              splan->scan_rel->not ? "true" : "false");
             }
