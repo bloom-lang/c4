@@ -10,7 +10,7 @@ else()
     message(FATAL_ERROR "Unrecognized C4 Build Type: ${C4_BUILD_TYPE}")
   endif()
   message(STATUS "*** C4 BUILD TYPE: Debug ***")
- set(CMAKE_BUILD_TYPE Debug)
+  set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 set(PACKAGE_VERSION 1)
@@ -29,7 +29,9 @@ message (STATUS "APU version: ${APU_VERSION}")
 set(CMAKE_C_FLAGS "-g -Wall -Wextra -Wdeclaration-after-statement -Wmissing-declarations -Wmissing-prototypes -Winline -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
- set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DC4_ASSERT_ENABLED")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -DC4_ASSERT_ENABLED")
+  # $APR_CFLAGS often contains -O2, which makes debugging harder
+  string(REGEX REPLACE "-O2" "" CMAKE_C_FLAGS ${CMAKE_C_FLAGS})
 endif()
 
 message (STATUS "CFLAGS: ${CMAKE_C_FLAGS}")
