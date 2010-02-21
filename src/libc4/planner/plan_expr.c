@@ -296,8 +296,8 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
      * We also handle PLAN_FILTER specially: the filter operator never does
      * projection because it does not modify its input, so there is little to be
      * gained by only projecting out the attributes we need for the rest of the
-     * operator chain. To simplify planning the rest of the OpChainPlan, we just
-     * cookup a projection list that is equivalent to the filter's input schema.
+     * operator chain. Hence, we just cookup a projection list that is
+     * equivalent to the filter's input schema.
      */
     if (plan->node.kind == PLAN_FILTER)
         return make_tbl_ref_proj_list(chain_plan->delta_tbl->ref,
