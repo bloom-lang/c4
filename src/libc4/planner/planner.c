@@ -192,7 +192,7 @@ add_scan_op(AstJoinClause *ast_join, List *quals,
 {
     ScanPlan *splan;
 
-    splan = make_scan_plan(ast_join, quals, NULL, NULL, state->plan_pool);
+    splan = make_scan_plan(ast_join, quals, NULL, NULL, false, state->plan_pool);
     list_append(chain_plan->chain, splan);
 }
 
@@ -211,8 +211,8 @@ add_agg_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     AggPlan *aplan;
 
-    aplan = make_agg_plan(rule->head, chain_plan->delta_tbl->not, NULL,
-                          state->plan_pool);
+    aplan = make_agg_plan(rule->head, chain_plan->delta_tbl->not,
+                          NULL, false, state->plan_pool);
     list_append(chain_plan->chain, aplan);
 }
 
@@ -221,8 +221,8 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
 
-    iplan = make_insert_plan(rule->head, chain_plan->delta_tbl->not, NULL,
-                             state->plan_pool);
+    iplan = make_insert_plan(rule->head, chain_plan->delta_tbl->not,
+                             NULL, false, state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 

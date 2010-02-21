@@ -90,7 +90,8 @@ copy_ast_agg_expr(AstAggExpr *in, apr_pool_t *p)
 static AggPlan *
 copy_agg_plan(AggPlan *in, apr_pool_t *p)
 {
-    return make_agg_plan(in->head, in->do_delete, in->plan.proj_list, p);
+    return make_agg_plan(in->head, in->do_delete, in->plan.proj_list,
+                         in->plan.skip_proj, p);
 }
 
 static FilterPlan *
@@ -103,14 +104,15 @@ copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 static InsertPlan *
 copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 {
-    return make_insert_plan(in->head, in->do_delete, in->plan.proj_list, p);
+    return make_insert_plan(in->head, in->do_delete, in->plan.proj_list,
+                            in->plan.skip_proj, p);
 }
 
 static ScanPlan *
 copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 {
-    return make_scan_plan(in->scan_rel, in->plan.quals,
-                          in->plan.qual_exprs, in->plan.proj_list, p);
+    return make_scan_plan(in->scan_rel, in->plan.quals, in->plan.qual_exprs,
+                          in->plan.proj_list, in->plan.skip_proj, p);
 }
 
 static ExprOp *

@@ -42,6 +42,7 @@ typedef struct PlanNode
     List *qual_exprs;
     /* Runtime representation of proj list */
     List *proj_list;
+    bool skip_proj;
 } PlanNode;
 
 typedef struct AggPlan

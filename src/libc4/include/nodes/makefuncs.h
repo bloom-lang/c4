@@ -28,13 +28,14 @@ AstConstExpr *make_ast_const_expr(AstConstKind c_kind, const char *value,
                                   apr_pool_t *p);
 
 AggPlan *make_agg_plan(AstTableRef *head, bool do_delete,
-                       List *proj_list, apr_pool_t *p);
+                       List *proj_list, bool skip_proj, apr_pool_t *p);
 FilterPlan *make_filter_plan(const char *tbl_name, List *quals,
                              List *qual_exprs, List *proj_list, apr_pool_t *p);
 InsertPlan *make_insert_plan(AstTableRef *head, bool do_delete,
-                             List *proj_list, apr_pool_t *p);
+                             List *proj_list, bool skip_proj, apr_pool_t *p);
 ScanPlan *make_scan_plan(AstJoinClause *scan_rel, List *quals,
-                         List *qual_exprs, List *proj_list, apr_pool_t *p);
+                         List *qual_exprs, List *proj_list,
+                         bool skip_proj, apr_pool_t *p);
 
 ExprOp *make_expr_op(DataType type, AstOperKind op_kind,
                      ExprNode *lhs, ExprNode *rhs, apr_pool_t *p);

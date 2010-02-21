@@ -50,7 +50,11 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
     i = 0;
     foreach (lc, proj_list)
     {
-        ExprVar *expr_var = (ExprVar *) lc_ptr(lc);
+        C4Node *n = (C4Node *) lc_ptr(lc);
+        ExprVar *expr_var;
+
+        ASSERT(n->kind == EXPR_VAR);
+        expr_var = (ExprVar *) n;
 
         if (strcmp(expr_var->name, var_name) == 0)
             return i;
@@ -212,8 +216,8 @@ make_proj_list_walker(AstVarExpr *var, void *data)
 }
 
 static List *
-make_tbl_ref_proj_list(AstTableRef *tbl_ref, OpChainPlan *chain_plan,
-                       PlannerState *state)
+make_tbl_ref_proj_list(AstTableRef *tbl_ref, AstJoinClause *outer_rel,
+                       OpChainPlan *chain_plan, PlannerState *state)
 {
     List *proj_list;
     ListCell *lc;
@@ -225,7 +229,7 @@ make_tbl_ref_proj_list(AstTableRef *tbl_ref, OpChainPlan *chain_plan,
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
         ExprNode *expr;
 
-        expr = make_eval_expr(cref->expr, NULL, chain_plan, state);
+        expr = make_eval_expr(cref->expr, outer_rel, chain_plan, state);
         list_append(proj_list, expr);
     }
 
@@ -233,24 +237,30 @@ make_tbl_ref_proj_list(AstTableRef *tbl_ref, OpChainPlan *chain_plan,
 }
 
 static List *
-make_insert_proj_list(InsertPlan *iplan, OpChainPlan *chain_plan,
-                      PlannerState *state)
+make_dummy_proj_list(OpChainPlan *chain_plan, PlannerState *state)
 {
-    return make_tbl_ref_proj_list(iplan->head, chain_plan, state);
-}
+    List *result;
+    ListCell *lc;
+    int i;
 
-static List *
-make_filter_proj_list(OpChainPlan *chain_plan, PlannerState *state)
-{
-    return make_tbl_ref_proj_list(chain_plan->delta_tbl->ref,
-                                  chain_plan, state);
-}
+    if (state->current_plist == NULL)
+        return make_tbl_ref_proj_list(chain_plan->delta_tbl->ref,
+                                      NULL, chain_plan, state);
 
-static List *
-make_agg_proj_list(AggPlan *aplan, OpChainPlan *chain_plan,
-                   PlannerState *state)
-{
-    return make_tbl_ref_proj_list(aplan->head, chain_plan, state);
+    result = list_make(state->plan_pool);
+    i = 0;
+    foreach (lc, state->current_plist)
+    {
+        ExprNode *n = (ExprNode *) lc_ptr(lc);
+        ExprVar *v;
+
+        v = make_expr_var(n->type, i, false, "_",
+                          state->plan_pool);
+        list_append(result, v);
+        i++;
+    }
+
+    return result;
 }
 
 /*
@@ -266,19 +276,20 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
     ListCell *lc;
 
     /*
-     * We need to handle PLAN_INSERT and PLAN_AGG specially: their projection
-     * list is based on the rule's head clause, not the expressions that appear
-     * in the rest of the chain (chain_rest).
+     * We need to handle PLAN_INSERT and PLAN_AGG specially. If preceded by a
+     * projection-capable operator (e.g. PLAN_SCAN), the input already has
+     * projection applied, so we just skip projection and generate a dummy proj
+     * list. Otherwise, the projection list is based on the rule's head clause,
+     * not the expressions in the rest of the chain.
      */
-    if (plan->node.kind == PLAN_INSERT)
+    if (plan->node.kind == PLAN_INSERT || plan->node.kind == PLAN_AGG)
     {
         ASSERT(chain_rest == NULL);
-        return make_insert_proj_list((InsertPlan *) plan, chain_plan, state);
-    }
-    if (plan->node.kind == PLAN_AGG)
-    {
-        ASSERT(chain_rest == NULL);
-        return make_agg_proj_list((AggPlan *) plan, chain_plan, state);
+        if (plan->skip_proj)
+            return make_dummy_proj_list(chain_plan, state);
+        else
+            return make_tbl_ref_proj_list(chain_plan->head, outer_rel,
+                                          chain_plan, state);
     }
 
     /*
@@ -289,7 +300,30 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
      * cookup a projection list that is equivalent to the filter's input schema.
      */
     if (plan->node.kind == PLAN_FILTER)
-        return make_filter_proj_list(chain_plan, state);
+        return make_tbl_ref_proj_list(chain_plan->delta_tbl->ref,
+                                      outer_rel, chain_plan, state);
+
+    /*
+     * Check if this is a PLAN_SCAN followed immediately by a PLAN_AGG or
+     * PLAN_INSERT. When this is the case, we can skip projection in the
+     * agg/insert op, and instead do any necessary projection when producing the
+     * output of the scan. We can't always apply this optimization, since an
+     * agg/insert might be preceded by a filter or might be the first op in a
+     * chain.
+     */
+    if (plan->node.kind == PLAN_SCAN)
+    {
+        PlanNode *next;
+
+        ASSERT(chain_rest != NULL);
+        next = lc_ptr(chain_rest);
+        if (next->node.kind == PLAN_AGG || next->node.kind == PLAN_INSERT)
+        {
+            next->skip_proj = true;
+            return make_tbl_ref_proj_list(chain_plan->head, outer_rel,
+                                          chain_plan, state);
+        }
+    }
 
     cxt.wip_plist = list_make(state->plan_pool);
     cxt.outer_rel = outer_rel;
