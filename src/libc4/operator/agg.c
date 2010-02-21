@@ -48,7 +48,7 @@ count_agg_exprs(AstTableRef *head)
 }
 
 static AggExprInfo **
-make_agg_info(int num_aggs, AstTableRef *head, apr_pool_t *pool)
+make_agg_info(int num_aggs, List *cols, apr_pool_t *pool)
 {
     AggExprInfo **result;
     ListCell *lc;
@@ -58,7 +58,7 @@ make_agg_info(int num_aggs, AstTableRef *head, apr_pool_t *pool)
     result = apr_palloc(pool, num_aggs * sizeof(*result));
     aggno = 0;
     colno = 0;
-    foreach (lc, head->cols)
+    foreach (lc, cols)
     {
         AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
         AstAggExpr *agg_expr;
@@ -82,10 +82,17 @@ make_agg_info(int num_aggs, AstTableRef *head, apr_pool_t *pool)
     return result;
 }
 
+static int *
+make_group_colnos(int num_group_cols, List *cols, apr_pool_t *pool)
+{
+    return NULL;
+}
+
 AggOperator *
 agg_op_make(AggPlan *plan, OpChain *chain)
 {
     AggOperator *agg_op;
+    int num_cols;
 
     ASSERT(list_length(plan->plan.quals) == 0);
 
@@ -98,8 +105,21 @@ agg_op_make(AggPlan *plan, OpChain *chain)
                                            agg_destroy);
 
     agg_op->num_aggs = count_agg_exprs(plan->head);
-    agg_op->agg_info = make_agg_info(agg_op->num_aggs, plan->head,
+    agg_op->agg_info = make_agg_info(agg_op->num_aggs, plan->head->cols,
                                      agg_op->op.pool);
+
+    num_cols = list_length(plan->head->cols);
+    ASSERT(num_cols >= agg_op->num_aggs);
+    agg_op->num_group_cols = num_cols - agg_op->num_aggs;
+    agg_op->group_colnos = make_group_colnos(agg_op->num_group_cols,
+                                             plan->head->cols, agg_op->op.pool);
+
+    agg_op->group_tbl = c4_hash_make(agg_op->op.pool,
+                                     sizeof(Tuple *),
+                                     agg_op, NULL, NULL);
+    agg_op->tuple_tbl = c4_hash_make(agg_op->op.pool,
+                                     sizeof(Tuple *),
+                                     agg_op, NULL, NULL);
 
     return agg_op;
 }
