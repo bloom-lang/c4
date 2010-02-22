@@ -7,9 +7,9 @@
 #include "util/strbuf.h"
 
 /*
- * XXX: Note that tuple refcounts are not currently tracked by the APR pool
- * cleanup mechanism. Therefore, modules keeping a tuple pinned should be
- * sure to release their pin in a cleanup function.
+ * Note that tuple refcounts are not currently tracked by the APR pool cleanup
+ * mechanism. Therefore, modules keeping a tuple pinned should be sure to
+ * release their pin in a cleanup function.
  */
 typedef struct Tuple
 {
@@ -18,6 +18,9 @@ typedef struct Tuple
      * element of the freelist. Since Tuples on the freelist have refcount zero
      * by definition, we just reuse the "refcount" struct element. Due to
      * padding, it probably doesn't cost any extra space.
+     *
+     * TODO: On LP64 machines, we have 6 bytes of padding we can use. One
+     * possible use for them is to cache the per-Tuple hash code.
      */
     union
     {
