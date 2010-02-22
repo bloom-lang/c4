@@ -207,4 +207,4 @@ int c4_hash_do(c4_hash_do_callback_fn_t *comp,
 
 /** @} */
 
-#endif  /* !APR_HASH_H */
+#endif  /* !C4_HASH_H */
