@@ -29,10 +29,10 @@
 /*
  * The internal form of an rset.
  *
- * The table is an array indexed by the hash of the key; collisions
- * are resolved by hanging a linked list of hash entries off each
- * element of the array. Although this is a really simple design it
- * isn't too bad given that pools have a low allocation overhead.
+ * The table is an array indexed by the hash of the key; collisions are resolved
+ * by hanging a linked list of rset entries off each element of the array.
+ * Although this is a really simple design it isn't too bad given that pools
+ * have a low allocation overhead.
  */
 
 typedef struct rset_entry_t rset_entry_t;
@@ -61,8 +61,8 @@ struct rset_index_t {
 /*
  * The size of the array is always a power of two. We use the maximum index
  * rather than the size so that we can use bitwise-AND for modular
- * arithmetic. The count of hash entries may be greater depending on the
- * chosen collision rate.
+ * arithmetic. The count of rset entries may be greater depending on the chosen
+ * collision rate.
  *
  * We allocate the bucket array in a sub-pool, "array_pool". This allows us
  * to reclaim the old bucket array after an expansion.
@@ -180,10 +180,6 @@ void *rset_this(rset_index_t *ri)
     return ri->this->key;
 }
 
-/*
- * Expanding a hash table
- */
-
 static void expand_array(rset_t *rs)
 {
     apr_pool_t *new_array_pool;
@@ -264,12 +260,12 @@ unsigned int rset_hashfunc_default(const char *char_key, int klen,
 
 
 /*
- * This is where we keep the details of the hash function and control
- * the maximum collision rate.
+ * This is where we keep the details of the hash function and control the
+ * maximum collision rate.
  *
- * If val is non-NULL it creates and initializes a new hash entry if
- * there isn't already one there; it returns an updatable pointer so
- * that hash entries can be removed.
+ * If "make_new" is true, it creates and initializes a new rset entry if there
+ * isn't already one there; it returns an updatable pointer so that entries can
+ * be removed.
  */
 static rset_entry_t **find_entry(rset_t *rs, void *key, bool make_new)
 {
