@@ -99,7 +99,7 @@ unsigned int rset_get(rset_t *rs, void *elem);
  *               element wasn't found in the rset, this is not written-through.
  * @return NULL if the element was not found. 
  */
-void *rset_remove(rset_t *rs, void *elem, int *new_refcount);
+void *rset_remove(rset_t *rs, void *elem, unsigned int *new_refcount);
 
 /**
  * Prepare to start iterating over the elements of an rset. This creates an

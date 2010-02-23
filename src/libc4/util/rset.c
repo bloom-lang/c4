@@ -323,7 +323,7 @@ bool rset_add(rset_t *rs, void *elem)
     return (entry->refcount == 1);
 }
 
-void *rset_remove(rset_t *rs, void *elem, int *new_refcount)
+void *rset_remove(rset_t *rs, void *elem, unsigned int *new_refcount)
 {
     rset_entry_t **rep;
     rset_entry_t *entry;
