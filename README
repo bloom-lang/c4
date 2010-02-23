@@ -1,12 +1,8 @@
-Build dependencies: flex (>= 2.3.35), bison, cmake (>= 2.8), apr (>=
-1.4), apr-util (>= 1.4) and SQLite (>= 3). At the moment, the binaries
-provided by each of these packages (flex, bison, apr-1-config, and
-apu-1-config) must be in your $PATH. Note that apr and apr-util 1.4
-hasn't been officially released: you will need to build versions of
-these libraries from SVN:
-
-    http://svn.apache.org/repos/asf/apr/apr/branches/1.4.x
-    http://svn.apache.org/repos/asf/apr/apr-util/branches/1.4.x
+Build dependencies: flex (>= 2.3.35), bison, cmake (>= 2.8), apr (>= 1.4),
+apr-util (>= 1.4) and SQLite (>= 3). At the moment, the binaries provided by
+each of these packages (flex, bison, apr-1-config, and apu-1-config) must be in
+your $PATH. Note that apr 1.4 and apr-util 1.4 have only recently been released,
+and so you may need to build from source.
 
 To build:
 
