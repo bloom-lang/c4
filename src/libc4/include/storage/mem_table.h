@@ -2,12 +2,12 @@
 #define MEM_TABLE_H
 
 #include "storage/table.h"
-#include "util/hash.h"
+#include "util/rset.h"
 
 typedef struct MemTable
 {
     AbstractTable table;
-    c4_hash_t *tuples;
+    rset_t *tuples;
 } MemTable;
 
 MemTable *mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool);

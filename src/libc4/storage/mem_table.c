@@ -9,14 +9,14 @@ static void
 mem_table_cleanup(AbstractTable *a_tbl)
 {
     MemTable *tbl = (MemTable *) a_tbl;
-    c4_hash_index_t *hi;
+    rset_index_t *ri;
 
-    hi = c4_hash_iter_make(a_tbl->pool, tbl->tuples);
-    while (c4_hash_next(hi))
+    ri = rset_iter_make(a_tbl->pool, tbl->tuples);
+    while (rset_next(ri))
     {
         Tuple *t;
 
-        c4_hash_this(hi, (const void **) &t, NULL);
+        t = rset_this(ri);
         tuple_unpin(t, a_tbl->def->schema);
     }
 }
@@ -25,12 +25,17 @@ static bool
 mem_table_insert(AbstractTable *a_tbl, Tuple *t)
 {
     MemTable *tbl = (MemTable *) a_tbl;
-    Tuple *val;
     bool is_new;
 
-    val = c4_hash_set_if_new(tbl->tuples, t, t, &is_new);
+    is_new = rset_add(tbl->tuples, t);
     if (is_new)
-        tuple_pin(val);
+        tuple_pin(t);
+#if 0
+    c4_log(a_tbl->c4, "%s: t = %s, tbl = %s, is_new = %s, refcount = %u",
+           __func__, log_tuple(a_tbl->c4, t, a_tbl->def->schema),
+           a_tbl->def->name,
+           is_new ? "true" : "false", rset_get(tbl->tuples, t));
+#endif
     return is_new;
 }
 
@@ -38,12 +43,26 @@ static bool
 mem_table_delete(AbstractTable *a_tbl, Tuple *t)
 {
     MemTable *tbl = (MemTable *) a_tbl;
-    bool found;
+    Tuple *elem;
+    unsigned int new_count;
 
-    found = c4_hash_remove(tbl->tuples, t);
-    if (found)
-        tuple_unpin(t, a_tbl->def->schema);
-    return found;
+    elem = rset_remove(tbl->tuples, t, &new_count);
+    if (!elem)
+        return false;
+
+#if 0
+    c4_log(a_tbl->c4, "%s: t = %s, tbl = %s, new_count = %u",
+           __func__, log_tuple(a_tbl->c4, t, a_tbl->def->schema),
+           a_tbl->def->name,
+           new_count);
+#endif
+    if (new_count == 0)
+    {
+        tuple_unpin(elem, a_tbl->def->schema);
+        return true;
+    }
+
+    return false;
 }
 
 static bool
@@ -76,7 +95,7 @@ mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool)
 
     scan = apr_pcalloc(pool, sizeof(*scan));
     scan->pool = pool;
-    scan->hash_iter = c4_hash_iter_make(pool, tbl->tuples);
+    scan->rset_iter = rset_iter_make(pool, tbl->tuples);
 
     return scan;
 }
@@ -84,19 +103,16 @@ mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool)
 static void
 mem_table_scan_reset(AbstractTable *a_tbl, ScanCursor *scan)
 {
-    c4_hash_iter_reset(scan->hash_iter);
+    rset_iter_reset(scan->rset_iter);
 }
 
 static Tuple *
 mem_table_scan_next(AbstractTable *a_tbl, ScanCursor *cur)
 {
-    Tuple *ret_tuple;
-
-    if (!c4_hash_iter_next(cur->hash_iter))
+    if (!rset_iter_next(cur->rset_iter))
         return NULL;
 
-    c4_hash_this(cur->hash_iter, (const void **) &ret_tuple, NULL);
-    return ret_tuple;
+    return rset_this(cur->rset_iter);
 }
 
 MemTable *
@@ -112,10 +128,9 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = c4_hash_make(pool, sizeof(Tuple *), tbl,
-                               mem_table_hash_tuple,
-                               mem_table_cmp_tuple);
+    tbl->tuples = rset_make(pool, sizeof(Tuple *), tbl,
+                            mem_table_hash_tuple,
+                            mem_table_cmp_tuple);
 
     return tbl;
 }
-
