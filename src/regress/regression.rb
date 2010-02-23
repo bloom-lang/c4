@@ -16,7 +16,7 @@ class TestTuple < Test::Unit::TestCase
   end
 
   def test_loop
-    tests = Dir.entries("input").reject { |i| i.match(/^\./) }
+    tests = Dir.entries(INPUT_DIR).reject { |i| i.match(/^\./) }
     tests.each do |test|
       print "Running test \"#{test}\"..."
       input = ""
