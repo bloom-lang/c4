@@ -314,7 +314,7 @@ unsigned int rset_get(rset_t *rs, void *elem)
         return 0;
 }
 
-void rset_set(rset_t *rs, void *elem)
+bool rset_add(rset_t *rs, void *elem)
 {
     rset_entry_t *entry;
 
@@ -323,6 +323,8 @@ void rset_set(rset_t *rs, void *elem)
     /* check that the collision rate isn't too high */
     if (rs->count > rs->max)
         expand_array(rs);
+
+    return (entry->refcount == 1);
 }
 
 void *rset_remove(rset_t *rs, void *elem, int *new_refcount)

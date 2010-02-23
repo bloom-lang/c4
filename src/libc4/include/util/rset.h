@@ -75,12 +75,12 @@ rset_t *rset_make(apr_pool_t *pool, int elem_len, void *cb_data,
 
 /**
  * Add an element to the rset. If the element is already present, bump its
- * refcount by 1 and return true; otherwise, add a new element with refcount 1,
- * and return false.
+ * refcount by 1 and return false; otherwise, add a new element with refcount 1,
+ * and return true.
  * @param rs The rset
  * @param elem New element
  */
-void rset_set(rset_t *rs, void *elem);
+bool rset_add(rset_t *rs, void *elem);
 
 /**
  * Look up the refcount of an element in the rset.
