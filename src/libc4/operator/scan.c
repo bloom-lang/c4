@@ -36,6 +36,7 @@ scan_invoke(Operator *op, Tuple *t)
     {
         Tuple *join_tuple;
 
+        exec_cxt->outer = NULL;
         join_tuple = operator_do_project(op);
         op->next->invoke(op->next, join_tuple);
     }

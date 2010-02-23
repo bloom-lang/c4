@@ -195,7 +195,11 @@ make_proj_list_walker(AstVarExpr *var, void *data)
     if (var_idx == -1 && cxt->outer_rel != NULL)
     {
         var_idx = get_var_index_from_join(var->name, cxt->outer_rel);
-        is_outer = true;
+        if (var_idx != -1)
+        {
+            ASSERT(!cxt->outer_rel->not);
+            is_outer = true;
+        }
     }
 
     if (var_idx != -1)
