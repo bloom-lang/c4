@@ -1,14 +1,24 @@
 require 'rubygems'
 require 'C4'
+require 'fileutils'
 
 INPUT_DIR="input"
 OUTPUT_DIR="output"
 EXPECTED_DIR="expected"
+DIFF_FILE="regress.diffs"
 
-def do_test(c4)
+def make_output_dir
+  FileUtils.remove_dir(OUTPUT_DIR) if File.directory?(OUTPUT_DIR)
+  Dir.mkdir(OUTPUT_DIR)
+end
+
+def run_tests(c4, test_name)
   puts "===="
   tests = Dir.entries(INPUT_DIR).reject { |i| i.match(/^\./) }
+  ran_tests = []
   tests.each do |test|
+    next unless (test_name.nil? or test == test_name)
+    ran_tests << test
     print "Running test \"#{test}\"..."
     input = ""
     output = ""
@@ -25,21 +35,29 @@ def do_test(c4)
     end
     puts " done"
 
-    Dir.mkdir(OUTPUT_DIR) unless File.directory?(OUTPUT_DIR)
     File.open("#{OUTPUT_DIR}/#{test}", 'w') do |f|
       f.write(output)
     end
   end
 
   puts "===="
-  `diff -ur #{EXPECTED_DIR} #{OUTPUT_DIR} > regress.diffs`
-  if $? == 0
-    puts "All tests passed!"
+  num_fails = 0
+  ran_tests.each do |test|
+    `diff -ur #{EXPECTED_DIR}/#{test} #{OUTPUT_DIR}/#{test} >> #{DIFF_FILE}`
+    if $? != 0
+      num_fails += 1
+      puts "Test \"#{test}\" failed!"
+    end
+  end
+
+  if num_fails == 0
+    puts "All #{ran_tests.length} tests passed"
   else
     puts "TESTS FAILED; see regress.diffs"
   end
 end
 
+make_output_dir
 c = C4.new
-do_test(c)
+run_tests(c, ARGV[0])
 c.destroy
