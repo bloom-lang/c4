@@ -58,6 +58,7 @@ def run_tests(c4, test_name)
 end
 
 make_output_dir
+File.delete(DIFF_FILE) if File.exists?(DIFF_FILE)
 c = C4.new
 run_tests(c, ARGV[0])
 c.destroy
