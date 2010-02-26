@@ -56,3 +56,28 @@ neg_t7("xxx", "300");
 \dump neg_t5
 \dump neg_t8
 \dump neg_t10
+
+/* Test multiple derivations of the same tuple, then NOT */
+define(multi_a, keys(0), {int8, int8});
+define(multi_b, keys(0), {int8, int8});
+define(multi_c, keys(0), {int8, int8});
+define(multi_d, keys(0), {int8, int8});
+
+multi_b(0, 0);
+multi_b(1, 1);
+multi_b(2, 2);
+
+multi_c(2, 2);
+multi_c(3, 3);
+
+multi_a(A, B) :- multi_b(A, B);
+multi_a(A, B) :- multi_c(A, B), notin multi_d(A, B);
+
+\dump multi_a
+
+multi_d(2, 2);
+multi_d(2, 2); /* dup */
+multi_d(3, 3);
+multi_d(4, 4);
+
+\dump multi_a
