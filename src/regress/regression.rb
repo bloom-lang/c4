@@ -53,7 +53,7 @@ def run_tests(c4, test_name)
   if num_fails == 0
     puts "All #{ran_tests.length} tests passed"
   else
-    puts "TESTS FAILED; see regress.diffs"
+    puts "#{num_fails} TEST#{num_fails > 1 ? "S" : ""} FAILED; see regress.diffs"
   end
 end
 
