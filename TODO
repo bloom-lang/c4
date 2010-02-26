@@ -57,6 +57,10 @@ Data types:
 * Support implicit coercions among related types (int2->int4->int8, etc.)
 * Replace string location specifier type with an IPv4 endpoint (scalar
   value containing IPv4 address + port)
+* Consider removing refcount from Tuple OR use the resulting padding
+  on LP64 machines for something useful (e.g. cache tuple_hash())
+* Consider using a packed tuple representation; reorder Tuple fields
+  to reduce padding requirements
 
 Tables and storage:
 
