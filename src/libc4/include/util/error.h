@@ -11,7 +11,7 @@
 #define FAIL_APR(s)     apr_error((s), __FILE__, __LINE__)
 #define FAIL_SQLITE(c)  sqlite_error((c), __FILE__, __LINE__)
 
-#ifdef ASSERT_ENABLED
+#ifdef C4_ASSERT_ENABLED
 #define ASSERT(cond)    \
     do {                \
         if (!(cond))    \
