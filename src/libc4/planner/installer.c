@@ -207,6 +207,7 @@ plan_install_facts(ProgramPlan *plan, InstallState *istate)
 static void
 plan_bootstrap_rules(ProgramPlan *plan, InstallState *istate)
 {
+#if 0
     ListCell *lc;
 
     foreach (lc, plan->rules)
@@ -226,6 +227,7 @@ plan_bootstrap_rules(ProgramPlan *plan, InstallState *istate)
                                     table->def);
         }
     }
+#endif
 }
 
 static InstallState *
