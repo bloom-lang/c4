@@ -1,6 +1,12 @@
-define(a, keys(0), {int8});
+define(input, keys(0), {int8});
+define(add_one, keys(0), {int8, int8});
+define(sub_500, keys(0), {int8, int8});
 
-a(0);
+input(0);
+input(X+1) :- input(X), X < 20;
+add_one(A, A + 1) :- input(A);
+sub_500(A, A - 500) :- input(A);
 
-a(X+1) :- a(X), X < 20;
-\dump a
+\dump input
+\dump add_one
+\dump sub_500
