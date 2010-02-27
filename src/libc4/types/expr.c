@@ -187,9 +187,15 @@ eval_var_expr(ExprState *state)
 
     /* XXX: bump refcount for pass-by-ref datums? */
     if (var->is_outer)
+    {
+        ASSERT(cxt->outer != NULL);
         return tuple_get_val(cxt->outer, var->attno);
+    }
     else
+    {
+        ASSERT(cxt->inner != NULL);
         return tuple_get_val(cxt->inner, var->attno);
+    }
 }
 
 static Datum
