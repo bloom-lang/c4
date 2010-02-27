@@ -58,9 +58,9 @@ C4Catalog *cat_make(C4Runtime *c4);
 void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
                       List *schema, List *key_list);
 void cat_delete_table(C4Catalog *cat, const char *name);
+bool cat_table_exists(C4Catalog *cat, const char *name);
 TableDef *cat_get_table(C4Catalog *cat, const char *name);
 struct AbstractTable *cat_get_table_impl(C4Catalog *cat, const char *name);
-Schema *cat_get_schema(C4Catalog *cat, const char *name);
 
 void cat_register_callback(C4Catalog *cat, const char *tbl_name,
                            C4TupleCallback callback, void *data);

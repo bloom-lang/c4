@@ -401,14 +401,15 @@ check_rule_safety(AstRule *rule, AnalyzeState *state)
 static int
 table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
 {
-    TableDef *tbl_def;
     AstDefine *define;
     int colno;
     ListCell *lc;
 
-    tbl_def = cat_get_table(state->c4->cat, tbl_name);
-    if (tbl_def != NULL)
+    if (cat_table_exists(state->c4->cat, tbl_name))
+    {
+        TableDef *tbl_def = cat_get_table(state->c4->cat, tbl_name);
         return tbl_def->ls_colno;
+    }
 
     define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
 
@@ -980,7 +981,7 @@ table_is_defined(const char *tbl_name, AnalyzeState *state)
         return true;
 
     /* Check for an already-defined table of the same name */
-    if (cat_get_table(state->c4->cat, tbl_name) != NULL)
+    if (cat_table_exists(state->c4->cat, tbl_name))
         return true;
 
     return false;
@@ -1005,7 +1006,6 @@ table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state)
     }
 
     tbl_def = cat_get_table(state->c4->cat, tbl_name);
-    ASSERT(tbl_def != NULL);
     return schema_get_type(tbl_def->schema, colno);
 }
 
@@ -1020,7 +1020,6 @@ table_get_num_cols(const char *tbl_name, AnalyzeState *state)
         return list_length(define->schema);
 
     tbl_def = cat_get_table(state->c4->cat, tbl_name);
-    ASSERT(tbl_def != NULL);
     return tbl_def->schema->len;
 }
 

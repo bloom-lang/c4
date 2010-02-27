@@ -62,7 +62,7 @@ cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
     apr_pool_t *tbl_pool;
     TableDef *tbl_def;
 
-    if (cat_get_table(cat, name) != NULL)
+    if (cat_table_exists(cat, name))
         ERROR("Duplicate table definition: %s", name);
 
     tbl_pool = make_subpool(cat->pool);
@@ -88,36 +88,36 @@ cat_delete_table(C4Catalog *cat, const char *name)
     TableDef *tbl_def;
 
     tbl_def = cat_get_table(cat, name);
-    if (tbl_def == NULL)
-        ERROR("No such table: %s", name);
-
     apr_hash_set(cat->tbl_def_tbl, name, APR_HASH_KEY_STRING, NULL);
     apr_pool_destroy(tbl_def->pool);
+}
+
+bool
+cat_table_exists(C4Catalog *cat, const char *name)
+{
+    void *tbl = apr_hash_get(cat->tbl_def_tbl, name,
+                             APR_HASH_KEY_STRING);
+
+    return (tbl != NULL);
 }
 
 TableDef *
 cat_get_table(C4Catalog *cat, const char *name)
 {
-    return (TableDef *) apr_hash_get(cat->tbl_def_tbl, name,
-                                     APR_HASH_KEY_STRING);
+    TableDef *tbl_def;
+
+    tbl_def =  (TableDef *) apr_hash_get(cat->tbl_def_tbl, name,
+                                         APR_HASH_KEY_STRING);
+    if (tbl_def == NULL)
+        ERROR("No such table: %s", name);
+
+    return tbl_def;
 }
 
 AbstractTable *
 cat_get_table_impl(C4Catalog *cat, const char *name)
 {
     return (cat_get_table(cat, name))->table;
-}
-
-Schema *
-cat_get_schema(C4Catalog *cat, const char *name)
-{
-    TableDef *tbl_def;
-
-    tbl_def = cat_get_table(cat, name);
-    if (!tbl_def)
-        return NULL;
-
-    return tbl_def->schema;
 }
 
 void
@@ -128,8 +128,6 @@ cat_register_callback(C4Catalog *cat, const char *tbl_name,
     CallbackRecord *cb_rec;
 
     tbl_def = cat_get_table(cat, tbl_name);
-    if (tbl_def == NULL)
-        ERROR("No such table: %s", tbl_name);
 
     cb_rec = apr_palloc(cat->pool, sizeof(*cb_rec));
     cb_rec->callback = callback;
