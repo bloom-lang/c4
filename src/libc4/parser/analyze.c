@@ -412,7 +412,6 @@ table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
     }
 
     define = apr_hash_get(state->define_tbl, tbl_name, APR_HASH_KEY_STRING);
-
     colno = 0;
     foreach (lc, define->schema)
     {
