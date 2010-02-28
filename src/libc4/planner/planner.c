@@ -397,9 +397,9 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
     sbuf_append(sbuf, "  QUALS (Exec): [");
     foreach (lc, plan->qual_exprs)
     {
-        ExprNode *expr = (ExprNode *) lc_ptr(lc);
+        C4Node *n = (C4Node *) lc_ptr(lc);
 
-        expr_to_str(expr, sbuf);
+        node_to_str(n, sbuf);
         if (lc != list_tail(plan->qual_exprs))
             sbuf_append(sbuf, ", ");
     }
@@ -408,9 +408,9 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
     sbuf_append(sbuf, "  PROJ LIST: [");
     foreach (lc, plan->proj_list)
     {
-        ExprNode *expr = (ExprNode *) lc_ptr(lc);
+        C4Node *n = (C4Node *) lc_ptr(lc);
 
-        expr_to_str(expr, sbuf);
+        node_to_str(n, sbuf);
         if (lc != list_tail(plan->proj_list))
             sbuf_append(sbuf, ", ");
     }
@@ -422,7 +422,16 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
         case PLAN_INSERT:
             {
                 InsertPlan *iplan = (InsertPlan *) plan;
-                sbuf_appendf(sbuf, "  HEAD: %s\n", iplan->head->name);
+                sbuf_appendf(sbuf, "  HEAD: %s ; COLS: ", iplan->head->name);
+                foreach (lc, iplan->head->cols)
+                {
+                    AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+
+                    node_to_str(cref->expr, sbuf);
+                    if (lc != list_tail(iplan->head->cols))
+                        sbuf_append(sbuf, ", ");
+                }
+                sbuf_append(sbuf, "\n");
             }
             break;
 

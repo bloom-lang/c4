@@ -1,6 +1,8 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include "util/strbuf.h"
+
 typedef enum C4NodeKind
 {
     /* AST nodes */
@@ -42,6 +44,7 @@ typedef struct C4Node
     C4NodeKind kind;
 } C4Node;
 
+void node_to_str(C4Node *node, StrBuf *sbuf);
 char *node_get_kind_str(C4Node *node);
 
 #endif  /* NODES_H */
