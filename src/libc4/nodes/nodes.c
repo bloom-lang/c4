@@ -123,6 +123,18 @@ ast_var_expr_to_str(AstVarExpr *var_expr, StrBuf *sbuf)
                  var_expr->name, get_type_name(var_expr->type));
 }
 
+static void
+ast_column_ref_to_str(AstColumnRef *cref, StrBuf *sbuf)
+{
+    node_to_str(cref->expr, sbuf);
+}
+
+static void
+ast_qual_to_str(AstQualifier *qual, StrBuf *sbuf)
+{
+    node_to_str(qual->expr, sbuf);
+}
+
 void
 node_to_str(C4Node *node, StrBuf *sbuf)
 {
@@ -152,6 +164,14 @@ node_to_str(C4Node *node, StrBuf *sbuf)
 
         case AST_CONST_EXPR:
             ast_const_expr_to_str((AstConstExpr *) node, sbuf);
+            break;
+
+        case AST_COLUMN_REF:
+            ast_column_ref_to_str((AstColumnRef *) node, sbuf);
+            break;
+
+        case AST_QUALIFIER:
+            ast_qual_to_str((AstQualifier *) node, sbuf);
             break;
 
         default:
