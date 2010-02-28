@@ -378,42 +378,20 @@ void
 print_plan_info(PlanNode *plan, apr_pool_t *p)
 {
     StrBuf *sbuf;
-    ListCell *lc;
 
     sbuf = sbuf_make(p);
     sbuf_appendf(sbuf, "PLAN: %s\n", node_get_kind_str(&plan->node));
 
     sbuf_append(sbuf, "  QUALS (Ast): [");
-    foreach (lc, plan->quals)
-    {
-        C4Node *node = (C4Node *) lc_ptr(lc);
-
-        sbuf_append(sbuf, node_get_kind_str(node));
-        if (lc != list_tail(plan->quals))
-            sbuf_append(sbuf, ", ");
-    }
+    list_to_str(plan->quals, sbuf);
     sbuf_append(sbuf, "]\n");
 
     sbuf_append(sbuf, "  QUALS (Exec): [");
-    foreach (lc, plan->qual_exprs)
-    {
-        C4Node *n = (C4Node *) lc_ptr(lc);
-
-        node_to_str(n, sbuf);
-        if (lc != list_tail(plan->qual_exprs))
-            sbuf_append(sbuf, ", ");
-    }
+    list_to_str(plan->qual_exprs, sbuf);
     sbuf_append(sbuf, "]\n");
 
     sbuf_append(sbuf, "  PROJ LIST: [");
-    foreach (lc, plan->proj_list)
-    {
-        C4Node *n = (C4Node *) lc_ptr(lc);
-
-        node_to_str(n, sbuf);
-        if (lc != list_tail(plan->proj_list))
-            sbuf_append(sbuf, ", ");
-    }
+    list_to_str(plan->proj_list, sbuf);
     sbuf_append(sbuf, "]\n");
 
     /* Print extra info about certain plan types */
@@ -423,14 +401,7 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
             {
                 InsertPlan *iplan = (InsertPlan *) plan;
                 sbuf_appendf(sbuf, "  HEAD: %s ; COLS: ", iplan->head->name);
-                foreach (lc, iplan->head->cols)
-                {
-                    AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
-
-                    node_to_str(cref->expr, sbuf);
-                    if (lc != list_tail(iplan->head->cols))
-                        sbuf_append(sbuf, ", ");
-                }
+                list_to_str(iplan->head->cols, sbuf);
                 sbuf_append(sbuf, "\n");
             }
             break;
