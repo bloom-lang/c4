@@ -289,3 +289,19 @@ list_reverse(List *list, apr_pool_t *pool)
 
     return result;
 }
+
+/* We assume that each element of the list is a C4Node */
+void
+list_to_str(List *list, StrBuf *sbuf)
+{
+    ListCell *lc;
+
+    foreach (lc, list)
+    {
+        C4Node *n = (C4Node *) lc_ptr(lc);
+
+        node_to_str(n, sbuf);
+        if (lc != list_tail(list))
+            sbuf_append(sbuf, ", ");
+    }
+}

@@ -75,4 +75,6 @@ List *list_copy_str(List *list, apr_pool_t *pool);
 
 List *list_reverse(List *list, apr_pool_t *pool);
 
+void list_to_str(List *list, StrBuf *sbuf);
+
 #endif  /* LIST_H */
