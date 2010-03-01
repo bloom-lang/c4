@@ -48,7 +48,9 @@ print_op_chain(OpChainPlan *chain_plan)
     List *chain = chain_plan->chain;
     ListCell *lc;
 
-    printf("Chain: delta_tbl = %s, [", chain_plan->delta_tbl->ref->name);
+    printf("Chain: delta_tbl = %s, head = %s [",
+           chain_plan->delta_tbl->ref->name,
+           chain_plan->head->name);
 
     foreach (lc, chain)
     {
