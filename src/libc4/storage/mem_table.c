@@ -30,12 +30,7 @@ mem_table_insert(AbstractTable *a_tbl, Tuple *t)
     is_new = rset_add(tbl->tuples, t);
     if (is_new)
         tuple_pin(t);
-#if 0
-    c4_log(a_tbl->c4, "%s: t = %s, tbl = %s, is_new = %s, refcount = %u",
-           __func__, log_tuple(a_tbl->c4, t, a_tbl->def->schema),
-           a_tbl->def->name,
-           is_new ? "true" : "false", rset_get(tbl->tuples, t));
-#endif
+
     return is_new;
 }
 
@@ -47,21 +42,13 @@ mem_table_delete(AbstractTable *a_tbl, Tuple *t)
     unsigned int new_count;
 
     elem = rset_remove(tbl->tuples, t, &new_count);
-    if (!elem)
-        return false;
-
-#if 0
-    c4_log(a_tbl->c4, "%s: t = %s, tbl = %s, new_count = %u",
-           __func__, log_tuple(a_tbl->c4, t, a_tbl->def->schema),
-           a_tbl->def->name,
-           new_count);
-#endif
-    if (new_count == 0)
+    if (elem != NULL && new_count == 0)
     {
         tuple_unpin(elem, a_tbl->def->schema);
         return true;
     }
 
+    /* Either not found or updated ref count > 0 */
     return false;
 }
 
