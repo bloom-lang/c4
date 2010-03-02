@@ -65,6 +65,33 @@ get_var_index_from_plist(const char *var_name, List *proj_list)
     return -1;
 }
 
+static int
+get_var_index(const char *var_name, AstJoinClause *delta_tbl,
+              AstJoinClause *outer_rel, PlannerState *state, bool *is_outer)
+{
+    int var_idx;
+
+    *is_outer = false;
+
+    /*
+     * If we haven't done projection yet, we need to look for variables in the
+     * delta table's join clause. Otherwise use the current projection list.
+     */
+    if (state->current_plist == NULL)
+        var_idx = get_var_index_from_join(var_name, delta_tbl);
+    else
+        var_idx = get_var_index_from_plist(var_name, state->current_plist);
+
+    if (var_idx == -1 && outer_rel != NULL)
+    {
+        var_idx = get_var_index_from_join(var_name, outer_rel);
+        if (var_idx != -1)
+            *is_outer = true;
+    }
+
+    return var_idx;
+}
+
 /*
  * Convert the AST representation of an expression tree into the Eval
  * ("runtime") representation.
@@ -130,30 +157,11 @@ make_eval_expr(C4Node *ast_expr, AstJoinClause *outer_rel,
             {
                 AstVarExpr *ast_var = (AstVarExpr *) ast_expr;
                 int var_idx;
-                bool is_outer = false;
+                bool is_outer;
                 DataType expr_type;
 
-                /*
-                 * If we haven't done projection yet, we need to look for
-                 * variables in the delta table's join clause. Otherwise use
-                 * the current projection list.
-                 */
-                if (state->current_plist == NULL)
-                    var_idx = get_var_index_from_join(ast_var->name, chain_plan->delta_tbl);
-                else
-                    var_idx = get_var_index_from_plist(ast_var->name, state->current_plist);
-
-                /*
-                 * If the variable isn't in the projection list of the input
-                 * to this operator, this must be a join and the variable is
-                 * the scanned ("outer") relation.
-                 */
-                if (var_idx == -1 && outer_rel != NULL)
-                {
-                    is_outer = true;
-                    var_idx = get_var_index_from_join(ast_var->name, outer_rel);
-                }
-
+                var_idx = get_var_index(ast_var->name, chain_plan->delta_tbl,
+                                        outer_rel, state, &is_outer);
                 if (var_idx == -1)
                     ERROR("Failed to find variable %s", ast_var->name);
 
@@ -184,21 +192,38 @@ static bool
 make_proj_list_walker(AstVarExpr *var, void *data)
 {
     ProjListContext *cxt = (ProjListContext *) data;
+    AstJoinClause *outer_rel;
     int var_idx;
-    bool is_outer = false;
+    bool is_outer;
 
-    if (cxt->state->current_plist == NULL)
-        var_idx = get_var_index_from_join(var->name, cxt->delta_tbl);
-    else
-        var_idx = get_var_index_from_plist(var->name, cxt->state->current_plist);
+    /*
+     * Note that if the outer relation is anti-scanned, we can't project any
+     * variables from it: projection is only applied to anti-scan outputs when
+     * there isn't a matching tuple in the outer relation.
+     */
+    outer_rel = cxt->outer_rel;
+    if (outer_rel && outer_rel->not)
+        outer_rel = NULL;
 
-    if (var_idx == -1 && cxt->outer_rel != NULL)
+    var_idx = get_var_index(var->name, cxt->delta_tbl, outer_rel,
+                            cxt->state, &is_outer);
+
+    if (var_idx == -1)
     {
-        var_idx = get_var_index_from_join(var->name, cxt->outer_rel);
-        if (var_idx != -1)
+        List *eq_list;
+        ListCell *lc;
+
+        eq_list = get_eq_list(var->name, true, cxt->state->var_eq_tbl,
+                              cxt->state->tmp_pool);
+
+        foreach (lc, eq_list)
         {
-            ASSERT(!cxt->outer_rel->not);
-            is_outer = true;
+            char *v = (char *) lc_ptr(lc);
+
+            var_idx = get_var_index(v, cxt->delta_tbl, outer_rel,
+                                    cxt->state, &is_outer);
+            if (var_idx != -1)
+                break;
         }
     }
 
@@ -267,11 +292,6 @@ make_dummy_proj_list(OpChainPlan *chain_plan, PlannerState *state)
     return result;
 }
 
-/*
- * XXX: The projection list we generate for the last scan op in the chain is
- * inefficient. We do both projection on the scan result tuple and projection on
- * the input to the insert op; this is redundnt.
- */
 static List *
 make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
                OpChainPlan *chain_plan, PlannerState *state)
@@ -373,10 +393,31 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
 }
 
 static void
+add_qual_expr(AstQualifier *qual, PlanNode *plan, AstJoinClause *outer_rel,
+              OpChainPlan *chain_plan, PlannerState *state)
+{
+    ExprNode *expr;
+    AstVarExpr *lhs_var;
+    AstVarExpr *rhs_var;
+
+    expr = make_eval_expr(qual->expr, outer_rel, chain_plan, state);
+    list_append(plan->qual_exprs, expr);
+
+    /* Update var equality table */
+    if (is_simple_equality(qual, &lhs_var, &rhs_var))
+    {
+        add_var_eq(lhs_var->name, rhs_var->name,
+                   state->var_eq_tbl, state->tmp_pool);
+        add_var_eq(rhs_var->name, lhs_var->name,
+                   state->var_eq_tbl, state->tmp_pool);
+    }
+}
+
+static void
 fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
              OpChainPlan *chain_plan, PlannerState *state)
 {
-    AstJoinClause *scan_rel = NULL;
+    AstJoinClause *outer_rel = NULL;
     ListCell *lc;
     List *new_plist;
 
@@ -384,7 +425,7 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
     if (plan->node.kind == PLAN_SCAN)
     {
         ScanPlan *scan_plan = (ScanPlan *) plan;
-        scan_rel = scan_plan->scan_rel;
+        outer_rel = scan_plan->scan_rel;
     }
 
     ASSERT(plan->qual_exprs == NULL);
@@ -393,13 +434,10 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
     foreach (lc, plan->quals)
     {
         AstQualifier *qual = (AstQualifier *) lc_ptr(lc);
-        ExprNode *expr;
-
-        expr = make_eval_expr(qual->expr, scan_rel, chain_plan, state);
-        list_append(plan->qual_exprs, expr);
+        add_qual_expr(qual, plan, outer_rel, chain_plan, state);
     }
 
-    new_plist = make_proj_list(plan, chain_rest, scan_rel, chain_plan, state);
+    new_plist = make_proj_list(plan, chain_rest, outer_rel, chain_plan, state);
     ASSERT(plan->proj_list == NULL);
     plan->proj_list = new_plist;
     state->current_plist = new_plist;
@@ -418,6 +456,7 @@ fix_chain_exprs(OpChainPlan *chain_plan, PlannerState *state)
 
     /* Initial proj list is empty => no projection before delta filter */
     state->current_plist = NULL;
+    apr_hash_clear(state->var_eq_tbl);
 
     foreach (lc, chain_plan->chain)
     {

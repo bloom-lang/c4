@@ -73,7 +73,6 @@ static void add_qual(char *lhs_name, C4Node *rhs, AstOperKind op_kind,
 static bool is_dont_care_var(C4Node *node);
 static void make_var_eq_table(AstRule *rule, AnalyzeState *state);
 static void make_implied_quals(AstRule *rule, AnalyzeState *state);
-static List *get_eq_list(const char *var_name, bool make_new, AnalyzeState *state);
 static bool table_is_defined(const char *tbl_name, AnalyzeState *state);
 static DataType table_get_col_type(const char *tbl_name, int colno, AnalyzeState *state);
 static int table_get_num_cols(const char *tbl_name, AnalyzeState *state);
@@ -348,7 +347,7 @@ check_negation_walker(AstVarExpr *var, void *data)
     List *eq_list;
     ListCell *lc;
 
-    eq_list = get_eq_list(var->name, false, state);
+    eq_list = get_eq_list(var->name, false, state->eq_tbl, state->pool);
     foreach (lc, eq_list)
     {
         char *eq_var_name = lc_ptr(lc);
@@ -505,7 +504,7 @@ is_var_equal(AstVarExpr *v1, AstVarExpr *v2, AnalyzeState *state)
 {
     List *eq_list;
 
-    eq_list = get_eq_list(v1->name, false, state);
+    eq_list = get_eq_list(v1->name, false, state->eq_tbl, state->pool);
     return list_member_str(eq_list, v2->name);
 }
 
@@ -833,31 +832,31 @@ is_dont_care_var(C4Node *node)
     return (bool) (strcmp(var->name, "_") == 0);
 }
 
-static List *
-get_eq_list(const char *var_name, bool make_new, AnalyzeState *state)
+List *
+get_eq_list(const char *var_name, bool make_new, apr_hash_t *eq_tbl, apr_pool_t *p)
 {
     List *eq_list;
 
-    eq_list = apr_hash_get(state->eq_tbl, var_name, APR_HASH_KEY_STRING);
+    eq_list = apr_hash_get(eq_tbl, var_name, APR_HASH_KEY_STRING);
     if (eq_list == NULL)
     {
         if (!make_new)
             ERROR("Failed to find equality list for variable %s", var_name);
 
-        eq_list = list_make(state->pool);
-        apr_hash_set(state->eq_tbl, var_name, APR_HASH_KEY_STRING, eq_list);
+        eq_list = list_make(p);
+        apr_hash_set(eq_tbl, var_name, APR_HASH_KEY_STRING, eq_list);
     }
 
     return eq_list;
 }
 
 /* Record that "v2" is an alias for "v1". */
-static void
-add_var_eq(char *v1, char *v2, AnalyzeState *state)
+void
+add_var_eq(char *v1, char *v2, apr_hash_t *eq_tbl, apr_pool_t *p)
 {
     List *eq_list;
 
-    eq_list = get_eq_list(v1, true, state);
+    eq_list = get_eq_list(v1, true, eq_tbl, p);
     list_append(eq_list, v2);
 }
 
@@ -865,7 +864,7 @@ add_var_eq(char *v1, char *v2, AnalyzeState *state)
  * We use a simple definition of "equality": we look for an op expression
  * consisting of "=" between two bare variables.
  */
-static bool
+bool
 is_simple_equality(AstQualifier *qual, AstVarExpr **lhs, AstVarExpr **rhs)
 {
     AstOpExpr *op_expr;
@@ -904,7 +903,7 @@ make_var_eq_table(AstRule *rule, AnalyzeState *state)
         char *var_name;
 
         apr_hash_this(hi, (const void **) &var_name, NULL, NULL);
-        add_var_eq(var_name, var_name, state);
+        add_var_eq(var_name, var_name, state->eq_tbl, state->pool);
     }
 
     /*
@@ -920,14 +919,14 @@ make_var_eq_table(AstRule *rule, AnalyzeState *state)
         if (!is_simple_equality(qual, &lhs, &rhs))
             continue;
 
-        add_var_eq(lhs->name, rhs->name, state);
-        add_var_eq(rhs->name, lhs->name, state);
+        add_var_eq(lhs->name, rhs->name, state->eq_tbl, state->pool);
+        add_var_eq(rhs->name, lhs->name, state->eq_tbl, state->pool);
     }
 }
 
 static int
-add_qual_list(AstVarExpr *target, List *var_list,
-              AstRule *rule, AnalyzeState *state)
+add_qual_list(AstVarExpr *target, List *var_list, AstRule *rule,
+              AnalyzeState *state)
 {
     ListCell *lc;
     int count;
@@ -941,7 +940,7 @@ add_qual_list(AstVarExpr *target, List *var_list,
         if (strcmp(var, target->name) == 0)
             continue;
 
-        eq_list = get_eq_list(var, false, state);
+        eq_list = get_eq_list(var, false, state->eq_tbl, state->pool);
         if (!list_member_str(eq_list, target->name))
         {
             /* Create the actual qual */
@@ -957,8 +956,8 @@ add_qual_list(AstVarExpr *target, List *var_list,
             qual = make_qualifier((C4Node *) op_expr, state->pool);
             list_append(rule->quals, qual);
 
-            add_var_eq(var, target->name, state);
-            add_var_eq(target->name, var, state);
+            add_var_eq(var, target->name, state->eq_tbl, state->pool);
+            add_var_eq(target->name, var, state->eq_tbl, state->pool);
             list_append(eq_list, target->name);
             count++;
         }
@@ -1052,10 +1051,10 @@ top:
         if (!is_simple_equality(qual, &lhs, &rhs))
             continue;
 
-        eq_list = get_eq_list(lhs->name, false, state);
+        eq_list = get_eq_list(lhs->name, false, state->eq_tbl, state->pool);
         count += add_qual_list(rhs, eq_list, rule, state);
 
-        eq_list = get_eq_list(rhs->name, false, state);
+        eq_list = get_eq_list(rhs->name, false, state->eq_tbl, state->pool);
         count += add_qual_list(lhs, eq_list, rule, state);
     }
 

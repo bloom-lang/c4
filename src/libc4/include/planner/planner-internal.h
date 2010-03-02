@@ -1,6 +1,8 @@
 #ifndef PLANNER_INTERNAL_H
 #define PLANNER_INTERNAL_H
 
+#include <apr_hash.h>
+
 #include "planner/planner.h"
 #include "types/expr.h"
 
@@ -16,6 +18,9 @@ typedef struct PlannerState
 
     /* The set of variable names projected by the current operator */
     List *current_plist;
+    /* Map from var name => list of equal variables name, s.t. the equality has
+     * been applied by a previous element in the current OpChain */
+    apr_hash_t *var_eq_tbl;
 
     /* The pool in which the output plan is allocated */
     apr_pool_t *plan_pool;

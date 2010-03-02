@@ -57,6 +57,7 @@ planner_state_make(apr_pool_t *plan_pool, C4Runtime *c4)
     state->tmp_pool = tmp_pool;
     state->plan = program_plan_make(plan_pool);
     state->current_plist = NULL;
+    state->var_eq_tbl = apr_hash_make(tmp_pool);
 
     return state;
 }
@@ -409,9 +410,11 @@ print_plan_info(PlanNode *plan, apr_pool_t *p)
         case PLAN_SCAN:
             {
                 ScanPlan *splan = (ScanPlan *) plan;
-                sbuf_appendf(sbuf, "  SCAN REL: %s ; ANTISCAN: %s\n",
+                sbuf_appendf(sbuf, "  SCAN REL: %s ; ANTISCAN: %s ; COLS: ",
                              splan->scan_rel->ref->name,
                              splan->scan_rel->not ? "true" : "false");
+                list_to_str(splan->scan_rel->ref->cols, sbuf);
+                sbuf_append(sbuf, "\n");
             }
             break;
 

@@ -62,6 +62,7 @@ define(multi_a, keys(0), {int8, int8});
 define(multi_b, keys(0), {int8, int8});
 define(multi_c, keys(0), {int8, int8});
 define(multi_d, keys(0), {int8, int8});
+define(multi_e, keys(0), {int8, int8});
 
 multi_b(0, 0);
 multi_b(1, 1);
@@ -71,7 +72,7 @@ multi_c(2, 2);
 multi_c(3, 3);
 
 multi_a(A, B) :- multi_b(A, B);
-multi_a(A, B) :- multi_c(A, B), notin multi_d(A, B);
+multi_a(A, B) :- multi_c(A, B), notin multi_d(A, B), notin multi_e(A, B);
 
 \dump multi_a
 
