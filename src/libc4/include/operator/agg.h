@@ -3,6 +3,7 @@
 
 #include "operator/operator.h"
 #include "util/hash.h"
+#include "util/rset.h"
 
 typedef struct AggExprInfo
 {
@@ -17,8 +18,7 @@ typedef struct AggOperator
     AggExprInfo **agg_info;
     int num_group_cols;
     int *group_colnos;
-    /* Map from Tuple => refcount */
-    c4_hash_t *tuple_tbl;
+    rset_t *tuple_set;
     c4_hash_t *group_tbl;
 } AggOperator;
 
