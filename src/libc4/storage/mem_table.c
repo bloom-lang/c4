@@ -52,28 +52,6 @@ mem_table_delete(AbstractTable *a_tbl, Tuple *t)
     return false;
 }
 
-static bool
-mem_table_cmp_tuple(const void *k1, const void *k2,
-                    int klen, void *user_data)
-{
-    Tuple *t1 = (Tuple *) k1;
-    Tuple *t2 = (Tuple *) k2;
-    AbstractTable *tbl = (AbstractTable *) user_data;
-
-    ASSERT(klen == sizeof(Tuple *));
-    return tuple_equal(t1, t2, tbl->def->schema);
-}
-
-static unsigned int
-mem_table_hash_tuple(const char *key, int klen, void *user_data)
-{
-    Tuple *t = (Tuple *) key;
-    AbstractTable *tbl = (AbstractTable *) user_data;
-
-    ASSERT(klen == sizeof(Tuple *));
-    return tuple_hash(t, tbl->def->schema);
-}
-
 static ScanCursor *
 mem_table_scan_make(AbstractTable *a_tbl, apr_pool_t *pool)
 {
@@ -115,9 +93,8 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = rset_make(pool, sizeof(Tuple *), tbl,
-                            mem_table_hash_tuple,
-                            mem_table_cmp_tuple);
+    tbl->tuples = rset_make(pool, sizeof(Tuple *), def->schema,
+                            tuple_hash_tbl, tuple_cmp_tbl);
 
     return tbl;
 }

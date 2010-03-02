@@ -42,6 +42,9 @@ void tuple_unpin(Tuple *tuple, Schema *s);
 
 bool tuple_equal(Tuple *t1, Tuple *t2, Schema *s);
 apr_uint32_t tuple_hash(Tuple *t, Schema *s);
+/* For use in hash tables */
+bool tuple_cmp_tbl(const void *k1, const void *k2, int klen, void *data);
+unsigned int tuple_hash_tbl(const char *key, int klen, void *data);
 
 bool tuple_is_remote(Tuple *tuple, TableDef *tbl_def, C4Runtime *c4);
 

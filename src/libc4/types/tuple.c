@@ -97,6 +97,27 @@ tuple_hash(Tuple *tuple, Schema *s)
     return result;
 }
 
+bool
+tuple_cmp_tbl(const void *k1, const void *k2, int klen, void *data)
+{
+    Tuple *t1 = (Tuple *) k1;
+    Tuple *t2 = (Tuple *) k2;
+    Schema *s = (Schema *) data;
+
+    ASSERT(klen == sizeof(Tuple *));
+    return tuple_equal(t1, t2, s);
+}
+
+unsigned int
+tuple_hash_tbl(const char *key, int klen, void *data)
+{
+    Tuple *t = (Tuple *) key;
+    Schema *s = (Schema *) data;
+
+    ASSERT(klen == sizeof(Tuple *));
+    return tuple_hash(t, s);
+}
+
 /*
  * XXX: Note that we return a malloc'd string, with a cleanup function
  * registered in the given pool. This might get expensive if used
