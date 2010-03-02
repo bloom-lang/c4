@@ -38,13 +38,13 @@ static bool
 mem_table_delete(AbstractTable *a_tbl, Tuple *t)
 {
     MemTable *tbl = (MemTable *) a_tbl;
-    Tuple *elem;
+    Tuple *old_t;
     unsigned int new_count;
 
-    elem = rset_remove(tbl->tuples, t, &new_count);
-    if (elem != NULL && new_count == 0)
+    old_t = rset_remove(tbl->tuples, t, &new_count);
+    if (old_t != NULL && new_count == 0)
     {
-        tuple_unpin(elem, a_tbl->def->schema);
+        tuple_unpin(old_t, a_tbl->def->schema);
         return true;
     }
 
