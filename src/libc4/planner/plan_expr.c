@@ -26,11 +26,11 @@ get_var_index_from_join(const char *var_name, AstJoinClause *join)
     i = 0;
     foreach (lc, join->ref->cols)
     {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
         AstVarExpr *var;
 
-        ASSERT(col->expr->kind == AST_VAR_EXPR);
-        var = (AstVarExpr *) col->expr;
+        ASSERT(expr->kind == AST_VAR_EXPR);
+        var = (AstVarExpr *) expr;
 
         if (strcmp(var->name, var_name) == 0)
             return i;
@@ -255,10 +255,10 @@ make_tbl_ref_proj_list(AstTableRef *tbl_ref, AstJoinClause *outer_rel,
 
     foreach (lc, tbl_ref->cols)
     {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        C4Node *ast_expr = (C4Node *) lc_ptr(lc);
         ExprNode *expr;
 
-        expr = make_eval_expr(cref->expr, outer_rel, chain_plan, state);
+        expr = make_eval_expr(ast_expr, outer_rel, chain_plan, state);
         list_append(proj_list, expr);
     }
 

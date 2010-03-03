@@ -57,10 +57,9 @@ static void analyze_rule_location(AstRule *rule, AnalyzeState *state);
 
 static void find_unused_vars(AstRule *rule, AnalyzeState *state);
 static void check_rule_safety(AstRule *rule, AnalyzeState *state);
-static AstColumnRef *table_ref_get_loc_spec(AstTableRef *ref,
+static C4Node *table_ref_get_loc_spec(AstTableRef *ref,
                                             AnalyzeState *state);
-static bool loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2,
-                           AnalyzeState *state);
+static bool loc_spec_equal(C4Node *ls1, C4Node *ls2, AnalyzeState *state);
 static char *make_anon_rule_name(AnalyzeState *state);
 static bool is_rule_defined(const char *name, AnalyzeState *state);
 static bool is_var_defined(const char *name, AnalyzeState *state);
@@ -232,19 +231,19 @@ analyze_rule_head(AstRule *rule, AnalyzeState *state)
 
     foreach (lc, rule->head->cols)
     {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
 
         /*
          * We currently require that aggs not be nested within other expressions
          * in the rule head.
          */
-        if (col->expr->kind == AST_AGG_EXPR)
+        if (expr->kind == AST_AGG_EXPR)
         {
             rule->has_agg = true;
             continue;
         }
 
-        expr_tree_walker(col->expr, disallow_agg_walker, NULL);
+        expr_tree_walker(expr, disallow_agg_walker, NULL);
     }
 }
 
@@ -255,8 +254,8 @@ analyze_rule_head(AstRule *rule, AnalyzeState *state)
 static void
 analyze_rule_location(AstRule *rule, AnalyzeState *state)
 {
-    AstColumnRef *body_loc_spec;
-    AstColumnRef *head_loc_spec;
+    C4Node *body_loc_spec;
+    C4Node *head_loc_spec;
     ListCell *lc;
 
     /*
@@ -267,7 +266,7 @@ analyze_rule_location(AstRule *rule, AnalyzeState *state)
     foreach (lc, rule->joins)
     {
         AstJoinClause *join = (AstJoinClause *) lc_ptr(lc);
-        AstColumnRef *loc_spec;
+        C4Node *loc_spec;
 
         loc_spec = table_ref_get_loc_spec(join->ref, state);
         if (loc_spec != NULL)
@@ -376,9 +375,9 @@ check_rule_safety(AstRule *rule, AnalyzeState *state)
      */
     foreach (lc, rule->head->cols)
     {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
 
-        expr_tree_var_walker(col->expr, check_negation_walker, state);
+        expr_tree_var_walker(expr, check_negation_walker, state);
     }
 
     /*
@@ -425,7 +424,7 @@ table_get_loc_spec_colno(const char *tbl_name, AnalyzeState *state)
     return -1;
 }
 
-static AstColumnRef *
+static C4Node *
 table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state)
 {
     int colno;
@@ -434,23 +433,22 @@ table_ref_get_loc_spec(AstTableRef *ref, AnalyzeState *state)
     if (colno == -1)
         return NULL;
 
-    return (AstColumnRef *) list_get(ref->cols, colno);
+    return (C4Node *) list_get(ref->cols, colno);
 }
 
 static bool
-loc_spec_equal(AstColumnRef *s1, AstColumnRef *s2, AnalyzeState *state)
+loc_spec_equal(C4Node *ls1, C4Node *ls2, AnalyzeState *state)
 {
     /* Only variable location specifiers supported for now */
-    ASSERT(s1->expr->kind == AST_VAR_EXPR);
-    ASSERT(s2->expr->kind == AST_VAR_EXPR);
+    ASSERT(ls1->kind == AST_VAR_EXPR);
+    ASSERT(ls2->kind == AST_VAR_EXPR);
 
     /*
      * NB: This only checks if there is an explicit or implied equality
      * constraint between the two variable names. In practice, this is
      * probably sufficient.
      */
-    return is_var_equal((AstVarExpr *) s1->expr, (AstVarExpr *) s2->expr,
-                        state);
+    return is_var_equal((AstVarExpr *) ls1, (AstVarExpr *) ls2, state);
 }
 
 static char *
@@ -535,25 +533,25 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
     colno = 0;
     foreach (lc, join->ref->cols)
     {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
         AstVarExpr *var;
 
         /*
-         * Replace constants in join clauses with a system-generated
-         * variable, and then add an equality qualifier between the new
-         * variable and the constant value.
+         * Replace constants in join clauses with a system-generated variable,
+         * and add an equality qualifier between the new variable and the
+         * constant value.
          */
-        if (cref->expr->kind == AST_CONST_EXPR)
+        if (expr->kind == AST_CONST_EXPR)
         {
-            C4Node *const_expr = cref->expr;
             char *var_name;
 
             var_name = make_anon_var_name("Const", state);
+            add_qual(var_name, expr, AST_OP_EQ, rule, state);
+
             /* Type will be filled-in shortly */
             var = make_ast_var_expr(var_name, TYPE_INVALID, state->pool);
-            cref->expr = (C4Node *) var;
-
-            add_qual(var_name, const_expr, AST_OP_EQ, rule, state);
+            lc_ptr(lc) = var;
+            expr = (C4Node *) var;
         }
         else
         {
@@ -561,14 +559,14 @@ analyze_join_clause(AstJoinClause *join, AstRule *rule, AnalyzeState *state)
              * OpExprs and AggExprs are disallowed. This might be relaxed in the
              * future.
              */
-            if (cref->expr->kind != AST_VAR_EXPR)
+            if (expr->kind != AST_VAR_EXPR)
                 ERROR("A join clause in the rule body must contain "
                       "either variables or constants");
 
-            if (is_dont_care_var(cref->expr))
+            if (is_dont_care_var(expr))
                 goto done;
 
-            var = (AstVarExpr *) cref->expr;
+            var = (AstVarExpr *) expr;
 
             /*
              * Check if the variable name has already been used by a
@@ -591,8 +589,8 @@ done:
          * We are left with either a uniquely-occurring variable or a don't
          * care variable.
          */
-        ASSERT(cref->expr->kind == AST_VAR_EXPR);
-        var = (AstVarExpr *) cref->expr;
+        ASSERT(expr->kind == AST_VAR_EXPR);
+        var = (AstVarExpr *) expr;
 
         /* Fill-in variable's type, add to variable tables (unless don't care) */
         var->type = table_get_col_type(join->ref->name, colno, state);
@@ -771,9 +769,9 @@ analyze_fact(AstFact *fact, AnalyzeState *state)
 
     foreach (lc, target->cols)
     {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
 
-        if (col->expr->kind != AST_CONST_EXPR)
+        if (expr->kind != AST_CONST_EXPR)
             ERROR("Columns in a fact must be constants");
     }
 }
@@ -803,12 +801,12 @@ analyze_table_ref(AstTableRef *ref, ExprLocation loc, AnalyzeState *state)
     colno = 0;
     foreach (lc, ref->cols)
     {
-        AstColumnRef *col = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
         DataType expr_type;
         DataType schema_type;
 
-        analyze_expr(col->expr, loc, state);
-        expr_type = expr_get_type(col->expr);
+        analyze_expr(expr, loc, state);
+        expr_type = expr_get_type(expr);
         schema_type = table_get_col_type(ref->name, colno, state);
 
         /* XXX: type compatibility check is far too strict */

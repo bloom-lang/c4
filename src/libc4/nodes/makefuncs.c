@@ -88,15 +88,6 @@ make_table_ref(const char *name, List *cols, apr_pool_t *p)
     return result;
 }
 
-AstColumnRef *
-make_column_ref(C4Node *expr, apr_pool_t *p)
-{
-    AstColumnRef *result = apr_pcalloc(p, sizeof(*result));
-    result->node.kind = AST_COLUMN_REF;
-    result->expr = copy_node(expr, p);
-    return result;
-}
-
 AstJoinClause *
 make_join_clause(AstTableRef *ref, bool not, apr_pool_t *p)
 {

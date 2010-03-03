@@ -79,9 +79,9 @@ count_agg_exprs(AstTableRef *head)
     num_aggs = 0;
     foreach (lc, head->cols)
     {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
 
-        if (cref->expr->kind == AST_AGG_EXPR)
+        if (expr->kind == AST_AGG_EXPR)
             num_aggs++;
     }
 
@@ -102,17 +102,17 @@ make_agg_info(int num_aggs, List *cols, apr_pool_t *pool)
     colno = 0;
     foreach (lc, cols)
     {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
+        C4Node *expr = (C4Node *) lc_ptr(lc);
         AstAggExpr *agg_expr;
         AggExprInfo *agg_info;
 
-        if (cref->expr->kind != AST_AGG_EXPR)
+        if (expr->kind != AST_AGG_EXPR)
         {
             colno++;
             continue;
         }
 
-        agg_expr = (AstAggExpr *) cref->expr;
+        agg_expr = (AstAggExpr *) expr;
         agg_info = apr_palloc(pool, sizeof(*agg_info));
         agg_info->colno = colno;
         agg_info->agg_kind = agg_expr->agg_kind;

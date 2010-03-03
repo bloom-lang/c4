@@ -99,11 +99,11 @@ join_set_satisfies_var(AstVarExpr *var, PlannerState *state)
 
         foreach (lc2, join->ref->cols)
         {
-            AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc2);
+            C4Node *expr = (C4Node *) lc_ptr(lc2);
             AstVarExpr *column_var;
 
-            ASSERT(cref->expr->kind == AST_VAR_EXPR);
-            column_var = (AstVarExpr *) cref->expr;
+            ASSERT(expr->kind == AST_VAR_EXPR);
+            column_var = (AstVarExpr *) expr;
             if (strcmp(var->name, column_var->name) == 0)
                 return true;
         }

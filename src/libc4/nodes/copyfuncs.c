@@ -45,12 +45,6 @@ copy_table_ref(AstTableRef *in, apr_pool_t *p)
     return make_table_ref(in->name, in->cols, p);
 }
 
-static AstColumnRef *
-copy_column_ref(AstColumnRef *in, apr_pool_t *p)
-{
-    return make_column_ref(in->expr, p);
-}
-
 static AstJoinClause *
 copy_join_clause(AstJoinClause *in, apr_pool_t *p)
 {
@@ -163,9 +157,6 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case AST_TABLE_REF:
             return copy_table_ref((AstTableRef *) n, pool);
-
-        case AST_COLUMN_REF:
-            return copy_column_ref((AstColumnRef *) n, pool);
 
         case AST_JOIN_CLAUSE:
             return copy_join_clause((AstJoinClause *) n, pool);

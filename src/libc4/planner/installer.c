@@ -178,8 +178,7 @@ fact_make_tuple(AstFact *fact, TableDef *tbl_def, InstallState *istate)
     i = 0;
     foreach (lc, fact->head->cols)
     {
-        AstColumnRef *cref = (AstColumnRef *) lc_ptr(lc);
-        AstConstExpr *c_expr = (AstConstExpr *) cref->expr;
+        AstConstExpr *c_expr = (AstConstExpr *) lc_ptr(lc);
 
         values[i] = c_expr->value;
         i++;

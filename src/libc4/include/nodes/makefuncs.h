@@ -18,7 +18,6 @@ AstRule *make_rule(const char *name, bool is_delete, bool is_network,
                    List *quals, apr_pool_t *p);
 AstFact *make_fact(AstTableRef *head, apr_pool_t *p);
 AstTableRef *make_table_ref(const char *name, List *cols, apr_pool_t *p);
-AstColumnRef *make_column_ref(C4Node *expr, apr_pool_t *p);
 AstJoinClause *make_join_clause(AstTableRef *ref, bool not, apr_pool_t *p);
 AstQualifier *make_qualifier(C4Node *expr, apr_pool_t *p);
 AstOpExpr *make_ast_op_expr(C4Node *lhs, C4Node *rhs,

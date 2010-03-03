@@ -124,12 +124,6 @@ ast_var_expr_to_str(AstVarExpr *var_expr, StrBuf *sbuf)
 }
 
 static void
-ast_column_ref_to_str(AstColumnRef *cref, StrBuf *sbuf)
-{
-    node_to_str(cref->expr, sbuf);
-}
-
-static void
 ast_qual_to_str(AstQualifier *qual, StrBuf *sbuf)
 {
     node_to_str(qual->expr, sbuf);
@@ -166,10 +160,6 @@ node_to_str(C4Node *node, StrBuf *sbuf)
             ast_const_expr_to_str((AstConstExpr *) node, sbuf);
             break;
 
-        case AST_COLUMN_REF:
-            ast_column_ref_to_str((AstColumnRef *) node, sbuf);
-            break;
-
         case AST_QUALIFIER:
             ast_qual_to_str((AstQualifier *) node, sbuf);
             break;
@@ -198,8 +188,6 @@ node_get_kind_str(C4Node *node)
             return "AstFact";
         case AST_TABLE_REF:
             return "AstTableRef";
-        case AST_COLUMN_REF:
-            return "AstColumnRef";
         case AST_JOIN_CLAUSE:
             return "AstJoinClause";
         case AST_QUALIFIER:

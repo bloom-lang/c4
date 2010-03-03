@@ -42,9 +42,9 @@ static void split_rule_body(List *body, List **joins,
 %left '*' '/' '%'
 %left UMINUS
 
-%type <ptr>        clause define rule timer table_ref column_ref join_clause
+%type <ptr>        clause define rule timer table_ref join_clause
 %type <list>       program_body opt_int_list int_list schema_list define_schema
-%type <list>       opt_keys column_ref_list opt_rule_body rule_body
+%type <list>       opt_keys expr_list opt_rule_body rule_body
 %type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
 %type <ptr>        var_expr agg_expr rule_prefix schema_elt
 %type <agg_kind>   agg_kind
@@ -194,7 +194,7 @@ rule_body_elem:
 | qualifier
 ;
 
-join_clause: opt_not TBL_IDENT '(' column_ref_list ')' {
+join_clause: opt_not TBL_IDENT '(' expr_list ')' {
     AstTableRef *ref = make_table_ref($2, $4, context->pool);
     $$ = make_join_clause(ref, $1, context->pool);
 };
@@ -204,7 +204,7 @@ opt_not:
 | /* EMPTY */           { $$ = false; }
 ;
 
-table_ref: TBL_IDENT '(' column_ref_list ')' { $$ = make_table_ref($1, $3, context->pool); };
+table_ref: TBL_IDENT '(' expr_list ')' { $$ = make_table_ref($1, $3, context->pool); };
 
 qualifier: qual_expr { $$ = make_qualifier($1, context->pool); };
 
@@ -258,13 +258,9 @@ agg_kind:
 | OL_SUM        { $$ = AST_AGG_SUM; }
 ;
 
-column_ref_list:
-  column_ref { $$ = list_make1($1, context->pool); }
-| column_ref_list ',' column_ref { $$ = list_append($1, $3); }
-;
-
-column_ref:
-  expr   { $$ = make_column_ref($1, context->pool); }
+expr_list:
+  expr { $$ = list_make1($1, context->pool); }
+| expr_list ',' expr { $$ = list_append($1, $3); }
 ;
 
 %%

@@ -58,15 +58,6 @@ expr_tree_walker(C4Node *node, expr_callback fn, void *data)
             }
             break;
 
-        case AST_COLUMN_REF:
-            {
-                AstColumnRef *cref = (AstColumnRef *) node;
-
-                if (expr_tree_walker(cref->expr, fn, data) == false)
-                    return false;
-            }
-            break;
-
         default:
             ERROR("Unrecognized expression node kind: %d",
                   (int) node->kind);

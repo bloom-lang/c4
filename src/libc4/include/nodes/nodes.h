@@ -13,7 +13,6 @@ typedef enum C4NodeKind
     AST_RULE,
     AST_FACT,
     AST_TABLE_REF,
-    AST_COLUMN_REF,
     AST_JOIN_CLAUSE,
     AST_QUALIFIER,
     AST_OP_EXPR,

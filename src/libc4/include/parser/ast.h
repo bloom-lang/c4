@@ -68,18 +68,9 @@ typedef struct AstRule
 struct AstTableRef
 {
     C4Node node;
-    /* The name of the referenced relation */
-    char *name;
-    /* The list of AstColumnRef that are bound to the table's columns */
-    List *cols;
+    char *name;         /* Name of the referenced relation */
+    List *cols;         /* List of expressions */
 };
-
-/* XXX: get rid of this? */
-typedef struct AstColumnRef
-{
-    C4Node node;
-    C4Node *expr;
-} AstColumnRef;
 
 typedef struct AstJoinClause
 {
