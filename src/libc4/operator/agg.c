@@ -3,12 +3,14 @@
 #include "router.h"
 
 static bool add_new_tuple(Tuple *t, AggOperator *agg_op);
-static void update_agg_state(Tuple *t, AggOperator *agg_op);
+static void agg_do_delete(Tuple *t, AggOperator *agg_op);
+static void agg_do_insert(Tuple *t, AggOperator *agg_op);
 
 static void
 agg_invoke(Operator *op, Tuple *t)
 {
     AggOperator *agg_op = (AggOperator *) op;
+    C4Runtime *c4 = op->chain->c4;
     ExprEvalContext *exec_cxt;
     Tuple *proj_tuple;
     bool need_work;
@@ -19,7 +21,12 @@ agg_invoke(Operator *op, Tuple *t)
     proj_tuple = operator_do_project(op);
     need_work = add_new_tuple(proj_tuple, agg_op);
     if (need_work)
-        update_agg_state(proj_tuple, agg_op);
+    {
+        if (router_is_deleting(c4->router))
+            agg_do_delete(proj_tuple, agg_op);
+        else
+            agg_do_insert(proj_tuple, agg_op);
+    }
 
     tuple_unpin(proj_tuple, op->proj_schema);
 }
@@ -103,34 +110,37 @@ advance_agg_group(Tuple *t, AggGroupState *agg_group, AggOperator *agg_op)
 }
 
 static void
-update_agg_state(Tuple *t, AggOperator *agg_op)
+agg_do_delete(Tuple *t, AggOperator *agg_op)
 {
-    C4Runtime *c4 = agg_op->op.chain->c4;
+    AggGroupState *agg_group;
+
+    agg_group = c4_hash_get(agg_op->group_tbl, t);
+    if (agg_group == NULL)
+        return;
+
+    agg_group->count--;
+    if (agg_group->count == 0)
+    {
+        remove_agg_group(t, agg_group, agg_op);
+        return;
+    }
+
+    advance_agg_group(t, agg_group, agg_op);
+}
+
+static void
+agg_do_insert(Tuple *t, AggOperator *agg_op)
+{
     AggGroupState *agg_group;
 
     agg_group = c4_hash_get(agg_op->group_tbl, t);
     if (agg_group == NULL)
     {
-        if (!router_is_deleting(c4->router))
-            create_agg_group(t, agg_op);
-
+        create_agg_group(t, agg_op);
         return;
     }
 
-    if (router_is_deleting(c4->router))
-    {
-        agg_group->count--;
-        if (agg_group->count == 1)
-        {
-            remove_agg_group(t, agg_group, agg_op);
-            return;
-        }
-    }
-    else
-    {
-        agg_group->count++;
-    }
-
+    agg_group->count++;
     advance_agg_group(t, agg_group, agg_op);
 }
 
