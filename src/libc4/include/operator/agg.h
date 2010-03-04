@@ -11,6 +11,12 @@ typedef struct AggExprInfo
     AstAggKind agg_kind;
 } AggExprInfo;
 
+typedef struct AggGroupState
+{
+    Datum *trans_vals;
+    struct AggGroupState *next;
+} AggGroupState;
+
 typedef struct AggOperator
 {
     Operator op;
@@ -20,6 +26,7 @@ typedef struct AggOperator
     int *group_colnos;
     rset_t *tuple_set;
     c4_hash_t *group_tbl;
+    AggGroupState *free_groups;
 } AggOperator;
 
 AggOperator *agg_op_make(AggPlan *plan, OpChain *chain);

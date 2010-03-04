@@ -55,10 +55,37 @@ add_new_tuple(Tuple *t, AggOperator *agg_op)
     }
 }
 
+static AggGroupState *
+make_agg_group(Tuple *t, AggOperator *agg_op)
+{
+    AggGroupState *new_group;
+
+    if (agg_op->free_groups != NULL)
+    {
+        new_group = agg_op->free_groups;
+        agg_op->free_groups = new_group->next;
+    }
+    else
+    {
+        new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
+        new_group->trans_vals = apr_palloc(agg_op->op.pool,
+                                           sizeof(Datum) * agg_op->num_aggs);
+    }
+
+    c4_hash_set(agg_op->group_tbl, t, new_group);
+    tuple_pin(t);
+
+    return new_group;
+}
+
 static void
 update_agg_state(Tuple *t, AggOperator *agg_op)
 {
-    ;
+    AggGroupState *agg_group;
+
+    agg_group = c4_hash_get(agg_op->group_tbl, t);
+    if (agg_group == NULL)
+        agg_group = make_agg_group(t, agg_op);
 }
 
 static void
@@ -237,6 +264,7 @@ agg_op_make(AggPlan *plan, OpChain *chain)
     agg_op->tuple_set = rset_make(agg_op->op.pool, sizeof(Tuple *),
                                   agg_op->op.proj_schema,
                                   tuple_hash_tbl, tuple_cmp_tbl);
+    agg_op->free_groups = NULL;
 
     return agg_op;
 }
