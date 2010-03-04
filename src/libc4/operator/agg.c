@@ -198,6 +198,7 @@ make_agg_info(int num_aggs, List *cols, apr_pool_t *pool)
         agg_info = apr_palloc(pool, sizeof(*agg_info));
         agg_info->colno = colno;
         agg_info->agg_kind = agg_expr->agg_kind;
+        agg_info->desc = lookup_agg_desc(agg_info->agg_kind);
         result[aggno] = agg_info;
         aggno++;
         colno++;

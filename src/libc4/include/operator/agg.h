@@ -2,6 +2,7 @@
 #define AGG_H
 
 #include "operator/operator.h"
+#include "types/agg_funcs.h"
 #include "util/hash.h"
 #include "util/rset.h"
 
@@ -9,6 +10,7 @@ typedef struct AggExprInfo
 {
     int colno;
     AstAggKind agg_kind;
+    AggFuncDesc *desc;
 } AggExprInfo;
 
 typedef struct AggGroupState
