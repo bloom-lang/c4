@@ -55,10 +55,11 @@ add_new_tuple(Tuple *t, AggOperator *agg_op)
     }
 }
 
-static AggGroupState *
-make_agg_group(Tuple *t, AggOperator *agg_op)
+static void
+create_agg_group(Tuple *t, AggOperator *agg_op)
 {
     AggGroupState *new_group;
+    int i;
 
     if (agg_op->free_groups != NULL)
     {
@@ -72,20 +73,65 @@ make_agg_group(Tuple *t, AggOperator *agg_op)
                                            sizeof(Datum) * agg_op->num_aggs);
     }
 
+    new_group->count = 1;
+    for (i = 0; i < agg_op->num_aggs; i++)
+    {
+        AggExprInfo *agg_info;
+        Datum input_val;
+
+        agg_info = agg_op->agg_info[i];
+        input_val = tuple_get_val(t, agg_info->colno);
+        new_group->trans_vals[i] = agg_info->desc->init_f(input_val);
+    }
+
     c4_hash_set(agg_op->group_tbl, t, new_group);
     tuple_pin(t);
 
-    return new_group;
+    /* XXX: Route new agg value */
+}
+
+static void
+remove_agg_group(Tuple *t, AggGroupState *agg_group, AggOperator *agg_op)
+{
+    ;
+}
+
+static void
+advance_agg_group(Tuple *t, AggGroupState *agg_group, AggOperator *agg_op)
+{
+    ;
 }
 
 static void
 update_agg_state(Tuple *t, AggOperator *agg_op)
 {
+    C4Runtime *c4 = agg_op->op.chain->c4;
     AggGroupState *agg_group;
 
     agg_group = c4_hash_get(agg_op->group_tbl, t);
     if (agg_group == NULL)
-        agg_group = make_agg_group(t, agg_op);
+    {
+        if (!router_is_deleting(c4->router))
+            create_agg_group(t, agg_op);
+
+        return;
+    }
+
+    if (router_is_deleting(c4->router))
+    {
+        agg_group->count--;
+        if (agg_group->count == 1)
+        {
+            remove_agg_group(t, agg_group, agg_op);
+            return;
+        }
+    }
+    else
+    {
+        agg_group->count++;
+    }
+
+    advance_agg_group(t, agg_group, agg_op);
 }
 
 static void

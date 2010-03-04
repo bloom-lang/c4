@@ -15,6 +15,7 @@ typedef struct AggExprInfo
 
 typedef struct AggGroupState
 {
+    int count;
     Datum *trans_vals;
     struct AggGroupState *next;
 } AggGroupState;
