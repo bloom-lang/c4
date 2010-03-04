@@ -2,6 +2,28 @@
 #include "operator/agg.h"
 #include "router.h"
 
+static bool add_new_tuple(Tuple *t, AggOperator *agg_op);
+static void update_agg_state(Tuple *t, AggOperator *agg_op);
+
+static void
+agg_invoke(Operator *op, Tuple *t)
+{
+    AggOperator *agg_op = (AggOperator *) op;
+    ExprEvalContext *exec_cxt;
+    Tuple *proj_tuple;
+    bool need_work;
+
+    exec_cxt = agg_op->op.exec_cxt;
+    exec_cxt->inner = t;
+
+    proj_tuple = operator_do_project(op);
+    need_work = add_new_tuple(proj_tuple, agg_op);
+    if (need_work)
+        update_agg_state(proj_tuple, agg_op);
+
+    tuple_unpin(proj_tuple, op->proj_schema);
+}
+
 static bool
 add_new_tuple(Tuple *t, AggOperator *agg_op)
 {
@@ -40,28 +62,61 @@ update_agg_state(Tuple *t, AggOperator *agg_op)
 }
 
 static void
-agg_invoke(Operator *op, Tuple *t)
-{
-    AggOperator *agg_op = (AggOperator *) op;
-    ExprEvalContext *exec_cxt;
-    Tuple *proj_tuple;
-    bool need_work;
-
-    exec_cxt = agg_op->op.exec_cxt;
-    exec_cxt->inner = t;
-
-    proj_tuple = operator_do_project(op);
-    need_work = add_new_tuple(proj_tuple, agg_op);
-    if (need_work)
-        update_agg_state(proj_tuple, agg_op);
-
-    tuple_unpin(proj_tuple, op->proj_schema);
-}
-
-static void
 agg_destroy(Operator *op)
 {
     operator_destroy(op);
+}
+
+static unsigned int
+group_tbl_hash(const char *key, int klen, void *data)
+{
+    Tuple *t = (Tuple *) key;
+    AggOperator *agg_op = (AggOperator *) data;
+    int i;
+    unsigned int result;
+
+    ASSERT(klen == sizeof(Tuple *));
+    result = 37;
+    for (i = 0; i < agg_op->num_group_cols; i++)
+    {
+        int colno;
+        Datum val;
+        apr_uint32_t h;
+
+        colno = agg_op->group_colnos[i];
+        val = tuple_get_val(t, colno);
+        h = (agg_op->op.proj_schema->hash_funcs[colno])(val);
+        result ^= h;
+    }
+
+    return result;
+}
+
+static bool
+group_tbl_cmp(const void *k1, const void *k2, int klen, void *data)
+{
+    Tuple *t1 = (Tuple *) k1;
+    Tuple *t2 = (Tuple *) k2;
+    AggOperator *agg_op = (AggOperator *) data;
+    int i;
+
+    ASSERT(klen == sizeof(Tuple *));
+    for (i = 0; i < agg_op->num_group_cols; i++)
+    {
+        int colno;
+        Datum val1;
+        Datum val2;
+        bool result;
+
+        colno = agg_op->group_colnos[i];
+        val1 = tuple_get_val(t1, colno);
+        val2 = tuple_get_val(t2, colno);
+        result = (agg_op->op.proj_schema->eq_funcs[colno])(val1, val2);
+        if (!result)
+            return false;
+    }
+
+    return true;
 }
 
 /*
@@ -127,7 +182,28 @@ make_agg_info(int num_aggs, List *cols, apr_pool_t *pool)
 static int *
 make_group_colnos(int num_group_cols, List *cols, apr_pool_t *pool)
 {
-    return NULL;
+    ListCell *lc;
+    int *colno_ary;
+    int colno = 0;
+    int idx = 0;
+
+    colno_ary = apr_palloc(pool, num_group_cols * sizeof(*colno_ary));
+    foreach (lc, cols)
+    {
+        C4Node *expr = (C4Node *) lc_ptr(lc);
+
+        if (expr->kind == AST_AGG_EXPR)
+        {
+            colno++;
+            continue;
+        }
+
+        colno_ary[idx] = colno;
+        colno++;
+        idx++;
+    }
+
+    return colno_ary;
 }
 
 AggOperator *
@@ -156,9 +232,8 @@ agg_op_make(AggPlan *plan, OpChain *chain)
     agg_op->group_colnos = make_group_colnos(agg_op->num_group_cols,
                                              plan->head->cols, agg_op->op.pool);
 
-    agg_op->group_tbl = c4_hash_make(agg_op->op.pool,
-                                     sizeof(Tuple *),
-                                     agg_op, NULL, NULL);
+    agg_op->group_tbl = c4_hash_make(agg_op->op.pool, sizeof(Tuple *),
+                                     agg_op, group_tbl_hash, group_tbl_cmp);
     agg_op->tuple_set = rset_make(agg_op->op.pool, sizeof(Tuple *),
                                   agg_op->op.proj_schema,
                                   tuple_hash_tbl, tuple_cmp_tbl);
