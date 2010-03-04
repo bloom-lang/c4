@@ -9,9 +9,8 @@
  */
 typedef Datum (*agg_init_f)(Datum v);
 
-/* Forward and backward transition funcs: return updated state */
-typedef Datum (*agg_fw_trans_f)(Datum state, Datum v);
-typedef Datum (*agg_bw_trans_f)(Datum state, Datum v);
+/* Forward or backward transition func: return updated state */
+typedef Datum (*agg_trans_f)(Datum state, Datum v);
 
 /* Emit an output value. If NULL, use the current state value */
 typedef Datum (*agg_output_f)(Datum state);
@@ -22,8 +21,8 @@ typedef void (*agg_shutdown_f)(Datum state);
 typedef struct AggFuncDesc
 {
     agg_init_f init_f;
-    agg_fw_trans_f fw_trans_f;
-    agg_bw_trans_f bw_trans_f;
+    agg_trans_f fw_trans_f;     /* Forward transition function */
+    agg_trans_f bw_trans_f;     /* Backward transition function */
     agg_output_f output_f;
     agg_shutdown_f shutdown_f;
 } AggFuncDesc;

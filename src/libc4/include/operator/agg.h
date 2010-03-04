@@ -15,8 +15,15 @@ typedef struct AggExprInfo
 
 typedef struct AggGroupState
 {
+    /*
+     * We keep a pointer (+ refcount pin) to the first tuple that was inserted
+     * into the group; this forms the key for the group hash table.  Annoyingly,
+     * we also need to keep a pointer to the key in the group state itself, so
+     * that we can release the pin when the group is removed.
+     */
+    Tuple *key;
     int count;
-    Datum *trans_vals;
+    Datum *state_vals;
     struct AggGroupState *next;
 } AggGroupState;
 

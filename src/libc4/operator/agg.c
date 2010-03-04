@@ -76,11 +76,13 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
     else
     {
         new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
-        new_group->trans_vals = apr_palloc(agg_op->op.pool,
+        new_group->state_vals = apr_palloc(agg_op->op.pool,
                                            sizeof(Datum) * agg_op->num_aggs);
     }
 
     new_group->count = 1;
+    new_group->key = t;
+    tuple_pin(new_group->key);
     for (i = 0; i < agg_op->num_aggs; i++)
     {
         AggExprInfo *agg_info;
@@ -88,25 +90,50 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
 
         agg_info = agg_op->agg_info[i];
         input_val = tuple_get_val(t, agg_info->colno);
-        new_group->trans_vals[i] = agg_info->desc->init_f(input_val);
+        new_group->state_vals[i] = agg_info->desc->init_f(input_val);
     }
 
     c4_hash_set(agg_op->group_tbl, t, new_group);
-    tuple_pin(t);
 
     /* XXX: Route new agg value */
 }
 
 static void
-remove_agg_group(Tuple *t, AggGroupState *agg_group, AggOperator *agg_op)
+remove_agg_group(AggGroupState *group, AggOperator *agg_op)
 {
-    ;
+    bool found;
+
+    found = c4_hash_remove(agg_op->group_tbl, group->key);
+    if (!found)
+        ERROR("Failed to re-find group for key");
+
+    tuple_unpin(group->key, agg_op->op.proj_schema);
+    group->next = agg_op->free_groups;
+    agg_op->free_groups = group;
 }
 
 static void
-advance_agg_group(Tuple *t, AggGroupState *agg_group, AggOperator *agg_op)
+advance_agg_group(Tuple *t, bool forward,
+                  AggGroupState *group, AggOperator *agg_op)
 {
-    ;
+    int i;
+
+    for (i = 0; i < agg_op->num_aggs; i++)
+    {
+        AggExprInfo *agg_info;
+        Datum input_val;
+        agg_trans_f trans_f;
+
+        agg_info = agg_op->agg_info[i];
+        input_val = tuple_get_val(t, agg_info->colno);
+
+        if (forward)
+            trans_f = agg_info->desc->fw_trans_f;
+        else
+            trans_f = agg_info->desc->bw_trans_f;
+
+        group->state_vals[i] = trans_f(group->state_vals[i], input_val);
+    }
 }
 
 static void
@@ -121,11 +148,11 @@ agg_do_delete(Tuple *t, AggOperator *agg_op)
     agg_group->count--;
     if (agg_group->count == 0)
     {
-        remove_agg_group(t, agg_group, agg_op);
+        remove_agg_group(agg_group, agg_op);
         return;
     }
 
-    advance_agg_group(t, agg_group, agg_op);
+    advance_agg_group(t, false, agg_group, agg_op);
 }
 
 static void
@@ -141,7 +168,7 @@ agg_do_insert(Tuple *t, AggOperator *agg_op)
     }
 
     agg_group->count++;
-    advance_agg_group(t, agg_group, agg_op);
+    advance_agg_group(t, true, agg_group, agg_op);
 }
 
 static void
