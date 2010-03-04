@@ -98,23 +98,21 @@ tuple_hash(Tuple *tuple, Schema *s)
 }
 
 bool
-tuple_cmp_tbl(const void *k1, const void *k2, int klen, void *data)
+tuple_cmp_tbl(const void *k1, const void *k2, void *data)
 {
     Tuple *t1 = (Tuple *) k1;
     Tuple *t2 = (Tuple *) k2;
     Schema *s = (Schema *) data;
 
-    ASSERT(klen == sizeof(Tuple *));
     return tuple_equal(t1, t2, s);
 }
 
 unsigned int
-tuple_hash_tbl(const char *key, int klen, void *data)
+tuple_hash_tbl(const void *key, void *data)
 {
     Tuple *t = (Tuple *) key;
     Schema *s = (Schema *) data;
 
-    ASSERT(klen == sizeof(Tuple *));
     return tuple_hash(t, s);
 }
 

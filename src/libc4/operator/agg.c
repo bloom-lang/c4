@@ -318,8 +318,7 @@ agg_op_make(AggPlan *plan, OpChain *chain)
 
     agg_op->group_tbl = c4_hash_make(agg_op->op.pool, sizeof(Tuple *),
                                      agg_op, group_tbl_hash, group_tbl_cmp);
-    agg_op->tuple_set = rset_make(agg_op->op.pool, sizeof(Tuple *),
-                                  agg_op->op.proj_schema,
+    agg_op->tuple_set = rset_make(agg_op->op.pool, agg_op->op.proj_schema,
                                   tuple_hash_tbl, tuple_cmp_tbl);
     agg_op->free_groups = NULL;
 

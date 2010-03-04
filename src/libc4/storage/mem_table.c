@@ -93,7 +93,7 @@ mem_table_make(TableDef *def, C4Runtime *c4, apr_pool_t *pool)
                                         mem_table_scan_reset,
                                         mem_table_scan_next,
                                         pool);
-    tbl->tuples = rset_make(pool, sizeof(Tuple *), def->schema,
+    tbl->tuples = rset_make(pool, def->schema,
                             tuple_hash_tbl, tuple_cmp_tbl);
 
     return tbl;

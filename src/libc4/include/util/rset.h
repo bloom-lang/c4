@@ -38,27 +38,19 @@ typedef struct rset_index_t rset_index_t;
 /**
  * Callback functions for calculating hash values.
  * @param key The key.
- * @param klen The length of the key.
  * @param user_data User-specified opaque callback data
  */
-typedef unsigned int (*rset_hashfunc_t)(const char *key, int klen,
-                                        void *user_data);
+typedef unsigned int (*rset_hashfunc_t)(const void *key, void *user_data);
 
 /**
  * Callback functions for determining whether two elements are equal.
  * @param e1 First element
  * @param e2 Second element
- * @param elen The length of both elements.
  * @param user_data User-specified opaque callback data
  * @return Zero if the two elements should be considered equal, non-zero otherwise.
  */
 typedef bool (*rset_keycomp_func_t)(const void *k1, const void *k2,
-                                    int klen, void *user_data);
-
-/**
- * The default hash function.
- */
-unsigned int rset_hashfunc_default(const char *key, int klen, void *user_data);
+                                    void *user_data);
 
 /**
  * Create a refcounted set
@@ -69,9 +61,8 @@ unsigned int rset_hashfunc_default(const char *key, int klen, void *user_data);
  * @param cb_data Opaque user data that is passed to hash and cmp functions
  * @return The rset just created, or NULL if memory allocation failed
  */
-rset_t *rset_make(apr_pool_t *pool, int elem_len, void *cb_data,
-                  rset_hashfunc_t hash_func,
-                  rset_keycomp_func_t cmp_func);
+rset_t *rset_make(apr_pool_t *pool, void *cb_data,
+                  rset_hashfunc_t hash_func, rset_keycomp_func_t cmp_func);
 
 /**
  * Add an element to the rset. If the element is already present, bump its

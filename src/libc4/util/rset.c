@@ -73,7 +73,6 @@ struct rset_t {
     rset_entry_t        **array;
     rset_index_t          iterator; /* For rset_first(NULL, ...) */
     unsigned int          count, max;
-    int                   key_len;
     void                 *user_data;
     rset_hashfunc_t       hash_func;
     rset_keycomp_func_t   cmp_func;
@@ -88,7 +87,7 @@ static rset_entry_t **alloc_array(rset_t *rs, unsigned int max)
    return apr_pcalloc(rs->array_pool, sizeof(*rs->array) * (max + 1));
 }
 
-rset_t *rset_make(apr_pool_t *pool, int key_len, void *cb_data,
+rset_t *rset_make(apr_pool_t *pool, void *cb_data,
                   rset_hashfunc_t hash_func, rset_keycomp_func_t cmp_func)
 {
     apr_pool_t *array_pool;
@@ -104,7 +103,6 @@ rset_t *rset_make(apr_pool_t *pool, int key_len, void *cb_data,
     rs->count = 0;
     rs->max = INITIAL_MAX;
     rs->array = alloc_array(rs, rs->max);
-    rs->key_len = key_len;
     rs->user_data = cb_data;
     rs->hash_func = hash_func;
     rs->cmp_func = cmp_func;
@@ -206,59 +204,6 @@ static void expand_array(rset_t *rs)
     apr_pool_destroy(old_array_pool);
 }
 
-unsigned int rset_hashfunc_default(const char *char_key, int klen,
-                                   void *user_data)
-{
-    const unsigned char *key = (const unsigned char *) char_key;
-    const unsigned char *p;
-    unsigned int hash = 0;
-    int i;
-    
-    /*
-     * This is the popular `times 33' hash algorithm which is used by
-     * perl and also appears in Berkeley DB. This is one of the best
-     * known hash functions for strings because it is both computed
-     * very fast and distributes very well.
-     *
-     * The originator may be Dan Bernstein but the code in Berkeley DB
-     * cites Chris Torek as the source. The best citation I have found
-     * is "Chris Torek, Hash function for text in C, Usenet message
-     * <27038@mimsy.umd.edu> in comp.lang.c , October, 1990." in Rich
-     * Salz's USENIX 1992 paper about INN which can be found at
-     * <http://citeseer.nj.nec.com/salz92internetnews.html>.
-     *
-     * The magic of number 33, i.e. why it works better than many other
-     * constants, prime or not, has never been adequately explained by
-     * anyone. So I try an explanation: if one experimentally tests all
-     * multipliers between 1 and 256 (as I did while writing a low-level
-     * data structure library some time ago) one detects that even
-     * numbers are not useable at all. The remaining 128 odd numbers
-     * (except for the number 1) work more or less all equally well.
-     * They all distribute in an acceptable way and this way fill a hash
-     * table with an average percent of approx. 86%.
-     *
-     * If one compares the chi^2 values of the variants (see
-     * Bob Jenkins ``Hashing Frequently Asked Questions'' at
-     * http://burtleburtle.net/bob/hash/hashfaq.html for a description
-     * of chi^2), the number 33 not even has the best value. But the
-     * number 33 and a few other equally good numbers like 17, 31, 63,
-     * 127 and 129 have nevertheless a great advantage to the remaining
-     * numbers in the large set of possible multipliers: their multiply
-     * operation can be replaced by a faster operation based on just one
-     * shift plus either a single addition or subtraction operation. And
-     * because a hash function has to both distribute good _and_ has to
-     * be very fast to compute, those few numbers should be preferred.
-     *
-     *                  -- Ralf S. Engelschall <rse@engelschall.com>
-     */
-    for (p = key, i = klen; i; i--, p++) {
-        hash = hash * 33 + *p;
-    }
-
-    return hash;
-}
-
-
 /*
  * This is where we keep the details of the hash function and control the
  * maximum collision rate.
@@ -272,14 +217,14 @@ static rset_entry_t **find_entry(rset_t *rs, void *key, bool make_new)
     rset_entry_t **rep, *re;
     unsigned int hash;
 
-    hash = rs->hash_func(key, rs->key_len, rs->user_data);
+    hash = rs->hash_func(key, rs->user_data);
 
     /* scan linked list */
     for (rep = &rs->array[hash & rs->max], re = *rep;
          re; rep = &re->next, re = *rep)
     {
         if (re->hash == hash &&
-            rs->cmp_func(re->key, key, rs->key_len, rs->user_data))
+            rs->cmp_func(re->key, key, rs->user_data))
             break;
     }
     if (re || !make_new)
