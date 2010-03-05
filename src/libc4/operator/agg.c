@@ -68,6 +68,20 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
     C4Runtime *c4 = agg_op->op.chain->c4;
     int i;
 
+    if (group->output_tup)
+    {
+        router_delete_tuple(c4->router, group->output_tup,
+                            agg_op->output_tbl);
+        tuple_unpin(group->output_tup, agg_op->op.proj_schema);
+    }
+
+    /*
+     * Note that because tuples are immutable, we can't overwrite the previous
+     * output tuple in-place
+     */
+    group->output_tup = tuple_make_empty(agg_op->op.proj_schema);
+
+    /* Compute agg columns */
     for (i = 0; i < agg_op->num_aggs; i++)
     {
         AggExprInfo *agg_info;
@@ -81,6 +95,17 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
             d = group->state_vals[i];
 
         colno = agg_info->colno;
+        group->output_tup->vals[colno] = d;
+    }
+
+    /* Copy over group columns: no need to recompute */
+    for (i = 0; i < agg_op->num_group_cols; i++)
+    {
+        int colno;
+        Datum d;
+
+        colno = agg_op->group_colnos[i];
+        d = tuple_get_val(group->key, colno);
         group->output_tup->vals[colno] = d;
     }
 
@@ -104,7 +129,7 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
         new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
         new_group->state_vals = apr_palloc(agg_op->op.pool,
                                            sizeof(Datum) * agg_op->num_aggs);
-        new_group->output_tup = tuple_make_empty(agg_op->output_tbl->schema);
+        new_group->output_tup = NULL;
     }
 
     new_group->count = 1;
@@ -127,12 +152,15 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
 static void
 remove_agg_group(AggGroupState *group, AggOperator *agg_op)
 {
+    C4Runtime *c4 = agg_op->op.chain->c4;
     bool found;
 
     found = c4_hash_remove(agg_op->group_tbl, group->key);
     if (!found)
         ERROR("Failed to re-find group for key");
 
+    router_delete_tuple(c4->router, group->output_tup, agg_op->output_tbl);
+    tuple_unpin(group->output_tup, agg_op->op.proj_schema);
     tuple_unpin(group->key, agg_op->op.proj_schema);
     group->next = agg_op->free_groups;
     agg_op->free_groups = group;
@@ -142,7 +170,6 @@ static void
 advance_agg_group(Tuple *t, bool forward,
                   AggGroupState *group, AggOperator *agg_op)
 {
-    C4Runtime *c4 = agg_op->op.chain->c4;
     int i;
 
     for (i = 0; i < agg_op->num_aggs; i++)
@@ -162,8 +189,6 @@ advance_agg_group(Tuple *t, bool forward,
         group->state_vals[i] = trans_f(group->state_vals[i], input_val);
     }
 
-    /* Delete the old output value, form & route new output value */
-    router_delete_tuple(c4->router, group->output_tup, agg_op->output_tbl);
     emit_agg_output(group, agg_op);
 }
 
