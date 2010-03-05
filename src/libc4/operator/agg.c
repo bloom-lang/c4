@@ -38,16 +38,6 @@ add_new_tuple(Tuple *t, AggOperator *agg_op)
 
     if (router_is_deleting(c4->router))
     {
-        bool is_new;
-
-        is_new = rset_add(agg_op->tuple_set, t);
-        if (is_new)
-            tuple_pin(t);
-
-        return is_new;
-    }
-    else
-    {
         Tuple *old_t;
         unsigned int new_count;
 
@@ -59,6 +49,16 @@ add_new_tuple(Tuple *t, AggOperator *agg_op)
         }
 
         return false;
+    }
+    else
+    {
+        bool is_new;
+
+        is_new = rset_add(agg_op->tuple_set, t);
+        if (is_new)
+            tuple_pin(t);
+
+        return is_new;
     }
 }
 
@@ -142,7 +142,10 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
 
         agg_info = agg_op->agg_info[i];
         input_val = tuple_get_val(t, agg_info->colno);
-        new_group->state_vals[i] = agg_info->desc->init_f(input_val);
+        if (agg_info->desc->init_f)
+            new_group->state_vals[i] = agg_info->desc->init_f(input_val);
+        else
+            new_group->state_vals[i] = input_val;
     }
 
     c4_hash_set(agg_op->group_tbl, t, new_group);
