@@ -1,0 +1,10 @@
+define(agg_t1, keys(0), {int8, int8});
+define(agg_t2, keys(0), {int8, int8});
+
+agg_t1(A, sum<B>) :- agg_t2(A, B);
+
+agg_t2(5, 10);
+agg_t2(5, 15);
+agg_t2(6, 20);
+
+\dump agg_t1
