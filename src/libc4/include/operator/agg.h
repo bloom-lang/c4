@@ -3,6 +3,7 @@
 
 #include "operator/operator.h"
 #include "types/agg_funcs.h"
+#include "types/catalog.h"
 #include "util/hash.h"
 #include "util/rset.h"
 
@@ -22,6 +23,7 @@ typedef struct AggGroupState
      * that we can release the pin when the group is removed.
      */
     Tuple *key;
+    Tuple *output_tup;
     int count;
     Datum *state_vals;
     struct AggGroupState *next;
@@ -37,6 +39,7 @@ typedef struct AggOperator
     rset_t *tuple_set;
     c4_hash_t *group_tbl;
     AggGroupState *free_groups;
+    TableDef *output_tbl;
 } AggOperator;
 
 AggOperator *agg_op_make(AggPlan *plan, OpChain *chain);

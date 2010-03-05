@@ -24,6 +24,7 @@ insert_invoke(Operator *op, Tuple *t)
         router_delete_tuple(c4->router, proj_tuple, insert_op->tbl_def);
     else
         router_insert_tuple(c4->router, proj_tuple, insert_op->tbl_def, true);
+
     tuple_unpin(proj_tuple, op->proj_schema);
 }
 

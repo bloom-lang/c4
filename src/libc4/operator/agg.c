@@ -63,6 +63,32 @@ add_new_tuple(Tuple *t, AggOperator *agg_op)
 }
 
 static void
+emit_agg_output(AggGroupState *group, AggOperator *agg_op)
+{
+    C4Runtime *c4 = agg_op->op.chain->c4;
+    int i;
+
+    for (i = 0; i < agg_op->num_aggs; i++)
+    {
+        AggExprInfo *agg_info;
+        Datum d;
+        int colno;
+
+        agg_info = agg_op->agg_info[i];
+        if (agg_info->desc->output_f)
+            d = agg_info->desc->output_f(group->state_vals[i]);
+        else
+            d = group->state_vals[i];
+
+        colno = agg_info->colno;
+        group->output_tup->vals[colno] = d;
+    }
+
+    router_insert_tuple(c4->router, group->output_tup,
+                        agg_op->output_tbl, true);
+}
+
+static void
 create_agg_group(Tuple *t, AggOperator *agg_op)
 {
     AggGroupState *new_group;
@@ -78,6 +104,7 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
         new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
         new_group->state_vals = apr_palloc(agg_op->op.pool,
                                            sizeof(Datum) * agg_op->num_aggs);
+        new_group->output_tup = tuple_make_empty(agg_op->output_tbl->schema);
     }
 
     new_group->count = 1;
@@ -94,8 +121,7 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
     }
 
     c4_hash_set(agg_op->group_tbl, t, new_group);
-
-    /* XXX: Route new agg value */
+    emit_agg_output(new_group, agg_op);
 }
 
 static void
@@ -116,6 +142,7 @@ static void
 advance_agg_group(Tuple *t, bool forward,
                   AggGroupState *group, AggOperator *agg_op)
 {
+    C4Runtime *c4 = agg_op->op.chain->c4;
     int i;
 
     for (i = 0; i < agg_op->num_aggs; i++)
@@ -134,6 +161,10 @@ advance_agg_group(Tuple *t, bool forward,
 
         group->state_vals[i] = trans_f(group->state_vals[i], input_val);
     }
+
+    /* Delete the old output value, form & route new output value */
+    router_delete_tuple(c4->router, group->output_tup, agg_op->output_tbl);
+    emit_agg_output(group, agg_op);
 }
 
 static void
@@ -348,6 +379,7 @@ agg_op_make(AggPlan *plan, OpChain *chain)
     agg_op->tuple_set = rset_make(agg_op->op.pool, agg_op->op.proj_schema,
                                   tuple_hash_tbl, tuple_cmp_tbl);
     agg_op->free_groups = NULL;
+    agg_op->output_tbl = cat_get_table(chain->c4->cat, plan->head->name);
 
     return agg_op;
 }
