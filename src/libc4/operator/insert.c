@@ -7,25 +7,16 @@ insert_invoke(Operator *op, Tuple *t)
 {
     C4Runtime *c4 = op->chain->c4;
     InsertOperator *insert_op = (InsertOperator *) op;
-    ExprEvalContext *exec_cxt;
-    Tuple *proj_tuple;
     bool do_delete;
-
-    exec_cxt = insert_op->op.exec_cxt;
-    exec_cxt->inner = t;
-
-    proj_tuple = operator_do_project(op);
 
     do_delete = insert_op->do_delete;
     if (router_is_deleting(c4->router))
         do_delete = !do_delete;
 
     if (do_delete)
-        router_delete_tuple(c4->router, proj_tuple, insert_op->tbl_def);
+        router_delete_tuple(c4->router, t, insert_op->tbl_def);
     else
-        router_insert_tuple(c4->router, proj_tuple, insert_op->tbl_def, true);
-
-    tuple_unpin(proj_tuple, op->proj_schema);
+        router_insert_tuple(c4->router, t, insert_op->tbl_def, true);
 }
 
 static void

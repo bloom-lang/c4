@@ -149,8 +149,8 @@ make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p)
 }
 
 AggPlan *
-make_agg_plan(AstTableRef *head, bool do_delete, List *proj_list,
-              bool skip_proj, apr_pool_t *p)
+make_agg_plan(AstTableRef *head, bool do_delete, bool planned,
+              List *proj_list, bool skip_proj, apr_pool_t *p)
 {
     AggPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_AGG;
@@ -160,6 +160,7 @@ make_agg_plan(AstTableRef *head, bool do_delete, List *proj_list,
     result->plan.skip_proj = skip_proj;
     result->head = copy_node(head, p);
     result->do_delete = do_delete;
+    result->planned = planned;
 
     return result;
 }
@@ -192,6 +193,18 @@ make_insert_plan(AstTableRef *head, bool do_delete,
     result->plan.skip_proj = skip_proj;
     result->head = copy_node(head, p);
     result->do_delete = do_delete;
+    return result;
+}
+
+ProjectPlan *
+make_project_plan(List *proj_list, bool skip_proj, apr_pool_t *p)
+{
+    ProjectPlan *result = apr_pcalloc(p, sizeof(*result));
+    result->plan.node.kind = PLAN_PROJECT;
+    result->plan.quals = list_make(p);
+    if (proj_list)
+        result->plan.proj_list = list_copy_deep(proj_list, p);
+    result->plan.skip_proj = skip_proj;
     return result;
 }
 

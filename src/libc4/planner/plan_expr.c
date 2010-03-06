@@ -299,22 +299,21 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
     ProjListContext cxt;
     ListCell *lc;
 
-    /*
-     * We need to handle PLAN_INSERT and PLAN_AGG specially. If preceded by a
-     * projection-capable operator (e.g. PLAN_SCAN), the input already has
-     * projection applied, so we just skip projection and generate a dummy proj
-     * list. Otherwise, the projection list is based on the rule's head clause,
-     * not the expressions in the rest of the chain.
-     */
+    /* PLAN_INSERT and PLAN_AGG don't do projection */
     if (plan->node.kind == PLAN_INSERT || plan->node.kind == PLAN_AGG)
     {
         ASSERT(chain_rest == NULL);
-        if (plan->skip_proj)
-            return make_dummy_proj_list(chain_plan, state);
-        else
-            return make_tbl_ref_proj_list(chain_plan->head, outer_rel,
-                                          chain_plan, state);
+        return make_dummy_proj_list(chain_plan, state);
     }
+
+    /*
+     * XXX: We currently assume that PLAN_PROJECT is followed by either
+     * PLAN_INSERT or PLAN_AGG; in either case, we want to do projection based
+     * on the rule's head clause.
+     */
+    if (plan->node.kind == PLAN_PROJECT)
+        return make_tbl_ref_proj_list(chain_plan->head, outer_rel,
+                                      chain_plan, state);
 
     /*
      * We also handle PLAN_FILTER specially: the filter operator never does
@@ -420,6 +419,16 @@ fix_op_exprs(PlanNode *plan, ListCell *chain_rest,
     AstJoinClause *outer_rel = NULL;
     ListCell *lc;
     List *new_plist;
+
+    if (plan->node.kind == PLAN_AGG)
+    {
+        AggPlan *agg_plan = (AggPlan *) plan;
+
+        if (agg_plan->planned)
+            return;
+
+        agg_plan->planned = true;
+    }
 
     /* Lookup the outer (scan) relation, if any */
     if (plan->node.kind == PLAN_SCAN)

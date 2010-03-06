@@ -13,9 +13,7 @@ typedef struct OpChain OpChain;
 /*
  * An OpChain is a sequence of operators that begins with a "delta
  * table". When a new tuple is inserted into a table, the tuple is passed
- * down each op chain that begins with that delta table. The last operator
- * in the chain is an OPER_INSERT that inserts tuples into the "head" table,
- * and/or enqueues them to be sent over the network.
+ * down each op chain that begins with that delta table.
  */
 struct OpChain
 {

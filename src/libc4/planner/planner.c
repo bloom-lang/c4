@@ -208,16 +208,6 @@ add_filter_op(List *quals, OpChainPlan *chain_plan, PlannerState *state)
 }
 
 static void
-add_agg_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
-{
-    AggPlan *aplan;
-
-    aplan = make_agg_plan(rule->head, chain_plan->delta_tbl->not,
-                          NULL, false, state->plan_pool);
-    list_append(chain_plan->chain, aplan);
-}
-
-static void
 add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
 {
     InsertPlan *iplan;
@@ -225,6 +215,27 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
     iplan = make_insert_plan(rule->head, chain_plan->delta_tbl->not,
                              NULL, false, state->plan_pool);
     list_append(chain_plan->chain, iplan);
+}
+
+static void
+add_project_op(OpChainPlan *chain_plan, PlannerState *state)
+{
+    ProjectPlan *pplan;
+
+    pplan = make_project_plan(NULL, false, state->plan_pool);
+    list_append(chain_plan->chain, pplan);
+}
+
+static void
+add_agg_op(AstRule *rule, RulePlan *rplan,
+           OpChainPlan *chain_plan, PlannerState *state)
+{
+    /* All the operator chains for a single rule share the same AggPlan */
+    if (rplan->agg_plan == NULL)
+        rplan->agg_plan = make_agg_plan(rule->head, chain_plan->delta_tbl->not,
+                                        false, NULL, false, state->plan_pool);
+
+    list_append(chain_plan->chain, rplan->agg_plan);
 }
 
 static void
@@ -265,14 +276,14 @@ extend_op_chain(OpChainPlan *chain_plan, PlannerState *state)
  * to select the set of necessary operators and choose their order. We do naive
  * qualifier pushdown (qualifiers are associated with the first node whose
  * output contains all the variables in the qualifier).
- *
- * The last op in the chain is an OPER_INSERT, which inserts tuples into the
- * head table (and/or enqueues them to be sent over the network).
  */
 static OpChainPlan *
-plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
+plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule,
+              RulePlan *rplan, PlannerState *state)
 {
     OpChainPlan *chain_plan;
+    ListCell *chain_tail;
+    PlanNode *tail_plan;
 
     state->join_set_todo = make_join_set(delta_tbl, rule->joins, state);
     state->qual_set_todo = list_copy(rule->quals, state->tmp_pool);
@@ -299,8 +310,21 @@ plan_op_chain(AstJoinClause *delta_tbl, AstRule *rule, PlannerState *state)
         ERROR("Failed to match %d qualifiers to an operator",
               list_length(state->qual_set_todo));
 
+    /*
+     * The last operator in a chain is either PLAN_INSERT or PLAN_AGG. In either
+     * case, we check if the preceding operator is projection-capable; if so, we
+     * have the preceding operator do projection for us. If not, we insert an
+     * explicit PLAN_PROJECT to do any needed projection.
+     */
+    chain_tail = list_tail(chain_plan->chain);
+    if (chain_tail != NULL)
+        tail_plan = (PlanNode *) lc_ptr(chain_tail);
+
+    if (chain_tail == NULL || tail_plan->node.kind != PLAN_SCAN)
+        add_project_op(chain_plan, state);
+
     if (rule->has_agg)
-        add_agg_op(rule, chain_plan, state);
+        add_agg_op(rule, rplan, chain_plan, state);
     else
         add_insert_op(rule, chain_plan, state);
 
@@ -320,7 +344,10 @@ plan_rule(AstRule *rule, PlannerState *state)
     RulePlan *rplan;
     ListCell *lc;
 
-    rplan = apr_pcalloc(state->plan_pool, sizeof(*rplan));
+    rplan = apr_palloc(state->plan_pool, sizeof(*rplan));
+    rplan->chains = list_make(state->plan_pool);
+    rplan->agg_plan = NULL;
+    rplan->bootstrap_tbl = NULL;
 
     /*
      * For each table referenced by the rule, generate an OpChainPlan that
@@ -328,13 +355,12 @@ plan_rule(AstRule *rule, PlannerState *state)
      * of operators that are evaluated when we see a new tuple in that
      * table.
      */
-    rplan->chains = list_make(state->plan_pool);
     foreach (lc, rule->joins)
     {
         AstJoinClause *delta_tbl = (AstJoinClause *) lc_ptr(lc);
         OpChainPlan *chain_plan;
 
-        chain_plan = plan_op_chain(delta_tbl, rule, state);
+        chain_plan = plan_op_chain(delta_tbl, rule, rplan, state);
         list_append(rplan->chains, chain_plan);
 
         /* We currently use the first join for the bootstrap table */

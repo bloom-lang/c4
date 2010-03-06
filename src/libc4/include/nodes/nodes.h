@@ -24,12 +24,14 @@ typedef enum C4NodeKind
     PLAN_AGG,
     PLAN_FILTER,
     PLAN_INSERT,
+    PLAN_PROJECT,
     PLAN_SCAN,
 
     /* Executor nodes */
     OPER_AGG,
     OPER_FILTER,
     OPER_INSERT,
+    OPER_PROJECT,
     OPER_SCAN,
 
     /* Expr nodes */

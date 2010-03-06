@@ -11,24 +11,16 @@ agg_invoke(Operator *op, Tuple *t)
 {
     AggOperator *agg_op = (AggOperator *) op;
     C4Runtime *c4 = op->chain->c4;
-    ExprEvalContext *exec_cxt;
-    Tuple *proj_tuple;
     bool need_work;
 
-    exec_cxt = agg_op->op.exec_cxt;
-    exec_cxt->inner = t;
-
-    proj_tuple = operator_do_project(op);
-    need_work = add_new_tuple(proj_tuple, agg_op);
+    need_work = add_new_tuple(t, agg_op);
     if (need_work)
     {
         if (router_is_deleting(c4->router))
-            agg_do_delete(proj_tuple, agg_op);
+            agg_do_delete(t, agg_op);
         else
-            agg_do_insert(proj_tuple, agg_op);
+            agg_do_insert(t, agg_op);
     }
-
-    tuple_unpin(proj_tuple, op->proj_schema);
 }
 
 static bool

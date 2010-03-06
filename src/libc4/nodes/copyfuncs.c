@@ -84,8 +84,8 @@ copy_ast_agg_expr(AstAggExpr *in, apr_pool_t *p)
 static AggPlan *
 copy_agg_plan(AggPlan *in, apr_pool_t *p)
 {
-    return make_agg_plan(in->head, in->do_delete, in->plan.proj_list,
-                         in->plan.skip_proj, p);
+    return make_agg_plan(in->head, in->do_delete, in->planned,
+                         in->plan.proj_list, in->plan.skip_proj, p);
 }
 
 static FilterPlan *
@@ -100,6 +100,12 @@ copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 {
     return make_insert_plan(in->head, in->do_delete, in->plan.proj_list,
                             in->plan.skip_proj, p);
+}
+
+static ProjectPlan *
+copy_project_plan(ProjectPlan *in, apr_pool_t *p)
+{
+    return make_project_plan(in->plan.proj_list, in->plan.skip_proj, p);
 }
 
 static ScanPlan *
@@ -184,6 +190,9 @@ copy_node(void *ptr, apr_pool_t *pool)
 
         case PLAN_INSERT:
             return copy_insert_plan((InsertPlan *) n, pool);
+
+        case PLAN_PROJECT:
+            return copy_project_plan((ProjectPlan *) n, pool);
 
         case PLAN_SCAN:
             return copy_scan_plan((ScanPlan *) n, pool);

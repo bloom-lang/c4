@@ -3,6 +3,7 @@
 #include "operator/agg.h"
 #include "operator/filter.h"
 #include "operator/insert.h"
+#include "operator/project.h"
 #include "operator/scan.h"
 #include "planner/installer.h"
 #include "router.h"
@@ -13,6 +14,7 @@ typedef struct InstallState
 {
     C4Runtime *c4;
     apr_pool_t *tmp_pool;
+    AggOperator *current_agg;
 } InstallState;
 
 static void
@@ -110,8 +112,10 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
             case PLAN_AGG:
                 /* Should be the last op in the chain */
                 ASSERT(prev_op == NULL);
-                op = (Operator *) agg_op_make((AggPlan *) plan,
-                                              op_chain);
+                if (istate->current_agg == NULL)
+                    istate->current_agg = agg_op_make((AggPlan *) plan,
+                                                      op_chain);
+                op = (Operator *) istate->current_agg;
                 break;
 
             case PLAN_FILTER:
@@ -124,6 +128,11 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
                 ASSERT(prev_op == NULL);
                 op = (Operator *) insert_op_make((InsertPlan *) plan,
                                                  op_chain);
+                break;
+
+            case PLAN_PROJECT:
+                op = (Operator *) project_op_make((ProjectPlan *) plan,
+                                                  prev_op, op_chain);
                 break;
 
             case PLAN_SCAN:
@@ -162,6 +171,8 @@ plan_install_rules(ProgramPlan *plan, InstallState *istate)
 
             install_op_chain(chain_plan, istate);
         }
+
+        istate->current_agg = NULL;
     }
 }
 
@@ -236,9 +247,10 @@ istate_make(apr_pool_t *pool, C4Runtime *c4)
 {
     InstallState *istate;
 
-    istate = apr_pcalloc(pool, sizeof(*istate));
+    istate = apr_palloc(pool, sizeof(*istate));
     istate->tmp_pool = pool;
     istate->c4 = c4;
+    istate->current_agg = NULL;
 
     return istate;
 }

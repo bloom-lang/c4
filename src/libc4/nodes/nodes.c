@@ -201,10 +201,14 @@ node_get_kind_str(C4Node *node)
         case AST_AGG_EXPR:
             return "AstAggExpr";
 
+        case PLAN_AGG:
+            return "PlanAgg";
         case PLAN_FILTER:
             return "PlanFilter";
         case PLAN_INSERT:
             return "PlanInsert";
+        case PLAN_PROJECT:
+            return "PlanProject";
         case PLAN_SCAN:
             return "PlanScan";
 
@@ -214,6 +218,8 @@ node_get_kind_str(C4Node *node)
             return "OperFilter";
         case OPER_INSERT:
             return "OperInsert";
+        case OPER_PROJECT:
+            return "OperProject";
         case OPER_SCAN:
             return "OperScan";
 
