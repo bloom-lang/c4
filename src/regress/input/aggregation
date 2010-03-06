@@ -25,3 +25,18 @@ agg_t2(5, 15);
 agg_t2(5, 30);
 
 \dump agg_t1
+
+define(agg_t5, keys(0), {int8, int8});
+define(agg_t6, keys(0), {int8, int8});
+define(agg_t7, keys(0), {int8, int8});
+
+agg_t5(A, B + 1) :- agg_t5(A, B), A > B;
+agg_t6(A, count<B>) :- agg_t5(A, B);
+agg_t7(A, sum<B>) :- agg_t5(A, B);
+
+agg_t5(100, 0);
+agg_t5(199, 101);
+agg_t5(2000, 1000);
+
+\dump agg_t6
+\dump agg_t7
