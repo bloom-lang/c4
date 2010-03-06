@@ -149,7 +149,7 @@ make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p)
 }
 
 AggPlan *
-make_agg_plan(AstTableRef *head, bool do_delete, bool planned,
+make_agg_plan(AstTableRef *head, bool planned,
               List *proj_list, apr_pool_t *p)
 {
     AggPlan *result = apr_pcalloc(p, sizeof(*result));
@@ -158,7 +158,6 @@ make_agg_plan(AstTableRef *head, bool do_delete, bool planned,
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
     result->head = copy_node(head, p);
-    result->do_delete = do_delete;
     result->planned = planned;
 
     return result;

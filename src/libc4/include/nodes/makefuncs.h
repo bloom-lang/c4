@@ -26,7 +26,7 @@ AstVarExpr *make_ast_var_expr(const char *name, DataType type, apr_pool_t *p);
 AstConstExpr *make_ast_const_expr(AstConstKind c_kind, const char *value,
                                   apr_pool_t *p);
 
-AggPlan *make_agg_plan(AstTableRef *head, bool do_delete, bool planned,
+AggPlan *make_agg_plan(AstTableRef *head, bool planned,
                        List *proj_list, apr_pool_t *p);
 FilterPlan *make_filter_plan(const char *tbl_name, List *quals,
                              List *qual_exprs, List *proj_list, apr_pool_t *p);

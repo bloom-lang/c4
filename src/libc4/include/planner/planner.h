@@ -19,7 +19,6 @@ typedef struct AggPlan
 {
     PlanNode plan;
     AstTableRef *head;
-    bool do_delete;
     bool planned;
 } AggPlan;
 

@@ -232,8 +232,8 @@ add_agg_op(AstRule *rule, RulePlan *rplan,
 {
     /* All the operator chains for a single rule share the same AggPlan */
     if (rplan->agg_plan == NULL)
-        rplan->agg_plan = make_agg_plan(rule->head, chain_plan->delta_tbl->not,
-                                        false, NULL, state->plan_pool);
+        rplan->agg_plan = make_agg_plan(rule->head, false,
+                                        NULL, state->plan_pool);
 
     list_append(chain_plan->chain, rplan->agg_plan);
 }
