@@ -157,7 +157,7 @@ router_insert_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
 
     if (check_remote && tuple_is_remote(tuple, tbl_def, router->c4))
     {
-        router_enqueue_net(router, tuple, tbl_def);
+        tuple_buf_push(router->net_buf, tuple, tbl_def);
         return;
     }
 
@@ -337,18 +337,6 @@ void
 router_enqueue_internal(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
     tuple_buf_push(router->insert_buf, tuple, tbl_def);
-}
-
-/*
- * Enqueue a network output tuple to be sent at the end of the current
- * fixpoint.
- */
-void
-router_enqueue_net(C4Router *router, Tuple *tuple, TableDef *tbl_def)
-{
-    ASSERT(tbl_def->ls_colno != -1);
-
-    tuple_buf_push(router->net_buf, tuple, tbl_def);
 }
 
 bool
