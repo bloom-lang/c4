@@ -145,6 +145,15 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
 }
 
 static void
+free_agg_group(AggGroupState *group, AggOperator *agg_op)
+{
+    tuple_unpin(group->output_tup, agg_op->op.proj_schema);
+    tuple_unpin(group->key, agg_op->op.proj_schema);
+    group->next = agg_op->free_groups;
+    agg_op->free_groups = group;
+}
+
+static void
 remove_agg_group(AggGroupState *group, AggOperator *agg_op)
 {
     C4Runtime *c4 = agg_op->op.chain->c4;
@@ -155,10 +164,7 @@ remove_agg_group(AggGroupState *group, AggOperator *agg_op)
         ERROR("Failed to re-find group for key");
 
     router_delete_tuple(c4->router, group->output_tup, agg_op->output_tbl);
-    tuple_unpin(group->output_tup, agg_op->op.proj_schema);
-    tuple_unpin(group->key, agg_op->op.proj_schema);
-    group->next = agg_op->free_groups;
-    agg_op->free_groups = group;
+    free_agg_group(group, agg_op);
 }
 
 static void
@@ -362,6 +368,34 @@ make_group_colnos(int num_group_cols, List *cols, apr_pool_t *pool)
     return colno_ary;
 }
 
+static apr_status_t
+agg_cleanup(void *data)
+{
+    AggOperator *agg = (AggOperator *) data;
+    rset_index_t *ri;
+    c4_hash_index_t *hi;
+
+    ri = rset_iter_make(agg->op.pool, agg->tuple_set);
+    while (rset_next(ri))
+    {
+        Tuple *t;
+
+        t = rset_this(ri);
+        tuple_unpin(t, agg->op.proj_schema);
+    }
+
+    hi = c4_hash_iter_make(agg->op.pool, agg->group_tbl);
+    while (c4_hash_next(hi))
+    {
+        AggGroupState *group;
+
+        c4_hash_this(hi, NULL, (void **) &group);
+        free_agg_group(group, agg);
+    }
+
+    return APR_SUCCESS;
+}
+
 AggOperator *
 agg_op_make(AggPlan *plan, OpChain *chain)
 {
@@ -393,6 +427,9 @@ agg_op_make(AggPlan *plan, OpChain *chain)
                                   tuple_hash_tbl, tuple_cmp_tbl);
     agg_op->free_groups = NULL;
     agg_op->output_tbl = cat_get_table(chain->c4->cat, plan->head->name);
+
+    apr_pool_cleanup_register(agg_op->op.pool, agg_op, agg_cleanup,
+                              apr_pool_cleanup_null);
 
     return agg_op;
 }
