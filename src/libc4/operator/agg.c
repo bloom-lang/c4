@@ -121,9 +121,9 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
         new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
         new_group->state_vals = apr_palloc(agg_op->op.pool,
                                            sizeof(Datum) * agg_op->num_aggs);
-        new_group->output_tup = NULL;
     }
 
+    new_group->output_tup = NULL;
     new_group->count = 1;
     new_group->key = t;
     tuple_pin(new_group->key);
