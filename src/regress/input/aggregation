@@ -1,8 +1,10 @@
+define(agg_t0, keys(0), {int8, int8});
 define(agg_t1, keys(0), {int8, int8});
 define(agg_t2, keys(0), {int8, int8});
 define(agg_t3, keys(0), {int8, int8});
 define(agg_t4, keys(0), {int8, int8});
 
+agg_t0(A, B) :- agg_t1(A, B);
 agg_t1(A, sum<B>) :- agg_t2(A, B), notin agg_t3(A, B), notin agg_t4(A, B);
 
 agg_t2(5, 10);
@@ -11,6 +13,7 @@ agg_t2(6, 20);
 agg_t2(6, 100);
 
 \dump agg_t1
+\dump agg_t0
 
 agg_t2(7, 50);
 agg_t3(5, 10);
@@ -19,12 +22,14 @@ agg_t4(6, 25);
 agg_t4(5, 10);
 
 \dump agg_t1
+\dump agg_t0
 
 agg_t2(6, 25);
 agg_t2(5, 15);
 agg_t2(5, 30);
 
 \dump agg_t1
+\dump agg_t0
 
 define(agg_t5, keys(0), {int8, int8});
 define(agg_t6, keys(0), {int8, int8});
