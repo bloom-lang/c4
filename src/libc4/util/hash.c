@@ -47,7 +47,7 @@ struct c4_hash_entry_t {
  *
  * We keep a pointer to the next hash entry here to allow the current
  * hash entry to be freed or otherwise mangled between calls to
- * c4_hash_next().
+ * c4_hash_iter_next().
  */
 struct c4_hash_index_t {
     c4_hash_t         *ht;
@@ -69,7 +69,6 @@ struct c4_hash_t {
     apr_pool_t          *pool;
     apr_pool_t          *array_pool;
     c4_hash_entry_t   **array;
-    c4_hash_index_t     iterator;  /* For c4_hash_first(NULL, ...) */
     unsigned int        count, max;
     int                 key_len;
     void               *user_data;
@@ -116,28 +115,6 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool, int key_len, void *cb_data,
 /*
  * Hash iteration functions.
  */
-
-c4_hash_index_t *c4_hash_next(c4_hash_index_t *hi)
-{
-    if (c4_hash_iter_next(hi))
-        return hi;
-    else
-        return NULL;
-}
-
-c4_hash_index_t *c4_hash_first(apr_pool_t *p, c4_hash_t *ht)
-{
-    c4_hash_index_t *hi;
-    if (p)
-        hi = apr_palloc(p, sizeof(*hi));
-    else
-        hi = &ht->iterator;
-
-    hi->ht = ht;
-    c4_hash_iter_reset(hi);
-    return c4_hash_next(hi);
-}
-
 c4_hash_index_t *c4_hash_iter_make(apr_pool_t *p, c4_hash_t *ht)
 {
     c4_hash_index_t *hi;
@@ -206,7 +183,8 @@ static void expand_array(c4_hash_t *ht)
 
     new_max = ht->max * 2 + 1;
     new_array = alloc_array(ht, new_max);
-    for (hi = c4_hash_first(NULL, ht); hi; hi = c4_hash_next(hi)) {
+    hi = c4_hash_iter_make(old_array_pool, ht);
+    while (c4_hash_iter_next(hi)) {
         unsigned int i = hi->this->hash & new_max;
         hi->this->next = new_array[i];
         new_array[i] = hi->this;
@@ -396,7 +374,13 @@ unsigned int c4_hash_count(c4_hash_t *ht)
 
 void c4_hash_clear(c4_hash_t *ht)
 {
+    c4_hash_index_t  hix;
     c4_hash_index_t *hi;
-    for (hi = c4_hash_first(NULL, ht); hi; hi = c4_hash_next(hi))
+
+    hi = &hix;
+    hi->ht = ht;
+    c4_hash_iter_reset(hi);
+
+    while (c4_hash_iter_next(&hix))
         c4_hash_remove(ht, hi->this->key);
 }

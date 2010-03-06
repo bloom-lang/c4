@@ -139,22 +139,6 @@ void c4_hash_iter_reset(c4_hash_index_t *hi);
 bool c4_hash_iter_next(c4_hash_index_t *hi);
 
 /**
- * APR-style API to start iterating over the entries of a hash table.
- * @param p The pool to allocate the c4_hash_index_t iterator in. If NULL,
- *          an internal non-threadsafe iterator is used.
- * @param ht The hash table
- * @return Iteration state, or NULL if the hash table is empty
- */
-c4_hash_index_t *c4_hash_first(apr_pool_t *p, c4_hash_t *ht);
-
-/**
- * APR-style API for hash iteration.
- * @param hi The iteration state
- * @return The next updated iteration state, or NULL if out of elements.
- */
-c4_hash_index_t *c4_hash_next(c4_hash_index_t *hi);
-
-/**
  * Get the current entry's details from the iteration state.
  * @param hi The iteration state
  * @param key Return pointer for the pointer to the key.

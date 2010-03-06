@@ -385,7 +385,7 @@ agg_cleanup(void *data)
     }
 
     hi = c4_hash_iter_make(agg->op.pool, agg->group_tbl);
-    while (c4_hash_next(hi))
+    while (c4_hash_iter_next(hi))
     {
         AggGroupState *group;
 
