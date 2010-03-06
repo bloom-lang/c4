@@ -19,7 +19,6 @@ agg_t2(7, 50);
 agg_t3(5, 10);
 agg_t3(20, 20);
 agg_t4(6, 25);
-agg_t4(5, 10);
 
 \dump agg_t1
 \dump agg_t0
