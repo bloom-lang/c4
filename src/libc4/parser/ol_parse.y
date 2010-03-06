@@ -249,7 +249,7 @@ bool_const:
 
 var_expr: VAR_IDENT { $$ = make_ast_var_expr($1, TYPE_INVALID, context->pool); };
 
-agg_expr: agg_kind '<' var_expr '>' { $$ = make_ast_agg_expr($1, $3, context->pool); }
+agg_expr: agg_kind '<' expr '>' { $$ = make_ast_agg_expr($1, $3, context->pool); }
 
 agg_kind:
   OL_COUNT      { $$ = AST_AGG_COUNT; }

@@ -40,3 +40,14 @@ agg_t5(2000, 1000);
 
 \dump agg_t6
 \dump agg_t7
+
+/* Test non-constant expr arguments to agg functions */
+define(agg_t8, keys(0), {int8, int8});
+define(agg_t9, keys(0), {int8, int8});
+
+agg_t8(A, B + 1) :- agg_t8(A, B), A > B;
+agg_t9(A, sum<B + 3>) :- agg_t8(A, B);
+
+agg_t8(10, 0);
+
+\dump agg_t9
