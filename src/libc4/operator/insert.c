@@ -19,12 +19,6 @@ insert_invoke(Operator *op, Tuple *t)
         router_insert_tuple(c4->router, t, insert_op->tbl_def, true);
 }
 
-static void
-insert_destroy(Operator *op)
-{
-    operator_destroy(op);
-}
-
 InsertOperator *
 insert_op_make(InsertPlan *plan, OpChain *chain)
 {
@@ -37,8 +31,7 @@ insert_op_make(InsertPlan *plan, OpChain *chain)
                                                  (PlanNode *) plan,
                                                  NULL,
                                                  chain,
-                                                 insert_invoke,
-                                                 insert_destroy);
+                                                 insert_invoke);
 
     insert_op->tbl_def = cat_get_table(chain->c4->cat, plan->head->name);
     insert_op->do_delete = plan->do_delete;

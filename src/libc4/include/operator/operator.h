@@ -32,7 +32,6 @@ struct OpChain
 };
 
 typedef void (*op_invoke_func)(Operator *op, Tuple *t);
-typedef void (*op_destroy_func)(Operator *op);
 
 struct Operator
 {
@@ -49,7 +48,6 @@ struct Operator
     Schema *proj_schema;
 
     op_invoke_func invoke;
-    op_destroy_func destroy;
 };
 
 /*
@@ -66,8 +64,7 @@ typedef struct OpChainList
 /* Generic support routines for operators */
 Operator *operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
                         Operator *next_op, OpChain *chain,
-                        op_invoke_func invoke_f, op_destroy_func destroy_f);
-void operator_destroy(Operator *op);
+                        op_invoke_func invoke_f);
 
 Tuple *operator_do_project(Operator *op);
 

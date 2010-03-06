@@ -42,12 +42,6 @@ scan_invoke(Operator *op, Tuple *t)
     }
 }
 
-static void
-scan_destroy(Operator *op)
-{
-    operator_destroy(op);
-}
-
 ScanOperator *
 scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain)
 {
@@ -61,8 +55,7 @@ scan_op_make(ScanPlan *plan, Operator *next_op, OpChain *chain)
                                              (PlanNode *) plan,
                                              next_op,
                                              chain,
-                                             scan_invoke,
-                                             scan_destroy);
+                                             scan_invoke);
 
     tbl_name = plan->scan_rel->ref->name;
     scan_op->table = cat_get_table_impl(chain->c4->cat, tbl_name);

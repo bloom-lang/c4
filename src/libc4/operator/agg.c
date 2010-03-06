@@ -222,12 +222,6 @@ agg_do_insert(Tuple *t, AggOperator *agg_op)
     advance_agg_group(t, true, agg_group, agg_op);
 }
 
-static void
-agg_destroy(Operator *op)
-{
-    operator_destroy(op);
-}
-
 static unsigned int
 group_tbl_hash(const char *key, int klen, void *data)
 {
@@ -381,8 +375,7 @@ agg_op_make(AggPlan *plan, OpChain *chain)
                                            (PlanNode *) plan,
                                            NULL,
                                            chain,
-                                           agg_invoke,
-                                           agg_destroy);
+                                           agg_invoke);
 
     agg_op->num_aggs = count_agg_exprs(plan->head);
     agg_op->agg_info = make_agg_info(agg_op->num_aggs, plan->head->cols,

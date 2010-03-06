@@ -15,12 +15,6 @@ project_invoke(Operator *op, Tuple *t)
     tuple_unpin(proj_tuple, op->proj_schema);
 }
 
-static void
-project_destroy(Operator *op)
-{
-    operator_destroy(op);
-}
-
 ProjectOperator *
 project_op_make(ProjectPlan *plan, Operator *next_op, OpChain *chain)
 {
@@ -33,8 +27,7 @@ project_op_make(ProjectPlan *plan, Operator *next_op, OpChain *chain)
                                                 (PlanNode *) plan,
                                                 next_op,
                                                 chain,
-                                                project_invoke,
-                                                project_destroy);
+                                                project_invoke);
 
     return proj_op;
 }

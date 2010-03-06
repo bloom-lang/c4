@@ -2,12 +2,10 @@
 #include "nodes/copyfuncs.h"
 #include "operator/operator.h"
 
-static apr_status_t operator_cleanup(void *data);
-
 Operator *
 operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
               Operator *next_op, OpChain *chain,
-              op_invoke_func invoke_f, op_destroy_func destroy_f)
+              op_invoke_func invoke_f)
 {
     apr_pool_t *pool = chain->pool;
     Operator *op;
@@ -22,7 +20,6 @@ operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
     op->chain = chain;
     op->exec_cxt = apr_pcalloc(pool, sizeof(*op->exec_cxt));
     op->invoke = invoke_f;
-    op->destroy = destroy_f;
 
     op->nproj = list_length(op->plan->proj_list);
     op->proj_ary = apr_palloc(pool, sizeof(ExprState *) * op->nproj);
@@ -37,25 +34,7 @@ operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
 
     op->proj_schema = schema_make_from_exprs(op->nproj, op->proj_ary, pool);
 
-    apr_pool_cleanup_register(pool, op, operator_cleanup,
-                              apr_pool_cleanup_null);
-
     return op;
-}
-
-static apr_status_t
-operator_cleanup(void *data)
-{
-    Operator *op = (Operator *) data;
-
-    op->destroy(op);
-    return APR_SUCCESS;
-}
-
-void
-operator_destroy(Operator *op)
-{
-    ;
 }
 
 Tuple *

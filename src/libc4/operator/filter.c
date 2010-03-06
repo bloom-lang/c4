@@ -20,12 +20,6 @@ filter_invoke(Operator *op, Tuple *t)
         op->next->invoke(op->next, t);
 }
 
-static void
-filter_destroy(Operator *op)
-{
-    operator_destroy(op);
-}
-
 FilterOperator *
 filter_op_make(FilterPlan *plan, Operator *next_op, OpChain *chain)
 {
@@ -38,8 +32,7 @@ filter_op_make(FilterPlan *plan, Operator *next_op, OpChain *chain)
                                                  (PlanNode *) plan,
                                                  next_op,
                                                  chain,
-                                                 filter_invoke,
-                                                 filter_destroy);
+                                                 filter_invoke);
 
     filter_op->nquals = list_length(filter_op->op.plan->quals);
     filter_op->qual_ary = apr_palloc(filter_op->op.pool,
