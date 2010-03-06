@@ -177,34 +177,6 @@ unsigned int c4_hash_count(c4_hash_t *ht);
  */
 void c4_hash_clear(c4_hash_t *ht);
 
-/**
- * Declaration prototype for the iterator callback function of c4_hash_do().
- *
- * @param rec The data passed as the first argument to c4_hash_[v]do()
- * @param key The key from this iteration of the hash table
- * @param value The value from this iteration of the hash table
- * @remark Iteration continues while this callback function returns non-zero.
- * To export the callback function for c4_hash_do() it must be declared 
- * in the _NONSTD convention.
- */
-typedef int (c4_hash_do_callback_fn_t)(void *rec, const void *key,
-                                       const void *value);
-
-/**
- * Iterate over a hash table running the provided function once for every
- * element in the hash table. The @param comp function will be invoked for
- * every element in the hash table.
- *
- * @param comp The function to run
- * @param rec The data to pass as the first argument to the function
- * @param ht The hash table to iterate over
- * @return FALSE if one of the comp() iterations returned zero; TRUE if all
- *            iterations returned non-zero
- * @see c4_hash_do_callback_fn_t
- */
-int c4_hash_do(c4_hash_do_callback_fn_t *comp,
-                void *rec, const c4_hash_t *ht);
-
 /** @} */
 
 #endif  /* !C4_HASH_H */

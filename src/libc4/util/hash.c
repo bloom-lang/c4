@@ -400,33 +400,3 @@ void c4_hash_clear(c4_hash_t *ht)
     for (hi = c4_hash_first(NULL, ht); hi; hi = c4_hash_next(hi))
         c4_hash_remove(ht, hi->this->key);
 }
-
-/* This is basically the following...
- * for every element in hash table {
- *    comp elemeny.key, element.value
- * }
- *
- * Like with apr_table_do, the comp callback is called for each and every
- * element of the hash table.
- */
-int c4_hash_do(c4_hash_do_callback_fn_t *comp, void *rec, const c4_hash_t *ht)
-{
-    c4_hash_index_t  hix;
-    c4_hash_index_t *hi;
-    int rv, dorv  = 1;
-
-    hix.ht = (c4_hash_t *)ht;
-    c4_hash_iter_reset(&hix);
-
-    if ((hi = c4_hash_next(&hix))) {
-        /* Scan the entire table */
-        do {
-            rv = (*comp)(rec, hi->this->key, hi->this->val);
-        } while (rv && (hi = c4_hash_next(hi)));
-
-        if (rv == 0) {
-            dorv = 0;
-        }
-    }
-    return dorv;
-}
