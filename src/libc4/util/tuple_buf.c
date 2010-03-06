@@ -12,7 +12,7 @@ tuple_buf_make(int size, apr_pool_t *pool)
     buf->size = size;
     buf->start = 0;
     buf->end = 0;
-    buf->entries = ol_alloc(sizeof(TupleBufEntry) * buf->size);
+    buf->entries = ol_alloc(buf->size * sizeof(TupleBufEntry));
 
     apr_pool_cleanup_register(pool, buf, tuple_buf_cleanup,
                               apr_pool_cleanup_null);
@@ -74,7 +74,8 @@ tuple_buf_push(TupleBuf *buf, Tuple *tuple, TableDef *tbl_def)
         else
         {
             buf->size *= 2;
-            buf->entries = ol_realloc(buf->entries, buf->size);
+            buf->entries = ol_realloc(buf->entries,
+                                      buf->size * sizeof(TupleBufEntry));
         }
     }
 
