@@ -94,9 +94,7 @@ void *rset_remove(rset_t *rs, void *elem, unsigned int *new_refcount);
 
 /**
  * Prepare to start iterating over the elements of an rset. This creates an
- * iterator and places it "before" the first element in the rset; that is,
- * rset_iter_make() + rset_next() is equivalent to a single call to
- * rset_first().
+ * iterator and places it "before" the first element in the rset.
  * @param p The pool to allocate the rset_index_t iterator in. Must
  *          not be NULL.
  * @param rs The rset.

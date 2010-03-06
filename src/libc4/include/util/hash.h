@@ -117,8 +117,7 @@ bool c4_hash_remove(c4_hash_t *ht, const void *key);
 /**
  * Prepare to start iterating over the entries in a hash table. This
  * creates an iterator and places it "before" the first element in the
- * hash table; that is, c4_hash_iter_make() + c4_hash_next() is
- * equivalent to a single call to c4_hash_first().
+ * hash table.
  * @param p The pool to allocate the c4_hash_index_t iterator in. Must
  *          not be NULL.
  * @param ht The hash table
