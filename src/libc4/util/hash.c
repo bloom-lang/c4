@@ -37,9 +37,9 @@ typedef struct c4_hash_entry_t c4_hash_entry_t;
 
 struct c4_hash_entry_t {
     c4_hash_entry_t *next;
-    unsigned int      hash;
-    const void       *key;
-    const void       *val;
+    unsigned int     hash;
+    const void      *key;
+    void            *val;
 };
 
 /*
@@ -152,15 +152,14 @@ bool c4_hash_iter_next(c4_hash_index_t *hi)
     return true;
 }
 
-void c4_hash_this(c4_hash_index_t *hi,
-                  const void **key,
-                  void **val)
+void *c4_hash_this(c4_hash_index_t *hi, const void **key)
 {
     if (hi->at_end)
         FAIL();
 
-    if (key)  *key  = hi->this->key;
-    if (val)  *val  = (void *) hi->this->val;
+    if (key)
+        *key = hi->this->key;
+    return hi->this->val;
 }
 
 
@@ -259,7 +258,7 @@ unsigned int c4_hashfunc_default(const char *char_key, int klen,
 
 static c4_hash_entry_t **find_entry(c4_hash_t *ht,
                                     const void *key,
-                                    const void *val,
+                                    void *val,
                                     bool *is_new)
 {
     c4_hash_entry_t **hep, *he;
@@ -307,7 +306,7 @@ void *c4_hash_get(c4_hash_t *ht, const void *key)
         return NULL;
 }
 
-void c4_hash_set(c4_hash_t *ht, const void *key, const void *val)
+void c4_hash_set(c4_hash_t *ht, const void *key, void *val)
 {
     c4_hash_entry_t **hep;
     hep = find_entry(ht, key, val, NULL);
@@ -350,7 +349,7 @@ bool c4_hash_remove(c4_hash_t *ht, const void *key)
     return true;
 }
 
-void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, const void *val,
+void *c4_hash_set_if_new(c4_hash_t *ht, const void *key, void *val,
                          bool *is_new_p)
 {
     c4_hash_entry_t *he;

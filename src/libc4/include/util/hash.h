@@ -78,7 +78,7 @@ c4_hash_t *c4_hash_make(apr_pool_t *pool, int key_len, void *cb_data,
  * @param val Value to associate with the key
  * @remark If the value is NULL the hash entry is deleted.
  */
-void c4_hash_set(c4_hash_t *ht, const void *key, const void *val);
+void c4_hash_set(c4_hash_t *ht, const void *key, void *val);
 
 /**
  * Associated a value with a key in the hash table, iff the key is not
@@ -94,7 +94,7 @@ void c4_hash_set(c4_hash_t *ht, const void *key, const void *val);
  *         equivalent to c4_hash_get(ht, key).
  */
 void *c4_hash_set_if_new(c4_hash_t *ht, const void *key,
-                         const void *val, bool *is_new);
+                         void *val, bool *is_new);
 
 
 /**
@@ -141,12 +141,11 @@ bool c4_hash_iter_next(c4_hash_index_t *hi);
 /**
  * Get the current entry's details from the iteration state.
  * @param hi The iteration state
- * @param key Return pointer for the pointer to the key.
- * @param val Return pointer for the associated value.
- * @remark The return pointers should point to a variable that will be set to the
- *         corresponding data, or they may be NULL if the data isn't interesting.
+ * @param key Return pointer for the pointer to the key, or NULL the
+ *            caller is not interested in the key.
+ * @return Pointer for the associated value.
  */
-void c4_hash_this(c4_hash_index_t *hi, const void **key, void **val);
+void *c4_hash_this(c4_hash_index_t *hi, const void **key);
 
 /**
  * Get the number of key/value pairs in the hash table.
