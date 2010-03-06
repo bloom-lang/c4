@@ -6,7 +6,7 @@ count_init_f(Datum v)
 {
     Datum state;
 
-    state.i8 = 0;
+    state.i8 = 1;
     return state;
 }
 
