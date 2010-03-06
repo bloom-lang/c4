@@ -70,8 +70,6 @@ router_make(C4Runtime *c4)
 static void
 route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
 {
-    router->routing_deletes = is_delete;
-
     while (!tuple_buf_is_empty(buf))
     {
         Tuple *tuple;
@@ -84,6 +82,12 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
         while (op_chain != NULL)
         {
             Operator *start = op_chain->chain_start;
+
+            if (op_chain->anti_chain)
+                router->routing_deletes = !is_delete;
+            else
+                router->routing_deletes = is_delete;
+
             start->invoke(start, tuple);
             op_chain = op_chain->next;
         }

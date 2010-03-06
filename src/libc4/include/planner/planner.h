@@ -32,7 +32,6 @@ typedef struct InsertPlan
 {
     PlanNode plan;
     AstTableRef *head;
-    bool do_delete;
 } InsertPlan;
 
 typedef struct ProjectPlan

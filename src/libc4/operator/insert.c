@@ -7,13 +7,8 @@ insert_invoke(Operator *op, Tuple *t)
 {
     C4Runtime *c4 = op->chain->c4;
     InsertOperator *insert_op = (InsertOperator *) op;
-    bool do_delete;
 
-    do_delete = insert_op->do_delete;
     if (router_is_deleting(c4->router))
-        do_delete = !do_delete;
-
-    if (do_delete)
         router_delete_tuple(c4->router, t, insert_op->tbl_def);
     else
         router_insert_tuple(c4->router, t, insert_op->tbl_def, true);
@@ -34,7 +29,6 @@ insert_op_make(InsertPlan *plan, OpChain *chain)
                                                  insert_invoke);
 
     insert_op->tbl_def = cat_get_table(chain->c4->cat, plan->head->name);
-    insert_op->do_delete = plan->do_delete;
 
     return insert_op;
 }

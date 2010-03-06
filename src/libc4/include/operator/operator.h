@@ -21,6 +21,7 @@ struct OpChain
     C4Runtime *c4;
     TableDef *delta_tbl;
     AstTableRef *head;
+    bool anti_chain;
     Operator *chain_start;
     int length;
 

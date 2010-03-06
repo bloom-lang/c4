@@ -87,6 +87,7 @@ install_op_chain(OpChainPlan *chain_plan, InstallState *istate)
     op_chain->delta_tbl = cat_get_table(op_chain->c4->cat,
                                         chain_plan->delta_tbl->ref->name);
     op_chain->head = copy_node(chain_plan->head, chain_pool);
+    op_chain->anti_chain = chain_plan->delta_tbl->not;
     op_chain->length = list_length(chain_plan->chain);
     op_chain->next = NULL;
 

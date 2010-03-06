@@ -9,7 +9,6 @@ typedef struct InsertOperator
 {
     Operator op;
     TableDef *tbl_def;
-    bool do_delete;
 } InsertOperator;
 
 InsertOperator *insert_op_make(InsertPlan *plan, OpChain *chain);

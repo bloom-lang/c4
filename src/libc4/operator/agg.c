@@ -13,6 +13,11 @@ agg_invoke(Operator *op, Tuple *t)
     C4Runtime *c4 = op->chain->c4;
     bool need_work;
 
+#if 0
+    c4_log(c4, "%s: %s",
+           __func__, log_tuple(c4, t, op->proj_schema));
+#endif
+
     need_work = add_new_tuple(t, agg_op);
     if (need_work)
     {
