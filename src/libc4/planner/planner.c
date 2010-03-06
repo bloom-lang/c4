@@ -193,7 +193,7 @@ add_scan_op(AstJoinClause *ast_join, List *quals,
 {
     ScanPlan *splan;
 
-    splan = make_scan_plan(ast_join, quals, NULL, NULL, false, state->plan_pool);
+    splan = make_scan_plan(ast_join, quals, NULL, NULL, state->plan_pool);
     list_append(chain_plan->chain, splan);
 }
 
@@ -213,7 +213,7 @@ add_insert_op(AstRule *rule, OpChainPlan *chain_plan, PlannerState *state)
     InsertPlan *iplan;
 
     iplan = make_insert_plan(rule->head, chain_plan->delta_tbl->not,
-                             NULL, false, state->plan_pool);
+                             NULL, state->plan_pool);
     list_append(chain_plan->chain, iplan);
 }
 
@@ -222,7 +222,7 @@ add_project_op(OpChainPlan *chain_plan, PlannerState *state)
 {
     ProjectPlan *pplan;
 
-    pplan = make_project_plan(NULL, false, state->plan_pool);
+    pplan = make_project_plan(NULL, state->plan_pool);
     list_append(chain_plan->chain, pplan);
 }
 
@@ -233,7 +233,7 @@ add_agg_op(AstRule *rule, RulePlan *rplan,
     /* All the operator chains for a single rule share the same AggPlan */
     if (rplan->agg_plan == NULL)
         rplan->agg_plan = make_agg_plan(rule->head, chain_plan->delta_tbl->not,
-                                        false, NULL, false, state->plan_pool);
+                                        false, NULL, state->plan_pool);
 
     list_append(chain_plan->chain, rplan->agg_plan);
 }

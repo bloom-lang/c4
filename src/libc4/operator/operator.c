@@ -64,12 +64,6 @@ operator_do_project(Operator *op)
     Tuple *proj_tuple;
     int i;
 
-    if (op->plan->skip_proj)
-    {
-        tuple_pin(op->exec_cxt->inner);
-        return op->exec_cxt->inner;
-    }
-
     proj_tuple = tuple_make_empty(op->proj_schema);
     for (i = 0; i < op->nproj; i++)
     {

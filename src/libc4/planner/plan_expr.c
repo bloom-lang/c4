@@ -341,11 +341,8 @@ make_proj_list(PlanNode *plan, ListCell *chain_rest, AstJoinClause *outer_rel,
         ASSERT(chain_rest != NULL);
         next = lc_ptr(chain_rest);
         if (next->node.kind == PLAN_AGG || next->node.kind == PLAN_INSERT)
-        {
-            next->skip_proj = true;
             return make_tbl_ref_proj_list(chain_plan->head, outer_rel,
                                           chain_plan, state);
-        }
     }
 
     cxt.wip_plist = list_make(state->plan_pool);

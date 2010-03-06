@@ -85,7 +85,7 @@ static AggPlan *
 copy_agg_plan(AggPlan *in, apr_pool_t *p)
 {
     return make_agg_plan(in->head, in->do_delete, in->planned,
-                         in->plan.proj_list, in->plan.skip_proj, p);
+                         in->plan.proj_list, p);
 }
 
 static FilterPlan *
@@ -98,21 +98,20 @@ copy_filter_plan(FilterPlan *in, apr_pool_t *p)
 static InsertPlan *
 copy_insert_plan(InsertPlan *in, apr_pool_t *p)
 {
-    return make_insert_plan(in->head, in->do_delete, in->plan.proj_list,
-                            in->plan.skip_proj, p);
+    return make_insert_plan(in->head, in->do_delete, in->plan.proj_list, p);
 }
 
 static ProjectPlan *
 copy_project_plan(ProjectPlan *in, apr_pool_t *p)
 {
-    return make_project_plan(in->plan.proj_list, in->plan.skip_proj, p);
+    return make_project_plan(in->plan.proj_list, p);
 }
 
 static ScanPlan *
 copy_scan_plan(ScanPlan *in, apr_pool_t *p)
 {
     return make_scan_plan(in->scan_rel, in->plan.quals, in->plan.qual_exprs,
-                          in->plan.proj_list, in->plan.skip_proj, p);
+                          in->plan.proj_list, p);
 }
 
 static ExprOp *

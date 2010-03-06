@@ -150,14 +150,13 @@ make_ast_agg_expr(AstAggKind a_kind, C4Node *expr, apr_pool_t *p)
 
 AggPlan *
 make_agg_plan(AstTableRef *head, bool do_delete, bool planned,
-              List *proj_list, bool skip_proj, apr_pool_t *p)
+              List *proj_list, apr_pool_t *p)
 {
     AggPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_AGG;
     result->plan.quals = list_make(p);
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
-    result->plan.skip_proj = skip_proj;
     result->head = copy_node(head, p);
     result->do_delete = do_delete;
     result->planned = planned;
@@ -176,41 +175,38 @@ make_filter_plan(const char *tbl_name, List *quals,
         result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
-    result->plan.skip_proj = true;
     result->tbl_name = apr_pstrdup(p, tbl_name);
     return result;
 }
 
 InsertPlan *
 make_insert_plan(AstTableRef *head, bool do_delete,
-                 List *proj_list, bool skip_proj, apr_pool_t *p)
+                 List *proj_list, apr_pool_t *p)
 {
     InsertPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_INSERT;
     result->plan.quals = list_make(p);
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
-    result->plan.skip_proj = skip_proj;
     result->head = copy_node(head, p);
     result->do_delete = do_delete;
     return result;
 }
 
 ProjectPlan *
-make_project_plan(List *proj_list, bool skip_proj, apr_pool_t *p)
+make_project_plan(List *proj_list, apr_pool_t *p)
 {
     ProjectPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_PROJECT;
     result->plan.quals = list_make(p);
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
-    result->plan.skip_proj = skip_proj;
     return result;
 }
 
 ScanPlan *
 make_scan_plan(AstJoinClause *scan_rel, List *quals, List *qual_exprs,
-               List *proj_list, bool skip_proj, apr_pool_t *p)
+               List *proj_list, apr_pool_t *p)
 {
     ScanPlan *result = apr_pcalloc(p, sizeof(*result));
     result->plan.node.kind = PLAN_SCAN;
@@ -219,7 +215,6 @@ make_scan_plan(AstJoinClause *scan_rel, List *quals, List *qual_exprs,
         result->plan.qual_exprs = list_copy_deep(qual_exprs, p);
     if (proj_list)
         result->plan.proj_list = list_copy_deep(proj_list, p);
-    result->plan.skip_proj = skip_proj;
     result->scan_rel = copy_node(scan_rel, p);
     return result;
 }
