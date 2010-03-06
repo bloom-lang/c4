@@ -376,7 +376,7 @@ agg_cleanup(void *data)
     c4_hash_index_t *hi;
 
     ri = rset_iter_make(agg->op.pool, agg->tuple_set);
-    while (rset_next(ri))
+    while (rset_iter_next(ri))
     {
         Tuple *t;
 

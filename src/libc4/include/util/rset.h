@@ -117,22 +117,6 @@ void rset_iter_reset(rset_index_t *ri);
 bool rset_iter_next(rset_index_t *ri);
 
 /**
- * APR-style API to start iterating over the entries of an rset.
- * @param p The pool to allocate the rset_index_t iterator in. If NULL,
- *          an internal non-threadsafe iterator is used.
- * @param rs The rset.
- * @return Iteration state, or NULL if the rset is empty
- */
-rset_index_t *rset_first(apr_pool_t *p, rset_t *rs);
-
-/**
- * APR-style API for rset iteration.
- * @param ri The iteration state
- * @return The next updated iteration state, or NULL if out of elements.
- */
-rset_index_t *rset_next(rset_index_t *ri);
-
-/**
  * Get the current entry from the iteration state.
  * @param hi The iteration state
  * @return The current element

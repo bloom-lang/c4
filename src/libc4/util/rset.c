@@ -48,7 +48,7 @@ struct rset_entry_t {
  * Data structure for iterating through an rset.
  *
  * We keep a pointer to the next rset entry here to allow the current entry to
- * be freed or otherwise mangled between calls to rset_next().
+ * be freed or otherwise mangled between calls to rset_iter_next().
  */
 struct rset_index_t {
     rset_t       *rs;
@@ -71,7 +71,6 @@ struct rset_t {
     apr_pool_t           *pool;
     apr_pool_t           *array_pool;
     rset_entry_t        **array;
-    rset_index_t          iterator; /* For rset_first(NULL, ...) */
     unsigned int          count, max;
     void                 *user_data;
     rset_hashfunc_t       hash_func;
@@ -112,27 +111,6 @@ rset_t *rset_make(apr_pool_t *pool, void *cb_data,
 /*
  * rset iteration functions.
  */
-rset_index_t *rset_next(rset_index_t *ri)
-{
-    if (rset_iter_next(ri))
-        return ri;
-    else
-        return NULL;
-}
-
-rset_index_t *rset_first(apr_pool_t *p, rset_t *rs)
-{
-    rset_index_t *ri;
-    if (p)
-        ri = apr_palloc(p, sizeof(*ri));
-    else
-        ri = &rs->iterator;
-
-    ri->rs = rs;
-    rset_iter_reset(ri);
-    return rset_next(ri);
-}
-
 rset_index_t *rset_iter_make(apr_pool_t *p, rset_t *rs)
 {
     rset_index_t *ri;
@@ -193,11 +171,14 @@ static void expand_array(rset_t *rs)
 
     new_max = rs->max * 2 + 1;
     new_array = alloc_array(rs, new_max);
-    for (ri = rset_first(NULL, rs); ri; ri = rset_next(ri)) {
+
+    ri = rset_iter_make(old_array_pool, rs);
+    while (rset_iter_next(ri)) {
         unsigned int i = ri->this->hash & new_max;
         ri->this->next = new_array[i];
         new_array[i] = ri->this;
     }
+
     rs->array = new_array;
     rs->max = new_max;
 

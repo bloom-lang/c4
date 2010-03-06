@@ -12,7 +12,7 @@ mem_table_cleanup(AbstractTable *a_tbl)
     rset_index_t *ri;
 
     ri = rset_iter_make(a_tbl->pool, tbl->tuples);
-    while (rset_next(ri))
+    while (rset_iter_next(ri))
     {
         Tuple *t;
 
