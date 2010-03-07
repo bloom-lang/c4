@@ -15,7 +15,7 @@ typedef void (*program_install_f)(C4Client *c);
 static void
 usage(void)
 {
-    printf("Usage: bench [ -n | -j ]\n");
+    printf("Usage: bench [ -a | -n | -j ]\n");
     exit(1);
 }
 
@@ -63,6 +63,18 @@ do_net_bench(apr_pool_t *pool)
 }
 
 static void
+agg_install_program(C4Client *c)
+{
+    c4_install_str(c, "define(t, keys(0), {int8});");
+    c4_install_str(c, "define(b, keys(0), {int8, int8});");
+    c4_install_str(c, "define(c, keys(0), {int8, int8});");
+    c4_install_str(c, "b(X, Y + 1) :- b(X, Y), Y < 100000;");
+    c4_install_str(c, "b(X, 0) :- t(X);");
+    c4_install_str(c, "t(X + 1) :- t(X), X < 20;");
+    c4_install_str(c, "c(X, count<Y>) :- b(X, Y);");
+}
+
+static void
 perf_install_program(C4Client *c)
 {
     c4_install_str(c, "define(t, keys(0), {int8});");
@@ -95,6 +107,7 @@ main(int argc, const char *argv[])
 {
     static const apr_getopt_option_t opt_option[] =
         {
+            {"agg", 'a', false, "agg benchmark"},
             {"join", 'j', false, "join benchmark"},
             {"net", 'n', false, "network benchmark"},
             { NULL, 0, 0, NULL }
@@ -104,6 +117,7 @@ main(int argc, const char *argv[])
     int optch;
     const char *optarg;
     apr_status_t s;
+    bool agg_bench = false;
     bool join_bench = false;
     bool net_bench = false;
     apr_time_t start_time;
@@ -118,6 +132,10 @@ main(int argc, const char *argv[])
     {
         switch (optch)
         {
+            case 'a':
+                agg_bench = true;
+                break;
+
             case 'j':
                 join_bench = true;
                 break;
@@ -137,7 +155,9 @@ main(int argc, const char *argv[])
 
     start_time = apr_time_now();
 
-    if (join_bench)
+    if (agg_bench)
+        do_simple_bench(agg_install_program, pool);
+    else if (join_bench)
         do_simple_bench(join_install_program, pool);
     else if (net_bench)
         do_net_bench(pool);
