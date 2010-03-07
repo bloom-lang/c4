@@ -125,8 +125,6 @@ network_make(C4Runtime *c4, int port)
     if (s != APR_SUCCESS)
         FAIL_APR(s);
 
-    printf("Using poll method: %s\n", apr_pollset_method_name(net->pollset));
-
     net->pollfd = pollfd_make(net->pool, net->serv_sock, APR_POLLIN, NULL);
     s = apr_pollset_add(net->pollset, net->pollfd);
     if (s != APR_SUCCESS)
