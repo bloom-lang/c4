@@ -149,7 +149,7 @@ void
 router_insert_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
                     bool check_remote)
 {
-#if 0
+#if 1
     c4_log(router->c4, "%s: %s (=> %s)",
            __func__, log_tuple(router->c4, tuple, tbl_def->schema),
            tbl_def->name);
@@ -172,7 +172,7 @@ router_insert_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
 void
 router_delete_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
 {
-#if 0
+#if 1
     c4_log(router->c4, "%s: %s (=> %s)",
            __func__, log_tuple(router->c4, tuple, tbl_def->schema),
            tbl_def->name);

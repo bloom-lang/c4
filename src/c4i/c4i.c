@@ -9,6 +9,8 @@
 
 #include "c4-api.h"
 
+#define MAX_SOURCE_STRINGS 32
+
 static void usage(void);
 static C4Client *setup_c4(apr_pool_t *pool, apr_int16_t port,
                           const char *srcfile);
@@ -29,13 +31,18 @@ main(int argc, const char *argv[])
     const char *optarg;
     apr_status_t s;
     apr_int64_t port = 0;
-    char *src_string = NULL;
+    char **src_strings;
+    int num_strings;
+    int i;
     C4Client *c;
 
     c4_initialize();
 
     (void) apr_pool_create(&pool, NULL);
     (void) apr_getopt_init(&opt, pool, argc, argv);
+
+    num_strings = 0;
+    src_strings = apr_palloc(pool, sizeof(*src_strings) * MAX_SOURCE_STRINGS);
 
     while ((s = apr_getopt_long(opt, opt_option,
                                 &optch, &optarg)) == APR_SUCCESS)
@@ -47,13 +54,18 @@ main(int argc, const char *argv[])
                 break;
 
             case 'p':
+                if (port != 0)  /* Only allow a single "-p" option */
+                    usage();
                 port = apr_atoi64(optarg);
                 if (port < 0 || port > APR_INT16_MAX)
                     usage();
                 break;
 
             case 's':
-                src_string = apr_pstrdup(pool, optarg);
+                if (num_strings + 1 == MAX_SOURCE_STRINGS)
+                    usage();
+                src_strings[num_strings] = apr_pstrdup(pool, optarg);
+                num_strings++;
                 break;
 
             default:
@@ -74,8 +86,9 @@ main(int argc, const char *argv[])
         usage();
 
     c = setup_c4(pool, (apr_int16_t) port, argv[opt->ind]);
-    if (src_string != NULL)
-        c4_install_str(c, src_string);
+
+    for (i = 0; i < num_strings; i++)
+        c4_install_str(c, src_strings[i]);
 
     while (true)
         sleep(1);
