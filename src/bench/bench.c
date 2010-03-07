@@ -15,7 +15,7 @@ typedef void (*program_install_f)(C4Client *c);
 static void
 usage(void)
 {
-    printf("Usage: bench [ -n ]\n");
+    printf("Usage: bench [ -n | -j ]\n");
     exit(1);
 }
 
