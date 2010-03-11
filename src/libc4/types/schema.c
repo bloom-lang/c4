@@ -6,6 +6,7 @@
 #include "types/schema.h"
 
 static void lookup_type_funcs(Schema *schema, apr_pool_t *pool);
+static TuplePool *schema_new_tuple_pool(Schema *schema, apr_pool_t *pool);
 
 Schema *
 schema_make(int len, DataType *types, apr_pool_t *pool)
@@ -16,7 +17,7 @@ schema_make(int len, DataType *types, apr_pool_t *pool)
     schema->len = len;
     schema->types = apr_pmemdup(pool, types, len * sizeof(DataType));
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = make_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -41,7 +42,7 @@ schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
         i++;
     }
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = make_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -61,7 +62,7 @@ schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
         schema->types[i] = expr_ary[i]->expr->type;
     }
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = make_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
 
     return schema;
 }
@@ -86,10 +87,16 @@ schema_equal(Schema *s1, Schema *s2)
 /*
  * Returns the size of a Tuple that has the given schema.
  */
-apr_size_t
+static apr_size_t
 schema_get_tuple_size(Schema *schema)
 {
     return offsetof(Tuple, vals) + (schema->len * sizeof(Datum));
+}
+
+static TuplePool *
+schema_new_tuple_pool(Schema *schema, apr_pool_t *pool)
+{
+    return make_tuple_pool(schema_get_tuple_size(schema), pool);
 }
 
 static

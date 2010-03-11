@@ -1,18 +1,16 @@
 #ifndef TUPLE_POOL_H
 #define TUPLE_POOL_H
 
-struct Schema;
 struct Tuple;
 
 /*
- * A TuplePool is a memory allocator that is specialized for Tuples with a
- * particular schema. Because all such Tuples have the same size, we can do
- * better than retail malloc() and free(): we grab large chunks of memory
- * via apr_palloc() and then use them to hold many individual Tuples. There
- * is also a simple freelist: when a Tuple is returned to the pool, it is
- * then eligible to be reused as the storage for a newly-allocated Tuple.
- * Note that we make no attempt to avoid fragmentation or return the contents
- * of the freelist to the OS if it grows large.
+ * A TuplePool is a memory allocator that is specialized for Tuples of a
+ * particular size. We can do better than retail malloc() and free(): we grab
+ * large chunks of memory via apr_palloc() and then use them to hold many
+ * individual Tuples. There is also a simple freelist: when a Tuple is returned
+ * to the pool, it is then eligible to be reused as the storage for a
+ * newly-allocated Tuple.  Note that we make no attempt to avoid fragmentation
+ * or return the contents of the freelist to the OS if it grows large.
  *
  * XXX: We really only need a TuplePool for each distinct tuple size.
  */
@@ -45,7 +43,7 @@ typedef struct TuplePool
     int nalloc_total;
 } TuplePool;
 
-TuplePool *make_tuple_pool(struct Schema *schema, apr_pool_t *pool);
+TuplePool *make_tuple_pool(apr_size_t alloc_sz, apr_pool_t *pool);
 struct Tuple *tuple_pool_loan(TuplePool *tpool);
 void tuple_pool_return(TuplePool *tpool, struct Tuple *tuple);
 

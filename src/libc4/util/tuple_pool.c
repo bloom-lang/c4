@@ -1,12 +1,11 @@
 #include "c4-internal.h"
-#include "types/schema.h"
 #include "types/tuple.h"
 #include "util/tuple_pool.h"
 
 #define INITIAL_TPOOL_SIZE 64
 
 TuplePool *
-make_tuple_pool(Schema *schema, apr_pool_t *pool)
+make_tuple_pool(apr_size_t alloc_sz, apr_pool_t *pool)
 {
     TuplePool *tpool;
 
@@ -14,7 +13,7 @@ make_tuple_pool(Schema *schema, apr_pool_t *pool)
     tpool->pool = pool;
     tpool->free_head = NULL;
     /* XXX: Ensure this is word-aligned */
-    tpool->tuple_size = schema_get_tuple_size(schema);
+    tpool->tuple_size = alloc_sz;
     tpool->ntotal = 0;
     tpool->nfree = 0;
     tpool->nalloc_unused = 0;
