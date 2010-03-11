@@ -40,7 +40,7 @@ typedef struct TuplePool
     int nalloc_unused;
     int nalloc_total;
 
-    /* List of tuple pools maintained by the TuplePoolMgr */
+    /* Next element in list of tuple pools maintained by the TuplePoolMgr */
     struct TuplePool *next;
 } TuplePool;
 
