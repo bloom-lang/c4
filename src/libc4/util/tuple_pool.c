@@ -2,6 +2,44 @@
 #include "types/tuple.h"
 #include "util/tuple_pool.h"
 
+struct TuplePool
+{
+    apr_pool_t *pool;
+    struct Tuple *free_head;
+    apr_size_t elem_size;
+
+    /*
+     * The total number of tuples of this schema we've allocated space
+     * for. This includes live tuples, free tuples, and tuples in
+     * "nalloc_unused".
+     */
+    int ntotal;
+
+    /*
+     * The number of tuples currently on the freelist. This doesn't include
+     * "nalloc_unused" below.
+     */
+    int nfree;
+
+    /*
+     * The current raw allocation that we're assigning tuples from. This is
+     * used when we can't find a free tuple on the freelist. When the
+     * allocation is exhausted, we allocate a new block from apr_palloc().
+     */
+    char *raw_alloc;
+    int nalloc_unused;
+    int nalloc_total;
+
+    /* Next element in list of tuple pools maintained by the TuplePoolMgr */
+    TuplePool *next;
+};
+
+struct TuplePoolMgr
+{
+    TuplePool *head;
+    apr_pool_t *pool;
+};
+
 #define INITIAL_TPOOL_SIZE 64
 
 static TuplePool *
