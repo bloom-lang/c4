@@ -95,6 +95,10 @@ tpool_mgr_make(apr_pool_t *pool)
     return result;
 }
 
+/*
+ * This is not efficient, but we don't expect that it will be called in the
+ * critical path.
+ */
 TuplePool *
 get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t alloc_sz)
 {
