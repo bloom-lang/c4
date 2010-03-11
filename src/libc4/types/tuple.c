@@ -6,7 +6,11 @@
 Tuple *
 tuple_make_empty(Schema *s)
 {
-    return tuple_pool_loan(s->tuple_pool);
+    Tuple *t;
+
+    t = tuple_pool_loan(s->tuple_pool);
+    t->u.refcount = 1;
+    return t;
 }
 
 Tuple *

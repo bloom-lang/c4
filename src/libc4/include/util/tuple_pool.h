@@ -1,8 +1,6 @@
 #ifndef TUPLE_POOL_H
 #define TUPLE_POOL_H
 
-struct Tuple;
-
 /*
  * A TuplePool is a memory allocator that is specialized for Tuples of a
  * particular size. We can do better than retail malloc() and free(): we grab
@@ -14,8 +12,8 @@ struct Tuple;
  */
 typedef struct TuplePool TuplePool;
 
-struct Tuple *tuple_pool_loan(TuplePool *tpool);
-void tuple_pool_return(TuplePool *tpool, struct Tuple *tuple);
+void *tuple_pool_loan(TuplePool *tpool);
+void tuple_pool_return(TuplePool *tpool, void *ptr);
 
 /*
  * A TuplePoolMgr manages the set of TuplePools in a given C4 instance. It is

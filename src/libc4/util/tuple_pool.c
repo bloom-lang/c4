@@ -1,11 +1,15 @@
 #include "c4-internal.h"
-#include "types/tuple.h"
 #include "util/tuple_pool.h"
+
+typedef struct FreeListElem
+{
+    struct FreeListElem *next_free;
+} FreeListElem;
 
 struct TuplePool
 {
     apr_pool_t *pool;
-    struct Tuple *free_head;
+    FreeListElem *free_head;
     apr_size_t elem_size;
 
     /*
@@ -65,10 +69,10 @@ make_tuple_pool(apr_size_t elem_size, TuplePoolMgr *tpool_mgr)
     return tpool;
 }
 
-Tuple *
+void *
 tuple_pool_loan(TuplePool *tpool)
 {
-    Tuple *result;
+    void *result;
 
     /*
      * Use the free list if there are any tuples in it. We return the
@@ -78,10 +82,8 @@ tuple_pool_loan(TuplePool *tpool)
     if (tpool->nfree > 0)
     {
         result = tpool->free_head;
-        tpool->free_head = result->u.next_free;
+        tpool->free_head = tpool->free_head->next_free;
         tpool->nfree--;
-
-        result->u.refcount = 1;
         return result;
     }
 
@@ -103,8 +105,7 @@ tuple_pool_loan(TuplePool *tpool)
         tpool->ntotal += alloc_size;
     }
 
-    result = (Tuple *) tpool->raw_alloc;
-    result->u.refcount = 1;
+    result = (void *) tpool->raw_alloc;
     tpool->raw_alloc += tpool->elem_size;
     tpool->nalloc_unused--;
 
@@ -112,13 +113,13 @@ tuple_pool_loan(TuplePool *tpool)
 }
 
 void
-tuple_pool_return(TuplePool *tpool, Tuple *tuple)
+tuple_pool_return(TuplePool *tpool, void *ptr)
 {
-    ASSERT(tuple->u.refcount == 0);
+    FreeListElem *new_elem = (FreeListElem *) ptr;
 
     tpool->nfree++;
-    tuple->u.next_free = tpool->free_head;
-    tpool->free_head = tuple;
+    new_elem->next_free = tpool->free_head;
+    tpool->free_head = new_elem;
 }
 
 TuplePoolMgr *

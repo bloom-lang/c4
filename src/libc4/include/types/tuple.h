@@ -14,11 +14,6 @@
 typedef struct Tuple
 {
     /*
-     * When tuples are on a TuplePool freelist, we need a way to record the next
-     * element of the freelist. Since Tuples on the freelist have refcount zero
-     * by definition, we just reuse the "refcount" struct element. Due to
-     * padding, it probably doesn't cost any extra space.
-     *
      * TODO: On LP64 machines, we have 6 bytes of padding we can use. One
      * possible use for them is to cache the per-Tuple hash code.
      */
