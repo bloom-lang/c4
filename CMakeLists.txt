@@ -26,7 +26,7 @@ find_package(SQLite3 REQUIRED)
 message (STATUS "APR version: ${APR_VERSION}")
 message (STATUS "APU version: ${APU_VERSION}")
 
-set(CMAKE_C_FLAGS "-g -Wall -Wextra -Wdeclaration-after-statement -Wmissing-declarations -Wmissing-prototypes -Winline -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra -Wredundant-decls -Wstrict-prototypes -Wdeclaration-after-statement -Wmissing-declarations -Wmissing-prototypes -Winline -pedantic -std=gnu99 ${APR_CFLAGS} ${CMAKE_C_FLAGS}")
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -DC4_ASSERT_ENABLED")
