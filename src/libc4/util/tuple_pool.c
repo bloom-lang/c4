@@ -4,13 +4,13 @@
 
 #define INITIAL_TPOOL_SIZE 64
 
-TuplePool *
-make_tuple_pool(apr_size_t alloc_sz, apr_pool_t *pool)
+static TuplePool *
+make_tuple_pool(apr_size_t alloc_sz, TuplePoolMgr *tpool_mgr)
 {
     TuplePool *tpool;
 
-    tpool = apr_palloc(pool, sizeof(*tpool));
-    tpool->pool = pool;
+    tpool = apr_palloc(tpool_mgr->pool, sizeof(*tpool));
+    tpool->pool = tpool_mgr->pool;
     tpool->free_head = NULL;
     /* XXX: Ensure this is word-aligned */
     tpool->tuple_size = alloc_sz;
@@ -19,6 +19,10 @@ make_tuple_pool(apr_size_t alloc_sz, apr_pool_t *pool)
     tpool->nalloc_unused = 0;
     tpool->nalloc_total = 0;
     tpool->raw_alloc = NULL;
+
+    /* Add to linked list of tuple pools */
+    tpool->next = tpool_mgr->head;
+    tpool_mgr->head = tpool;
 
     return tpool;
 }
@@ -77,4 +81,30 @@ tuple_pool_return(TuplePool *tpool, Tuple *tuple)
     tpool->nfree++;
     tuple->u.next_free = tpool->free_head;
     tpool->free_head = tuple;
+}
+
+TuplePoolMgr *
+tpool_mgr_make(apr_pool_t *pool)
+{
+    TuplePoolMgr *result;
+
+    result = apr_palloc(pool, sizeof(*result));
+    result->head = NULL;
+    result->pool = pool;
+
+    return result;
+}
+
+TuplePool *
+get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t alloc_sz)
+{
+    TuplePool *tpool;
+
+    for (tpool = tpool_mgr->head; tpool != NULL; tpool = tpool->next)
+    {
+        if (tpool->tuple_size == alloc_sz)
+            return tpool;
+    }
+
+    return make_tuple_pool(alloc_sz, tpool_mgr);
 }

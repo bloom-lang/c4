@@ -22,9 +22,10 @@ typedef struct Schema
 
 struct ExprState;
 
-Schema *schema_make(int len, DataType *types, apr_pool_t *pool);
-Schema *schema_make_from_ast(List *ast_schema, apr_pool_t *pool);
-Schema *schema_make_from_exprs(int len, struct ExprState **expr_ary, apr_pool_t *pool);
+Schema *schema_make(int len, DataType *types, C4Runtime *c4, apr_pool_t *pool);
+Schema *schema_make_from_ast(List *ast_schema, C4Runtime *c4, apr_pool_t *pool);
+Schema *schema_make_from_exprs(int len, struct ExprState **expr_ary,
+                               C4Runtime *c4, apr_pool_t *pool);
 bool schema_equal(Schema *s1, Schema *s2);
 char *schema_to_sql_param_str(Schema *schema, apr_pool_t *pool);
 

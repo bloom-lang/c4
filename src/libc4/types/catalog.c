@@ -70,7 +70,7 @@ cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
     tbl_def->pool = tbl_pool;
     tbl_def->name = apr_pstrdup(tbl_pool, name);
     tbl_def->storage = storage;
-    tbl_def->schema = schema_make_from_ast(schema, tbl_pool);
+    tbl_def->schema = schema_make_from_ast(schema, cat->c4, tbl_pool);
     tbl_def->key_list = list_copy(key_list, tbl_pool);
     tbl_def->ls_colno = find_loc_spec_colno(schema);
     tbl_def->cb = NULL;

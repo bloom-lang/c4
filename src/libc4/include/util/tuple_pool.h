@@ -11,8 +11,6 @@ struct Tuple;
  * to the pool, it is then eligible to be reused as the storage for a
  * newly-allocated Tuple.  Note that we make no attempt to avoid fragmentation
  * or return the contents of the freelist to the OS if it grows large.
- *
- * XXX: We really only need a TuplePool for each distinct tuple size.
  */
 typedef struct TuplePool
 {
@@ -41,10 +39,21 @@ typedef struct TuplePool
     char *raw_alloc;
     int nalloc_unused;
     int nalloc_total;
+
+    /* List of tuple pools maintained by the TuplePoolMgr */
+    struct TuplePool *next;
 } TuplePool;
 
-TuplePool *make_tuple_pool(apr_size_t alloc_sz, apr_pool_t *pool);
 struct Tuple *tuple_pool_loan(TuplePool *tpool);
 void tuple_pool_return(TuplePool *tpool, struct Tuple *tuple);
+
+typedef struct TuplePoolMgr
+{
+    TuplePool *head;
+    apr_pool_t *pool;
+} TuplePoolMgr;
+
+TuplePoolMgr *tpool_mgr_make(apr_pool_t *pool);
+TuplePool *get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t alloc_sz);
 
 #endif  /* TUPLE_POOL_H */

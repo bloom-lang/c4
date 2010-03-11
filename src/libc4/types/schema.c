@@ -6,10 +6,10 @@
 #include "types/schema.h"
 
 static void lookup_type_funcs(Schema *schema, apr_pool_t *pool);
-static TuplePool *schema_new_tuple_pool(Schema *schema, apr_pool_t *pool);
+static TuplePool *schema_new_tuple_pool(Schema *schema, C4Runtime *c4);
 
 Schema *
-schema_make(int len, DataType *types, apr_pool_t *pool)
+schema_make(int len, DataType *types, C4Runtime *c4, apr_pool_t *pool)
 {
     Schema *schema;
 
@@ -17,13 +17,13 @@ schema_make(int len, DataType *types, apr_pool_t *pool)
     schema->len = len;
     schema->types = apr_pmemdup(pool, types, len * sizeof(DataType));
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, c4);
 
     return schema;
 }
 
 Schema *
-schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
+schema_make_from_ast(List *schema_ast, C4Runtime *c4, apr_pool_t *pool)
 {
     Schema *schema;
     int i;
@@ -42,13 +42,13 @@ schema_make_from_ast(List *schema_ast, apr_pool_t *pool)
         i++;
     }
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, c4);
 
     return schema;
 }
 
 Schema *
-schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
+schema_make_from_exprs(int len, ExprState **expr_ary, C4Runtime *c4, apr_pool_t *pool)
 {
     Schema *schema;
     int i;
@@ -62,7 +62,7 @@ schema_make_from_exprs(int len, ExprState **expr_ary, apr_pool_t *pool)
         schema->types[i] = expr_ary[i]->expr->type;
     }
     lookup_type_funcs(schema, pool);
-    schema->tuple_pool = schema_new_tuple_pool(schema, pool);
+    schema->tuple_pool = schema_new_tuple_pool(schema, c4);
 
     return schema;
 }
@@ -94,9 +94,9 @@ schema_get_tuple_size(Schema *schema)
 }
 
 static TuplePool *
-schema_new_tuple_pool(Schema *schema, apr_pool_t *pool)
+schema_new_tuple_pool(Schema *schema, C4Runtime *c4)
 {
-    return make_tuple_pool(schema_get_tuple_size(schema), pool);
+    return get_tuple_pool(c4->tpool_mgr, schema_get_tuple_size(schema));
 }
 
 static

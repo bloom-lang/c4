@@ -32,7 +32,8 @@ operator_make(C4NodeKind kind, apr_size_t sz, PlanNode *plan,
         op->proj_ary[i++] = make_expr_state(expr, op->exec_cxt, pool);
     }
 
-    op->proj_schema = schema_make_from_exprs(op->nproj, op->proj_ary, pool);
+    op->proj_schema = schema_make_from_exprs(op->nproj, op->proj_ary,
+                                             chain->c4, pool);
 
     return op;
 }

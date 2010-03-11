@@ -87,6 +87,7 @@ c4_runtime_make(int port)
     c4->router = router_make(c4);
     c4->sql = sqlite_init(c4);
     c4->timer = timer_make(c4);
+    c4->tpool_mgr = tpool_mgr_make(c4->pool);
     c4->port = network_get_port(c4->net);
     c4->local_addr = get_local_addr(c4->port, c4->tmp_pool);
     c4->base_dir = get_c4_base_dir(c4->port, c4->pool, c4->tmp_pool);

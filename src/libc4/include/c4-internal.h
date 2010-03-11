@@ -42,6 +42,7 @@ struct C4Runtime
     struct C4Router *router;
     struct SQLiteState *sql;
     struct C4Timer *timer;
+    struct TuplePoolMgr *tpool_mgr;
 
     int port;
     Datum local_addr;
