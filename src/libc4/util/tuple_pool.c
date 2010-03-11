@@ -12,7 +12,6 @@ make_tuple_pool(Schema *schema, apr_pool_t *pool)
 
     tpool = apr_palloc(pool, sizeof(*tpool));
     tpool->pool = pool;
-    tpool->schema = schema;
     tpool->free_head = NULL;
     /* XXX: Ensure this is word-aligned */
     tpool->tuple_size = schema_get_tuple_size(schema);

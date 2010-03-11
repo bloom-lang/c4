@@ -19,7 +19,6 @@ struct Tuple;
 typedef struct TuplePool
 {
     apr_pool_t *pool;
-    struct Schema *schema;
     struct Tuple *free_head;
     apr_size_t tuple_size;
 
