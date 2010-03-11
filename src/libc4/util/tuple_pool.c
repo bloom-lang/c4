@@ -5,7 +5,7 @@
 #define INITIAL_TPOOL_SIZE 64
 
 static TuplePool *
-make_tuple_pool(apr_size_t alloc_sz, TuplePoolMgr *tpool_mgr)
+make_tuple_pool(apr_size_t elem_size, TuplePoolMgr *tpool_mgr)
 {
     TuplePool *tpool;
 
@@ -13,7 +13,7 @@ make_tuple_pool(apr_size_t alloc_sz, TuplePoolMgr *tpool_mgr)
     tpool->pool = tpool_mgr->pool;
     tpool->free_head = NULL;
     /* XXX: Ensure this is word-aligned */
-    tpool->tuple_size = alloc_sz;
+    tpool->elem_size = elem_size;
     tpool->ntotal = 0;
     tpool->nfree = 0;
     tpool->nalloc_unused = 0;
@@ -59,7 +59,7 @@ tuple_pool_loan(TuplePool *tpool)
             alloc_size = tpool->nalloc_total * 2;
 
         tpool->raw_alloc = apr_palloc(tpool->pool,
-                                      alloc_size * tpool->tuple_size);
+                                      alloc_size * tpool->elem_size);
         tpool->nalloc_total = alloc_size;
         tpool->nalloc_unused = alloc_size;
         tpool->ntotal += alloc_size;
@@ -67,7 +67,7 @@ tuple_pool_loan(TuplePool *tpool)
 
     result = (Tuple *) tpool->raw_alloc;
     result->u.refcount = 1;
-    tpool->raw_alloc += tpool->tuple_size;
+    tpool->raw_alloc += tpool->elem_size;
     tpool->nalloc_unused--;
 
     return result;
@@ -100,15 +100,15 @@ tpool_mgr_make(apr_pool_t *pool)
  * critical path.
  */
 TuplePool *
-get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t alloc_sz)
+get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t elem_size)
 {
     TuplePool *tpool;
 
     for (tpool = tpool_mgr->head; tpool != NULL; tpool = tpool->next)
     {
-        if (tpool->tuple_size == alloc_sz)
+        if (tpool->elem_size == elem_size)
             return tpool;
     }
 
-    return make_tuple_pool(alloc_sz, tpool_mgr);
+    return make_tuple_pool(elem_size, tpool_mgr);
 }

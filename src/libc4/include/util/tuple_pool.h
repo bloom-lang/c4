@@ -16,7 +16,7 @@ typedef struct TuplePool
 {
     apr_pool_t *pool;
     struct Tuple *free_head;
-    apr_size_t tuple_size;
+    apr_size_t elem_size;
 
     /*
      * The total number of tuples of this schema we've allocated space
@@ -54,6 +54,6 @@ typedef struct TuplePoolMgr
 } TuplePoolMgr;
 
 TuplePoolMgr *tpool_mgr_make(apr_pool_t *pool);
-TuplePool *get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t alloc_sz);
+TuplePool *get_tuple_pool(TuplePoolMgr *tpool_mgr, apr_size_t elem_size);
 
 #endif  /* TUPLE_POOL_H */
