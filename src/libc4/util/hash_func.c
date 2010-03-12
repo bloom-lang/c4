@@ -16,6 +16,7 @@
  * of a slower multi-purpose function.
  */
 #include "c4-internal.h"
+#include "util/hash_func.h"
 
 /* Get a bit mask of the bits set in non-uint32 aligned addresses */
 #define UINT32_ALIGN_MASK (sizeof(apr_uint32_t) - 1)
