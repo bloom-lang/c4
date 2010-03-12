@@ -9,7 +9,7 @@ tuple_make_empty(Schema *s)
     Tuple *t;
 
     t = tuple_pool_loan(s->tuple_pool);
-    t->u.refcount = 1;
+    t->refcount = 1;
     return t;
 }
 
@@ -43,17 +43,17 @@ tuple_make_from_strings(Schema *s, char **values)
 void
 tuple_pin(Tuple *tuple)
 {
-    ASSERT(tuple->u.refcount > 0);
-    tuple->u.refcount++;
+    ASSERT(tuple->refcount > 0);
+    tuple->refcount++;
 }
 
 void
 tuple_unpin(Tuple *tuple, Schema *s)
 {
-    ASSERT(tuple->u.refcount > 0);
-    tuple->u.refcount--;
+    ASSERT(tuple->refcount > 0);
+    tuple->refcount--;
 
-    if (tuple->u.refcount == 0)
+    if (tuple->refcount == 0)
     {
         int i;
 

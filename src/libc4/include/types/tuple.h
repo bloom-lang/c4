@@ -17,12 +17,7 @@ typedef struct Tuple
      * TODO: On LP64 machines, we have 6 bytes of padding we can use. One
      * possible use for them is to cache the per-Tuple hash code.
      */
-    union
-    {
-        struct Tuple *next_free;
-        apr_uint16_t refcount;
-    } u;
-
+    apr_uint16_t refcount;
     Datum vals[1];      /* Variable-length array */
 } Tuple;
 
