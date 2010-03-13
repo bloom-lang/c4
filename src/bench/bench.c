@@ -68,9 +68,9 @@ agg_install_program(C4Client *c)
     c4_install_str(c, "define(t, keys(0), {int8});");
     c4_install_str(c, "define(b, keys(0), {int8, int8});");
     c4_install_str(c, "define(c, keys(0), {int8, int8});");
-    c4_install_str(c, "b(X, Y + 1) :- b(X, Y), Y < 100000;");
+    c4_install_str(c, "b(X, Y + 1) :- b(X, Y), Y < 150000;");
     c4_install_str(c, "b(X, 0) :- t(X);");
-    c4_install_str(c, "t(X + 1) :- t(X), X < 20;");
+    c4_install_str(c, "t(X + 1) :- t(X), X < 30;");
     c4_install_str(c, "c(X, count<Y>) :- b(X, Y);");
 }
 
