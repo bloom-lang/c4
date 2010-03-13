@@ -149,6 +149,11 @@ bool c4_hash_iter_next(c4_hash_index_t *hi)
         hi->this = hi->ht->array[hi->index++];
     }
     hi->next = hi->this->next;
+    /*
+     * GCC perf hack: We are very likely to read the next entry in the hash
+     * table in the near future. Hence, prefetch to try to avoid a cache miss.
+     */
+    __builtin_prefetch(hi->next);
     return true;
 }
 

@@ -145,6 +145,11 @@ bool rset_iter_next(rset_index_t *ri)
         ri->this = ri->rs->array[ri->index++];
     }
     ri->next = ri->this->next;
+    /*
+     * GCC perf hack: We are very likely to read the next entry in the rset in
+     * the near future. Hence, prefetch to try to avoid a cache miss.
+     */
+    __builtin_prefetch(ri->next);
     return true;
 }
 
