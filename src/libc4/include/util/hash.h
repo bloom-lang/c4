@@ -54,11 +54,6 @@ typedef bool (*c4_keycomp_func_t)(const void *k1, const void *k2,
                                   int klen, void *user_data);
 
 /**
- * The default hash function.
- */
-unsigned int c4_hashfunc_default(const char *key, int klen, void *user_data);
-
-/**
  * Create a hash table
  * @param pool The pool to allocate the hash table out of
  * @param key_len The length of keys in the table (must be fixed)
