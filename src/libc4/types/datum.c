@@ -2,7 +2,7 @@
 
 #include "c4-internal.h"
 #include "types/datum.h"
-#include "util/hash.h"
+#include "util/hash_func.h"
 
 bool
 bool_equal(Datum d1, Datum d2)
@@ -192,22 +192,18 @@ datum_cmp(Datum d1, Datum d2, DataType type)
 apr_uint32_t
 bool_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(bool);
-    return c4_hashfunc_default((char *) &(d.b), len, NULL);
+    return hash_any((unsigned char *) &(d.b), sizeof(bool));
 }
 
 apr_uint32_t
 char_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(unsigned char);
-    return c4_hashfunc_default((char *) &(d.c), len, NULL);
+    return hash_any((unsigned char *) &(d.c), sizeof(unsigned char));
 }
 
 apr_uint32_t
 double_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(double);
-
     /*
      * Per IEEE754, minus zero and zero may have different bit patterns, but
      * they should compare as equal. Therefore, ensure they hash to the same
@@ -216,35 +212,31 @@ double_hash(Datum d)
     if (d.d8 == 0)
         return 0;
 
-    return c4_hashfunc_default((char *) &(d.d8), len, NULL);
+    return hash_any((unsigned char *) &(d.d8), sizeof(double));
 }
 
 apr_uint32_t
 int2_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(apr_int16_t);
-    return c4_hashfunc_default((char *) &(d.i2), len, NULL);
+    return hash_any((unsigned char *) &(d.i2), sizeof(apr_int16_t));
 }
 
 apr_uint32_t
 int4_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(apr_int32_t);
-    return c4_hashfunc_default((char *) &(d.i4), len, NULL);
+    return hash_any((unsigned char *) &(d.i4), sizeof(apr_int32_t));
 }
 
 apr_uint32_t
 int8_hash(Datum d)
 {
-    apr_ssize_t len = sizeof(apr_int64_t);
-    return c4_hashfunc_default((char *) &(d.i8), len, NULL);
+    return hash_any((unsigned char *) &(d.i8), sizeof(apr_int64_t));
 }
 
 apr_uint32_t
 string_hash(Datum d)
 {
-    apr_ssize_t len = d.s->len;
-    return c4_hashfunc_default(d.s->data, len, NULL);
+    return hash_any((unsigned char *) d.s->data, d.s->len);
 }
 
 static void
