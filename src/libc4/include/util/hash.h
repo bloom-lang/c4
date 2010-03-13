@@ -133,13 +133,18 @@ void c4_hash_iter_reset(c4_hash_index_t *hi);
 bool c4_hash_iter_next(c4_hash_index_t *hi);
 
 /**
- * Get the current entry's details from the iteration state.
+ * Get the current key from the iteration state.
  * @param hi The iteration state
- * @param key Return pointer for the pointer to the key, or NULL the
- *            caller is not interested in the key.
- * @return Pointer for the associated value.
+ * @return Pointer for the current key.
  */
-void *c4_hash_this(c4_hash_index_t *hi, const void **key);
+const void *c4_hash_this_key(c4_hash_index_t *hi);
+
+/**
+ * Get the current value from the iteration state.
+ * @param hi The iteration state
+ * @return Pointer for the current value.
+ */
+void *c4_hash_this_val(c4_hash_index_t *hi);
 
 /**
  * Get the number of key/value pairs in the hash table.

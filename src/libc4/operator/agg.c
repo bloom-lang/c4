@@ -394,7 +394,7 @@ agg_cleanup(void *data)
     {
         AggGroupState *group;
 
-        group = c4_hash_this(hi, NULL);
+        group = c4_hash_this_val(hi);
         free_agg_group(group, agg);
     }
 

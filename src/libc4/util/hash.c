@@ -161,16 +161,21 @@ bool c4_hash_iter_next(c4_hash_index_t *hi)
     return true;
 }
 
-void *c4_hash_this(c4_hash_index_t *hi, const void **key)
+const void *c4_hash_this_key(c4_hash_index_t *hi)
 {
     if (hi->at_end)
         FAIL();
 
-    if (key)
-        *key = hi->this->key;
-    return hi->this->val;
+    return hi->this->key;
 }
 
+void *c4_hash_this_val(c4_hash_index_t *hi)
+{
+    if (hi->at_end)
+        FAIL();
+
+    return hi->this->val;
+}
 
 /*
  * Expanding a hash table
