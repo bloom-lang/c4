@@ -147,9 +147,13 @@ bool rset_iter_next(rset_index_t *ri)
     ri->next = ri->this->next;
     /*
      * GCC perf hack: We are very likely to read the next entry in the rset in
-     * the near future. Hence, prefetch to try to avoid a cache miss.
+     * the near future. Hence, prefetch to try to avoid a cache miss.  It seems
+     * to even be a win to do the conditional branch to prefetch the next bucket
+     * as well.
      */
     __builtin_prefetch(ri->next);
+    if (ri->index <= ri->rs->max)
+        __builtin_prefetch(ri->rs->array[ri->index]);
     return true;
 }
 

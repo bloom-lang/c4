@@ -151,9 +151,13 @@ bool c4_hash_iter_next(c4_hash_index_t *hi)
     hi->next = hi->this->next;
     /*
      * GCC perf hack: We are very likely to read the next entry in the hash
-     * table in the near future. Hence, prefetch to try to avoid a cache miss.
+     * table in the near future. Hence, prefetch to try to avoid a cache
+     * miss. It seems to even be a win to do the conditional branch to prefetch
+     * the next bucket as well.
      */
     __builtin_prefetch(hi->next);
+    if (hi->index <= hi->ht->max)
+        __builtin_prefetch(hi->ht->array[hi->index]);
     return true;
 }
 
