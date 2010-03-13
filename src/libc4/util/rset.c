@@ -228,7 +228,7 @@ static rset_entry_t **find_entry(rset_t *rs, void *key, bool make_new)
     re->next = NULL;
     re->hash = hash;
     re->key  = key;
-    re->refcount = 0;
+    re->refcount = 1;
     *rep = re;
     rs->count++;
     return rep;
@@ -250,7 +250,6 @@ bool rset_add(rset_t *rs, void *elem)
     rset_entry_t *entry;
 
     entry = *find_entry(rs, elem, true);
-    entry->refcount++;
     /* check that the collision rate isn't too high */
     if (rs->count > rs->max)
         expand_array(rs);
