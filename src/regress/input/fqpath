@@ -1,0 +1,24 @@
+define(file, keys(0), {int8, int8, string, bool});
+define(fqpath, keys(0), {int8, string});
+
+fqpath(FileId, FName) :-
+    file(FileId, 0, FName, IsDir),
+    IsDir == true;
+
+fqpath(FileId, ParentPath + FName) :-
+    file(FileId, FParentId, FName, false),
+    fqpath(FParentId, ParentPath);
+
+fqpath(FileId, ParentPath + FName + "/") :-
+    file(FileId, FParentId, FName, true),
+    fqpath(FParentId, ParentPath);
+
+file(1, 0, "/", true);
+file(2, 1, "Bar", false);
+file(3, 1, "Baz", true);
+file(4, 1, "Bax", false);
+file(5, 3, "xxx", true);
+file(6, 3, "xyz", false);
+
+\dump file
+\dump fqpath
