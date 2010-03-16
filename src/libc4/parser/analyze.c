@@ -686,6 +686,10 @@ analyze_op_expr(AstOpExpr *op_expr, ExprLocation loc, AnalyzeState *state)
     switch (op_expr->op_kind)
     {
         case AST_OP_PLUS:
+            if (lhs_type == TYPE_STRING && rhs_type == TYPE_STRING)
+                break;
+            /* Fall through */
+
         case AST_OP_MINUS:
         case AST_OP_TIMES:
         case AST_OP_DIVIDE:

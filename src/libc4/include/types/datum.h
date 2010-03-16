@@ -109,4 +109,6 @@ void pool_track_datum(apr_pool_t *pool, Datum datum, DataType type);
 void datum_to_str(Datum d, DataType type, StrBuf *buf);
 Datum datum_from_str(DataType type, const char *str);
 
+C4String *make_string(apr_size_t slen);
+
 #endif  /* DATUM_H */

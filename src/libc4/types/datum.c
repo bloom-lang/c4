@@ -387,7 +387,7 @@ int8_from_str(const char *str)
     return result;
 }
 
-static C4String *
+C4String *
 make_string(apr_size_t slen)
 {
     C4String *s;

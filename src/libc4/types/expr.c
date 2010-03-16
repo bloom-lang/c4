@@ -16,6 +16,27 @@ eval_op_uminus_i8(ExprState *state)
 }
 
 static Datum
+eval_op_plus_string(ExprState *state)
+{
+    Datum lhs;
+    Datum rhs;
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_STRING);
+    ASSERT(state->rhs->expr->type == TYPE_STRING);
+    ASSERT(state->expr->type == TYPE_STRING);
+
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
+    /* XXX: FIXME */
+    result.s = make_string(lhs.s->len + rhs.s->len);
+    memcpy(result.s->data, lhs.s->data, lhs.s->len);
+    memcpy(result.s->data + lhs.s->len, rhs.s->data, rhs.s->len);
+
+    return result;
+}
+
+static Datum
 eval_op_plus_i8(ExprState *state)
 {
     Datum lhs;
@@ -216,7 +237,11 @@ lookup_op_expr_eval_func(ExprOp *op_expr)
             return eval_op_uminus_i8;
 
         case AST_OP_PLUS:
-            return eval_op_plus_i8;
+            if (op_expr->lhs->type == TYPE_STRING &&
+                op_expr->rhs->type == TYPE_STRING)
+                return eval_op_plus_string;
+            else
+                return eval_op_plus_i8;
 
         case AST_OP_MINUS:
             return eval_op_minus_i8;
