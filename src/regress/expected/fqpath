@@ -1,25 +1,39 @@
 **** \dump "valid_file" ****
 1,0,/,true
+10,8,f2,false
 2,1,Bar,false
 3,1,Baz,true
 4,1,Bax,false
 5,3,xxx,true
 6,3,xyz,false
+7,3,zzz,false
+8,1,Qux,true
+9,8,f1,false
 **** \dump "fqpath" ****
 1,/
+10,/Qux/f2
 2,/Bar
 3,/Baz/
 4,/Bax
 5,/Baz/xxx/
 6,/Baz/xyz
+7,/Baz/zzz
+8,/Qux/
+9,/Qux/f1
 **** \dump "valid_file" ****
 1,0,/,true
+10,8,f2,false
 2,1,Bar,false
 4,1,Bax,false
+8,1,Qux,true
+9,8,f1,false
 **** \dump "fqpath" ****
 1,/
+10,/Qux/f2
 2,/Bar
 4,/Bax
+8,/Qux/
+9,/Qux/f1
 **** \dump "valid_file" ****
 
 **** \dump "fqpath" ****

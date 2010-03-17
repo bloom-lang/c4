@@ -34,6 +34,10 @@ file(3, 1, "Baz", true);
 file(4, 1, "Bax", false);
 file(5, 3, "xxx", true);
 file(6, 3, "xyz", false);
+file(7, 3, "zzz", false);
+file(8, 1, "Qux", true);
+file(9, 8, "f1", false);
+file(10, 8, "f2", false);
 
 \dump valid_file
 \dump fqpath
