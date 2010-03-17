@@ -27,13 +27,14 @@ Planner:
 
 Executor/Router/Operators:
 
-* Implement aggregation
 * More efficient joins: the existing approach to joins essentially
   re-materializes intermediate join results. Stems and stairs from
   earlier Eddies work might point toward a better way of doing this.
 * Use a heap to implement timer deadlines
 * Aggs: don't emit a deletion/insertion pair if the agg value is
   unchanged (e.g. sum<> on input 0, min<> on non-min input, etc.)
+  * Similarly, if an agg moves from n => m, we currently delete n and insert
+    m. Might be more efficient to emit a single "update n => m" tuple
 
 Network:
 
