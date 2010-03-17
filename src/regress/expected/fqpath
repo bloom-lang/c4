@@ -16,9 +16,11 @@
 1,0,/,true
 2,1,Bar,false
 4,1,Bax,false
-5,3,xxx,true
-6,3,xyz,false
 **** \dump "fqpath" ****
 1,/
 2,/Bar
 4,/Bax
+**** \dump "valid_file" ****
+
+**** \dump "fqpath" ****
+

@@ -3,8 +3,17 @@ define(retract_file, keys(0), {int8});
 define(valid_file, keys(0), {int8, int8, string, bool});
 define(fqpath, keys(0), {int8, string});
 
+/*
+ * A file is "valid" if it hasn't been retracted, and either its
+ * parent is valid, or it is the root of the tree (parent == 0).
+ */
 valid_file(FileId, FParentId, FName, IsDir) :-
+    valid_file(FParentId, _, _, _),
     file(FileId, FParentId, FName, IsDir),
+    notin retract_file(FileId);
+
+valid_file(FileId, 0, FName, IsDir) :-
+    file(FileId, 0, FName, IsDir),
     notin retract_file(FileId);
 
 fqpath(FileId, FName) :-
@@ -30,6 +39,11 @@ file(6, 3, "xyz", false);
 \dump fqpath
 
 retract_file(3);
+
+\dump valid_file
+\dump fqpath
+
+retract_file(1);
 
 \dump valid_file
 \dump fqpath
