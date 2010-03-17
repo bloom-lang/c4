@@ -32,3 +32,12 @@ xxx,1
 0,0
 1,1
 2,2
+**** \dump "multi_insert_dest" ****
+5
+9
+**** \dump "multi_insert_dest" ****
+9
+**** \dump "multi_insert_dest" ****
+9
+**** \dump "multi_insert_dest" ****
+

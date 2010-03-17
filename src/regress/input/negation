@@ -82,3 +82,38 @@ multi_d(3, 3);
 multi_d(4, 4);
 
 \dump multi_a
+
+/*
+ * Test that multiple facts inserted in the same FP only bump the
+ * refcount of derived tuples once, not multiple times.
+ */
+define(multi_insert_src1, keys(0), {int8});
+define(multi_insert_src2, keys(0), {int8});
+define(multi_insert_dest, keys(0), {int8});
+define(multi_insert_cancel, keys(0), {int8});
+
+multi_insert_dest(A) :- multi_insert_src1(A), multi_insert_src2(A),
+                        notin multi_insert_cancel(A);
+
+multi_insert_src1(5);
+multi_insert_src2(5);
+multi_insert_src1(7);
+multi_insert_src1(9);
+multi_insert_src2(9);
+multi_insert_src2(13);
+
+\dump multi_insert_dest
+
+multi_insert_cancel(5);
+
+\dump multi_insert_dest
+
+multi_insert_src2(7);
+multi_insert_cancel(13);
+multi_insert_cancel(7);
+
+\dump multi_insert_dest
+
+multi_insert_cancel(9);
+
+\dump multi_insert_dest

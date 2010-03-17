@@ -63,6 +63,9 @@ router_make(C4Runtime *c4)
     return router;
 }
 
+# define likely(x)      __builtin_expect(!!(x), 1)
+# define unlikely(x)    __builtin_expect(!!(x), 0)
+
 /*
  * We route tuples from the buffer in a FIFO manner, but that is not necessarily
  * the only choice.
@@ -75,8 +78,17 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
         Tuple *tuple;
         TableDef *tbl_def;
         OpChain *op_chain;
+        bool route_tuple;
 
         tuple_buf_shift(buf, &tuple, &tbl_def);
+
+        if (is_delete)
+            route_tuple = tbl_def->table->delete(tbl_def->table, tuple);
+        else
+            route_tuple = tbl_def->table->insert(tbl_def->table, tuple);
+
+        if (!route_tuple)
+            return;
 
         op_chain = tbl_def->op_chain_list->head;
         while (op_chain != NULL)
@@ -161,10 +173,6 @@ router_insert_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def,
         return;
     }
 
-    /* If the tuple is a duplicate, no need to route it */
-    if (tbl_def->table->insert(tbl_def->table, tuple) == false)
-        return;
-
     table_invoke_callbacks(tuple, tbl_def, false);
     router_enqueue_internal(router, tuple, tbl_def);
 }
@@ -177,10 +185,6 @@ router_delete_tuple(C4Router *router, Tuple *tuple, TableDef *tbl_def)
            __func__, log_tuple(router->c4, tuple, tbl_def->schema),
            tbl_def->name);
 #endif
-
-    /* If removed tuple is not found, no need to route the deletion onward */
-    if (tbl_def->table->delete(tbl_def->table, tuple) == false)
-        return;
 
     table_invoke_callbacks(tuple, tbl_def, true);
     tuple_buf_push(router->delete_buf, tuple, tbl_def);
