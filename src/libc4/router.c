@@ -63,9 +63,6 @@ router_make(C4Runtime *c4)
     return router;
 }
 
-# define likely(x)      __builtin_expect(!!(x), 1)
-# define unlikely(x)    __builtin_expect(!!(x), 0)
-
 /*
  * We route tuples from the buffer in a FIFO manner, but that is not necessarily
  * the only choice.
