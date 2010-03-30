@@ -21,7 +21,9 @@ input_d8(X + 1.0, Y) :- input_d8(X, Y), X < Y;
 
 add_d8(X, Y, X + Y) :- input_d8(X, Y);
 sub_d8(X, Y, X - Y) :- input_d8(X, Y);
+mult_d8(X, Y, X * Y) :- input_d8(X, Y);
 
 \dump input_d8
 \dump add_d8
 \dump sub_d8
+\dump mult_d8
