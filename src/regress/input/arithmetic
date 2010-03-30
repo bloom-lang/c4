@@ -10,3 +10,16 @@ sub_500(A, A - 500) :- input(A);
 \dump input
 \dump add_one
 \dump sub_500
+
+define(input_d8, keys(0), {double, double});
+define(add_d8, keys(0), {double, double, double});
+define(sub_d8, keys(0), {double, double, double});
+define(mult_d8, keys(0), {double, double, double});
+
+input_d8(2.0, 10.0);
+input_d8(X + 1.0, Y) :- input_d8(X, Y), X < Y;
+
+add_d8(X, Y, X + Y) :- input_d8(X, Y);
+
+\dump input_d8
+\dump add_d8

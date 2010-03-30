@@ -128,6 +128,23 @@ eval_op_modulus_i8(ExprState *state)
 }
 
 static Datum
+eval_op_plus_d8(ExprState *state)
+{
+    Datum lhs;
+    Datum rhs;
+    Datum result;
+
+    ASSERT(state->lhs->expr->type == TYPE_DOUBLE);
+    ASSERT(state->rhs->expr->type == TYPE_DOUBLE);
+    ASSERT(state->expr->type == TYPE_DOUBLE);
+
+    lhs = eval_expr(state->lhs);
+    rhs = eval_expr(state->rhs);
+    result.d8 = lhs.d8 + rhs.d8;
+    return result;
+}
+
+static Datum
 eval_op_eq(ExprState *state)
 {
     Datum lhs;
@@ -240,6 +257,9 @@ lookup_op_expr_eval_func(ExprOp *op_expr)
             if (op_expr->lhs->type == TYPE_STRING &&
                 op_expr->rhs->type == TYPE_STRING)
                 return eval_op_plus_string;
+            else if (op_expr->lhs->type == TYPE_DOUBLE &&
+                     op_expr->rhs->type == TYPE_DOUBLE)
+                return eval_op_plus_d8;
             else
                 return eval_op_plus_i8;
 
