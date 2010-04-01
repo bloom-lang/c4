@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(C4)
+project(C4 C)
 subdirs(src)
 
 if(C4_BUILD_TYPE STREQUAL "Release")
