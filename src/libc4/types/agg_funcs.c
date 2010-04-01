@@ -1,40 +1,40 @@
 #include "c4-internal.h"
 #include "types/agg_funcs.h"
 
-static Datum
+static AggStateVal
 count_init_f(Datum v)
 {
-    Datum state;
+    AggStateVal state;
 
-    state.i8 = 1;
+    state.d.i8 = 1;
     return state;
 }
 
-static Datum
-count_fw_trans_f(Datum state, Datum v)
+static AggStateVal
+count_fw_trans_f(AggStateVal state, Datum v)
 {
-    state.i8++;
+    state.d.i8++;
     return state;
 }
 
-static Datum
-count_bw_trans_f(Datum state, Datum v)
+static AggStateVal
+count_bw_trans_f(AggStateVal state, Datum v)
 {
-    state.i8--;
+    state.d.i8--;
     return state;
 }
 
-static Datum
-sum_fw_trans_f(Datum state, Datum v)
+static AggStateVal
+sum_fw_trans_f(AggStateVal state, Datum v)
 {
-    state.i8 += v.i8;
+    state.d.i8 += v.i8;
     return state;
 }
 
-static Datum
-sum_bw_trans_f(Datum state, Datum v)
+static AggStateVal
+sum_bw_trans_f(AggStateVal state, Datum v)
 {
-    state.i8 -= v.i8;
+    state.d.i8 -= v.i8;
     return state;
 }
 

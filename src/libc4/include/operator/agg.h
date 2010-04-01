@@ -25,7 +25,7 @@ typedef struct AggGroupState
     Tuple *key;
     Tuple *output_tup;
     int count;
-    Datum *state_vals;
+    AggStateVal *state_vals;
     struct AggGroupState *next;
 } AggGroupState;
 

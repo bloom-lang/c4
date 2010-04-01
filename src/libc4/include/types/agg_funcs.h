@@ -3,20 +3,26 @@
 
 #include "parser/ast.h"
 
+typedef union AggStateVal
+{
+    Datum d;            /* "Simple" state value */
+    void *ptr;          /* Opaque pointer to agg-maintained internal state */
+} AggStateVal;
+
 /*
  * Initialize the state of an agg, given an initial input value. If NULL, use
  * the initial value as the state.
  */
-typedef Datum (*agg_init_f)(Datum v);
+typedef AggStateVal (*agg_init_f)(Datum v);
 
 /* Forward or backward transition func: return updated state */
-typedef Datum (*agg_trans_f)(Datum state, Datum v);
+typedef AggStateVal (*agg_trans_f)(AggStateVal state, Datum v);
 
-/* Emit an output value. If NULL, use the current state value */
-typedef Datum (*agg_output_f)(Datum state);
+/* Emit an output value. If NULL, use the current simple state value */
+typedef Datum (*agg_output_f)(AggStateVal state);
 
 /* Shutdown an aggregate. If NULL, shutdown is a no-op. */
-typedef void (*agg_shutdown_f)(Datum state);
+typedef void (*agg_shutdown_f)(AggStateVal state);
 
 typedef struct AggFuncDesc
 {

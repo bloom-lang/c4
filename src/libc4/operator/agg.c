@@ -89,7 +89,7 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
         if (agg_info->desc->output_f)
             d = agg_info->desc->output_f(group->state_vals[i]);
         else
-            d = group->state_vals[i];
+            d = group->state_vals[i].d;
 
         colno = agg_info->colno;
         group->output_tup->vals[colno] = d;
@@ -125,7 +125,7 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
     {
         new_group = apr_palloc(agg_op->op.pool, sizeof(*new_group));
         new_group->state_vals = apr_palloc(agg_op->op.pool,
-                                           sizeof(Datum) * agg_op->num_aggs);
+                                           sizeof(AggStateVal) * agg_op->num_aggs);
     }
 
     new_group->output_tup = NULL;
@@ -142,7 +142,7 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
         if (agg_info->desc->init_f)
             new_group->state_vals[i] = agg_info->desc->init_f(input_val);
         else
-            new_group->state_vals[i] = input_val;
+            new_group->state_vals[i].d = input_val;
     }
 
     c4_hash_set(agg_op->group_tbl, t, new_group);
