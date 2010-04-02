@@ -33,7 +33,7 @@ static void split_rule_body(List *body, List **joins,
 %lex-param { yyscan_t scanner }
 
 %token KEYS DEFINE MEMORY SQLITE DELETE NOTIN TIMER
-       OL_FALSE OL_TRUE OL_COUNT OL_MAX OL_MIN OL_SUM
+       OL_FALSE OL_TRUE OL_AVG OL_COUNT OL_MAX OL_MIN OL_SUM
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
 %left OL_EQ OL_NEQ
@@ -252,7 +252,8 @@ var_expr: VAR_IDENT { $$ = make_ast_var_expr($1, TYPE_INVALID, context->pool); }
 agg_expr: agg_kind '<' expr '>' { $$ = make_ast_agg_expr($1, $3, context->pool); }
 
 agg_kind:
-  OL_COUNT      { $$ = AST_AGG_COUNT; }
+  OL_AVG        { $$ = AST_AGG_AVG; }
+| OL_COUNT      { $$ = AST_AGG_COUNT; }
 | OL_MAX        { $$ = AST_AGG_MAX; }
 | OL_MIN        { $$ = AST_AGG_MIN; }
 | OL_SUM        { $$ = AST_AGG_SUM; }

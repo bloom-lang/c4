@@ -136,6 +136,7 @@ typedef struct AstConstExpr
 
 typedef enum AstAggKind
 {
+    AST_AGG_AVG,
     AST_AGG_COUNT,
     AST_AGG_MAX,
     AST_AGG_MIN,

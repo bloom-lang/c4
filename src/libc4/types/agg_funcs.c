@@ -3,6 +3,72 @@
 #include "types/agg_funcs.h"
 #include "util/rbtree.h"
 
+/* Average */
+typedef struct AvgStateVal
+{
+    apr_pool_t *pool;
+    Datum sum;
+    Datum count;
+} AvgStateVal;
+
+/* XXX: Currently assume that avg input and output is TYPE_DOUBLE */
+static AggStateVal
+avg_init_f(Datum v, AggOperator *agg_op, __unused int aggno)
+{
+    apr_pool_t *pool;
+    AvgStateVal *avg_state;
+    AggStateVal state;
+
+    pool = make_subpool(agg_op->op.pool);
+    avg_state = apr_palloc(pool, sizeof(*avg_state));
+    avg_state->pool = pool;
+    avg_state->count.i8 = 1;
+    avg_state->sum.d8 = v.d8;
+
+    state.ptr = avg_state;
+    return state;
+}
+
+static AggStateVal
+avg_fw_trans_f(AggStateVal state, Datum v)
+{
+    AvgStateVal *avg_state = (AvgStateVal *) state.ptr;
+
+    avg_state->count.i8++;
+    avg_state->sum.d8 += v.d8;
+
+    return state;
+}
+
+static AggStateVal
+avg_bw_trans_f(AggStateVal state, Datum v)
+{
+    AvgStateVal *avg_state = (AvgStateVal *) state.ptr;
+
+    avg_state->count.i8--;
+    avg_state->sum.d8 -= v.d8;
+
+    return state;
+}
+
+static Datum
+avg_output_f(AggStateVal state)
+{
+    AvgStateVal *avg_state = (AvgStateVal *) state.ptr;
+    Datum result;
+
+    result.d8 = avg_state->sum.d8 / (double) avg_state->count.i8;
+    return result;
+}
+
+static void
+avg_shutdown_f(AggStateVal state)
+{
+    AvgStateVal *avg_state = (AvgStateVal *) state.ptr;
+
+    apr_pool_destroy(avg_state->pool);
+}
+
 /* Count */
 static AggStateVal
 count_init_f(__unused Datum v, __unused AggOperator *agg_op, __unused int aggno)
@@ -85,7 +151,7 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
 {
     AggStateVal state;
     MaxStateVal *max_state;
-    apr_pool_t *max_pool;
+    apr_pool_t *pool;
     AggExprInfo *agg_info;
     int colno;
     DataType input_type;
@@ -94,9 +160,9 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
     colno = agg_info->colno;
     input_type = schema_get_type(agg_op->op.proj_schema, colno);
 
-    max_pool = make_subpool(agg_op->op.pool);
-    max_state = apr_palloc(max_pool, sizeof(*max_state));
-    max_state->pool = max_pool;
+    pool = make_subpool(agg_op->op.pool);
+    max_state = apr_palloc(pool, sizeof(*max_state));
+    max_state->pool = pool;
     max_state->cmp_func = type_get_cmp_func(input_type);
     max_state->free_head = NULL;
     RB_INIT(&max_state->tree, max_state);
@@ -152,6 +218,7 @@ max_shutdown_f(AggStateVal state)
 }
 
 /* Sum */
+/* XXX: Currently assume that sum input and output is TYPE_INT8 */
 static AggStateVal
 sum_fw_trans_f(AggStateVal state, Datum v)
 {
@@ -165,6 +232,14 @@ sum_bw_trans_f(AggStateVal state, Datum v)
     state.d.i8 -= v.i8;
     return state;
 }
+
+static AggFuncDesc agg_desc_avg = {
+    avg_init_f,
+    avg_fw_trans_f,
+    avg_bw_trans_f,
+    avg_output_f,
+    avg_shutdown_f
+};
 
 static AggFuncDesc agg_desc_count = {
     count_init_f,
@@ -195,6 +270,9 @@ lookup_agg_desc(AstAggKind agg_kind)
 {
     switch (agg_kind)
     {
+        case AST_AGG_AVG:
+            return &agg_desc_avg;
+
         case AST_AGG_COUNT:
             return &agg_desc_count;
 

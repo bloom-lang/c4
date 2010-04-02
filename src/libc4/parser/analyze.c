@@ -213,7 +213,7 @@ analyze_rule(AstRule *rule, AnalyzeState *state)
 }
 
 static bool
-disallow_agg_walker(C4Node *n, void *data)
+disallow_agg_walker(C4Node *n, __unused void *data)
 {
     if (n->kind == AST_AGG_EXPR)
         ERROR("Aggregate used in illegal context");
@@ -758,9 +758,22 @@ analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state)
 
     analyze_expr(a_expr->expr, loc, state);
 
-    if (a_expr->agg_kind == AST_AGG_SUM &&
-        expr_get_type(a_expr->expr) != TYPE_INT8)
-        ERROR("Sum aggregate must be used with int8 value");
+    /* Check consistency of input to aggregate function */
+    switch (a_expr->agg_kind)
+    {
+        case AST_AGG_AVG:
+            if (expr_get_type(a_expr->expr) != TYPE_DOUBLE)
+                ERROR("Avg aggregate must be used with double value");
+            break;
+
+        case AST_AGG_SUM:
+            if (expr_get_type(a_expr->expr) != TYPE_INT8)
+                ERROR("Sum aggregate must be used with int8 value");
+            break;
+
+        default:
+            break;
+    }
 }
 
 static void
@@ -1162,6 +1175,9 @@ agg_expr_get_type(AstAggExpr *agg)
 {
     switch (agg->agg_kind)
     {
+        case AST_AGG_AVG:
+            return TYPE_DOUBLE;
+
         case AST_AGG_COUNT:
         case AST_AGG_SUM:
             return TYPE_INT8;

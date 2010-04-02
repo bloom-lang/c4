@@ -105,6 +105,7 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "<>"                    { return OL_NEQ; }
 "=="                    { return OL_EQ; }
 
+"avg"                   { return OL_AVG; }
 "count"                 { return OL_COUNT; }
 "max"                   { return OL_MAX; }
 "min"                   { return OL_MIN; }
