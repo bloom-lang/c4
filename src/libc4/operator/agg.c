@@ -153,6 +153,17 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
 static void
 free_agg_group(AggGroupState *group, AggOperator *agg_op)
 {
+    int i;
+
+    for (i = 0; i < agg_op->num_aggs; i++)
+    {
+        AggExprInfo *agg_info;
+
+        agg_info = agg_op->agg_info[i];
+        if (agg_info->desc->shutdown_f)
+            agg_info->desc->shutdown_f(group->state_vals[i]);
+    }
+
     tuple_unpin(group->output_tup, agg_op->op.proj_schema);
     tuple_unpin(group->key, agg_op->op.proj_schema);
     group->next = agg_op->free_groups;

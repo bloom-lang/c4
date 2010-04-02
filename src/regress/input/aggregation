@@ -80,5 +80,6 @@ max_t3(0);
 
 max_t3(5);
 max_t1(5, 0);
+max_t1(15, 0);
 
 \dump max_t2
