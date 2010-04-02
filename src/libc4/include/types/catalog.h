@@ -73,6 +73,7 @@ char *get_type_name(DataType type_id);
 
 datum_hash_func type_get_hash_func(DataType type);
 datum_eq_func type_get_eq_func(DataType type);
+datum_cmp_func type_get_cmp_func(DataType type);
 datum_bin_in_func type_get_binary_in_func(DataType type);
 datum_text_in_func type_get_text_in_func(DataType type);
 datum_bin_out_func type_get_binary_out_func(DataType type);

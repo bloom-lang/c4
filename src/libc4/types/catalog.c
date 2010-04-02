@@ -288,6 +288,40 @@ type_get_eq_func(DataType type)
     }
 }
 
+datum_cmp_func
+type_get_cmp_func(DataType type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL:
+            return bool_cmp;
+
+        case TYPE_CHAR:
+            return char_cmp;
+
+        case TYPE_DOUBLE:
+            return double_cmp;
+
+        case TYPE_INT2:
+            return int2_cmp;
+
+        case TYPE_INT4:
+            return int4_cmp;
+
+        case TYPE_INT8:
+            return int8_cmp;
+
+        case TYPE_STRING:
+            return string_cmp;
+
+        case TYPE_INVALID:
+            ERROR("Invalid data type: TYPE_INVALID");
+
+        default:
+            ERROR("Unexpected data type: %uc", type);
+    }
+}
+
 datum_bin_in_func
 type_get_binary_in_func(DataType type)
 {

@@ -87,69 +87,69 @@ datum_equal(Datum d1, Datum d2, DataType type)
     }
 }
 
-static int
-bool_cmp(bool b1, bool b2)
+int
+bool_cmp(Datum d1, Datum d2)
 {
     ERROR("%s: Not implemented yet", __func__);
 }
 
-static int
-char_cmp(unsigned char c1, unsigned char c2)
+int
+char_cmp(Datum d1, Datum d2)
 {
-    if (c1 < c2)
+    if (d1.c < d2.c)
         return -1;
-    else if (c1 > c2)
+    else if (d1.c > d2.c)
         return 1;
     else
         return 0;
 }
 
-static int
-double_cmp(double d1, double d2)
+int
+double_cmp(Datum d1, Datum d2)
 {
-    if (d1 < d2)
+    if (d1.d8 < d2.d8)
         return -1;
-    else if (d1 > d2)
+    else if (d1.d8 > d2.d8)
         return 1;
     else
         return 0;
 }
 
-static int
-int2_cmp(apr_int16_t i1, apr_int16_t i2)
+int
+int2_cmp(Datum d1, Datum d2)
 {
-    if (i1 < i2)
+    if (d1.i2 < d2.i2)
         return -1;
-    else if (i1 > i2)
+    else if (d1.i2 > d2.i2)
         return 1;
     else
         return 0;
 }
 
-static int
-int4_cmp(apr_int32_t i1, apr_int32_t i2)
+int
+int4_cmp(Datum d1, Datum d2)
 {
-    if (i1 < i2)
+    if (d1.i4 < d2.i4)
         return -1;
-    else if (i1 > i2)
+    else if (d1.i4 > d2.i4)
         return 1;
     else
         return 0;
 }
 
-static int
-int8_cmp(apr_int64_t i1, apr_int64_t i2)
+int
+int8_cmp(Datum d1, Datum d2)
 {
-    if (i1 < i2)
+    if (d1.i8 < d2.i8)
         return -1;
-    else if (i1 > i2)
+    else if (d1.i8 > d2.i8)
         return 1;
     else
         return 0;
 }
 
-static int
-string_cmp(C4String *s1, C4String *s2)
+int
+string_cmp(Datum d1, Datum d2)
 {
     ERROR("%s: Not implemented yet", __func__);
 }
@@ -161,25 +161,25 @@ datum_cmp(Datum d1, Datum d2, DataType type)
     switch (type)
     {
         case TYPE_BOOL:
-            return bool_cmp(d1.b, d2.b);
+            return bool_cmp(d1, d2);
 
         case TYPE_CHAR:
-            return char_cmp(d1.c, d2.c);
+            return char_cmp(d1, d2);
 
         case TYPE_DOUBLE:
-            return double_cmp(d1.d8, d2.d8);
+            return double_cmp(d1, d2);
 
         case TYPE_INT2:
-            return int2_cmp(d1.i2, d2.i2);
+            return int2_cmp(d1, d2);
 
         case TYPE_INT4:
-            return int4_cmp(d1.i4, d2.i4);
+            return int4_cmp(d1, d2);
 
         case TYPE_INT8:
-            return int8_cmp(d1.i8, d2.i8);
+            return int8_cmp(d1, d2);
 
         case TYPE_STRING:
-            return string_cmp(d1.s, d2.s);
+            return string_cmp(d1, d2);
 
         case TYPE_INVALID:
             ERROR("Invalid data type: TYPE_INVALID");

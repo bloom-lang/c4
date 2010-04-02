@@ -40,6 +40,7 @@ typedef union Datum
 } Datum;
 
 typedef bool (*datum_eq_func)(Datum d1, Datum d2);
+typedef int (*datum_cmp_func)(Datum d1, Datum d2);
 typedef apr_uint32_t (*datum_hash_func)(Datum d);
 typedef Datum (*datum_bin_in_func)(StrBuf *buf);
 typedef Datum (*datum_text_in_func)(const char *str);
@@ -53,6 +54,14 @@ bool int2_equal(Datum d1, Datum d2);
 bool int4_equal(Datum d1, Datum d2);
 bool int8_equal(Datum d1, Datum d2);
 bool string_equal(Datum d1, Datum d2);
+
+int bool_cmp(Datum d1, Datum d2);
+int char_cmp(Datum d1, Datum d2);
+int double_cmp(Datum d1, Datum d2);
+int int2_cmp(Datum d1, Datum d2);
+int int4_cmp(Datum d1, Datum d2);
+int int8_cmp(Datum d1, Datum d2);
+int string_cmp(Datum d1, Datum d2);
 
 apr_uint32_t bool_hash(Datum d);
 apr_uint32_t char_hash(Datum d);

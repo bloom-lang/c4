@@ -140,7 +140,8 @@ create_agg_group(Tuple *t, AggOperator *agg_op)
         agg_info = agg_op->agg_info[i];
         input_val = tuple_get_val(t, agg_info->colno);
         if (agg_info->desc->init_f)
-            new_group->state_vals[i] = agg_info->desc->init_f(input_val);
+            new_group->state_vals[i] = agg_info->desc->init_f(input_val,
+                                                              agg_op, i);
         else
             new_group->state_vals[i].d = input_val;
     }

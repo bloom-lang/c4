@@ -9,11 +9,13 @@ typedef union AggStateVal
     void *ptr;          /* Opaque pointer to agg-maintained internal state */
 } AggStateVal;
 
+struct AggOperator;
+
 /*
  * Initialize the state of an agg, given an initial input value. If NULL, use
  * the initial value as the state.
  */
-typedef AggStateVal (*agg_init_f)(Datum v);
+typedef AggStateVal (*agg_init_f)(Datum v, struct AggOperator *agg_op, int aggno);
 
 /* Forward or backward transition func: return updated state */
 typedef AggStateVal (*agg_trans_f)(AggStateVal state, Datum v);
@@ -27,8 +29,8 @@ typedef void (*agg_shutdown_f)(AggStateVal state);
 typedef struct AggFuncDesc
 {
     agg_init_f init_f;
-    agg_trans_f fw_trans_f;     /* Forward transition function */
-    agg_trans_f bw_trans_f;     /* Backward transition function */
+    agg_trans_f fw_trans_f;
+    agg_trans_f bw_trans_f;
     agg_output_f output_f;
     agg_shutdown_f shutdown_f;
 } AggFuncDesc;
