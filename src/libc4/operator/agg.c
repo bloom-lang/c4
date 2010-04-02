@@ -445,8 +445,13 @@ agg_op_make(AggPlan *plan, OpChain *chain)
     agg_op->free_groups = NULL;
     agg_op->output_tbl = cat_get_table(chain->c4->cat, plan->head->name);
 
-    apr_pool_cleanup_register(agg_op->op.pool, agg_op, agg_cleanup,
-                              apr_pool_cleanup_null);
+    /*
+     * Note that this must be a pre-cleanup, because free_agg_group invokes the
+     * shutdown function for each active AggStateVal. Those aggs may well
+     * utilize a sub-pool, so invoking free_agg_group after sub-pools have been
+     * destroyed would be unsafe.
+     */
+    apr_pool_pre_cleanup_register(agg_op->op.pool, agg_op, agg_cleanup);
 
     return agg_op;
 }
