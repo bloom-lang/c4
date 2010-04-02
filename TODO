@@ -35,6 +35,7 @@ Executor/Router/Operators:
   unchanged (e.g. sum<> on input 0, min<> on non-min input, etc.)
   * Similarly, if an agg moves from n => m, we currently delete n and insert
     m. Might be more efficient to emit a single "update n => m" tuple
+* Implement DRED
 
 Network:
 
@@ -50,7 +51,7 @@ Network:
 * Consider adding a multicast transport?
 * Consider using TCP_NODELAY in TCP transport
 
-Data types:
+Data types and expressions:
 
 * Consider using a variable-size length word for C4String: more
   storage-efficient for short strings, which is the common case (or
@@ -62,6 +63,9 @@ Data types:
   on LP64 machines for something useful (e.g. cache tuple_hash())
 * Consider using a packed tuple representation; reorder Tuple fields
   to reduce padding requirements
+* Allow sum, avg to work on a broader range of data types
+  * The sum of int4s might be an int8
+* Check for integer overflow in addition, multiply, etc.
 
 Tables and storage:
 
