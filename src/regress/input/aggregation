@@ -59,9 +59,10 @@ agg_t8(10, 0);
 /* Max */
 define(max_t1, keys(0), {int8, int8});
 define(max_t2, keys(0), {int8, int8});
+define(max_t3, keys(0), {int8});
 
 max_t1(A, B + 1) :- max_t1(A, B), A > B;
-max_t2(A, max<B>) :- max_t1(A, B);
+max_t2(A, max<B>) :- max_t1(A, B), notin max_t3(A);
 
 max_t1(5, 10);
 max_t1(5, 15);
@@ -70,5 +71,9 @@ max_t1(0, 50);
 max_t1(0, 0);
 max_t1(1000, 1);
 max_t1(1000, 0);
+
+\dump max_t2
+
+max_t3(0);
 
 \dump max_t2
