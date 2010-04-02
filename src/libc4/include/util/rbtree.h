@@ -27,8 +27,8 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef	RB_TREE_H
-#define	RB_TREE_H
+#ifndef	RBTREE_H
+#define	RBTREE_H
 
 /*
  * This file defines a red-black tree data structure.
@@ -513,4 +513,4 @@ name##_RB_MINMAX(struct name *head, int val)				\
 	    ((x) != NULL) && ((y) = name##_RB_PREV(x), (x) != NULL);	\
 	     (x) = (y))
 
-#endif	/* RB_TREE_H */
+#endif	/* RBTREE_H */
