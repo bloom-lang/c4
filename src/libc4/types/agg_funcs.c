@@ -98,6 +98,7 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
     max_state = apr_palloc(max_pool, sizeof(*max_state));
     max_state->pool = max_pool;
     max_state->cmp_func = type_get_cmp_func(input_type);
+    max_state->free_head = NULL;
     RB_INIT(&max_state->tree, max_state);
 
     max_insert_val(max_state, v);
