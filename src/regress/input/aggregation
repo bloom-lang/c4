@@ -77,3 +77,8 @@ max_t1(1000, 0);
 max_t3(0);
 
 \dump max_t2
+
+max_t3(5);
+max_t1(5, 0);
+
+\dump max_t2
