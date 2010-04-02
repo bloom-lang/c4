@@ -1,6 +1,7 @@
 #include "c4-internal.h"
 #include "operator/agg.h"
 #include "types/agg_funcs.h"
+#include "util/rbtree.h"
 
 /* Count */
 static AggStateVal
@@ -27,12 +28,57 @@ count_bw_trans_f(AggStateVal state, __unused Datum v)
 }
 
 /* Max */
-typedef struct MaxStateVal
+struct max_tree_node
+{
+    RB_ENTRY(max_tree_node) entry;
+    union
+    {
+        Datum val;                          /* Data value */
+        struct max_tree_node *next_free;    /* Next free node, if on free list */
+    } v;
+};
+
+typedef struct MaxStateVal MaxStateVal;
+
+RB_HEAD(max_tree, max_tree_node, MaxStateVal *);
+
+struct MaxStateVal
 {
     apr_pool_t *pool;
     datum_cmp_func cmp_func;
-    Datum max;
-} MaxStateVal;
+    struct max_tree tree;
+    struct max_tree_node *free_head;
+};
+
+static int
+max_tree_node_cmp(struct max_tree *tree, struct max_tree_node *n1,
+                  struct max_tree_node *n2)
+{
+    MaxStateVal *max_state = (MaxStateVal *) tree->opaque;
+
+    return max_state->cmp_func(n1->v.val, n2->v.val);
+}
+
+RB_GENERATE_STATIC(max_tree, max_tree_node, entry, max_tree_node_cmp)
+
+static void
+max_insert_val(MaxStateVal *state, Datum v)
+{
+    struct max_tree_node *n;
+
+    if (state->free_head)
+    {
+        n = state->free_head;
+        state->free_head = n->v.next_free;
+    }
+    else
+    {
+        n = apr_palloc(state->pool, sizeof(*n));
+    }
+
+    n->v.val = v;
+    RB_INSERT(max_tree, &state->tree, n);
+}
 
 static AggStateVal
 max_init_f(Datum v, AggOperator *agg_op, int aggno)
@@ -52,7 +98,9 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
     max_state = apr_palloc(max_pool, sizeof(*max_state));
     max_state->pool = max_pool;
     max_state->cmp_func = type_get_cmp_func(input_type);
-    max_state->max = v;
+    RB_INIT(&max_state->tree, max_state);
+
+    max_insert_val(max_state, v);
 
     state.ptr = max_state;
     return state;
@@ -61,12 +109,26 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
 static AggStateVal
 max_fw_trans_f(AggStateVal state, Datum v)
 {
+    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
+
+    max_insert_val(max_state, v);
     return state;
 }
 
 static AggStateVal
 max_bw_trans_f(AggStateVal state, Datum v)
 {
+    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
+    struct max_tree_node find;
+    struct max_tree_node *n;
+
+    find.v.val = v;
+    n = RB_FIND(max_tree, &max_state->tree, &find);
+    RB_REMOVE(max_tree, &max_state->tree, n);
+
+    n->v.next_free = max_state->free_head;
+    max_state->free_head = n;
+
     return state;
 }
 
@@ -74,8 +136,10 @@ static Datum
 max_output_f(AggStateVal state)
 {
     MaxStateVal *max_state = (MaxStateVal *) state.ptr;
+    struct max_tree_node *n;
 
-    return max_state->max;
+    n = RB_MAX(max_tree, &max_state->tree);
+    return n->v.val;
 }
 
 static void
