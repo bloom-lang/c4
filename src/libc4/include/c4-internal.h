@@ -54,4 +54,9 @@ struct C4Runtime
 #define Min(x, y)       ((x) < (y) ? (x) : (y))
 #define Abs(x)          ((x) >= 0 ? (x) : -(x))
 
+/* Mark that a function argument is intentionally unused */
+#ifndef __unused
+#define __unused __attribute__ ((__unused__))
+#endif
+
 #endif

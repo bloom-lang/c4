@@ -199,7 +199,7 @@ pollfd_make(apr_pool_t *pool, apr_socket_t *sock,
 }
 
 static unsigned int
-client_tbl_hash(const char *key, int klen, void *user_data)
+client_tbl_hash(const char *key, int klen, __unused void *user_data)
 {
     Datum d;
 
@@ -210,7 +210,7 @@ client_tbl_hash(const char *key, int klen, void *user_data)
 }
 
 static bool
-client_tbl_cmp(const void *k1, const void *k2, int klen, void *user_data)
+client_tbl_cmp(const void *k1, const void *k2, int klen, __unused void *user_data)
 {
     Datum d1;
     Datum d2;

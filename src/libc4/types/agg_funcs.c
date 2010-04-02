@@ -4,7 +4,7 @@
 
 /* Count */
 static AggStateVal
-count_init_f(Datum v, AggOperator *agg_op, int aggno)
+count_init_f(__unused Datum v, __unused AggOperator *agg_op, __unused int aggno)
 {
     AggStateVal state;
 
@@ -13,14 +13,14 @@ count_init_f(Datum v, AggOperator *agg_op, int aggno)
 }
 
 static AggStateVal
-count_fw_trans_f(AggStateVal state, Datum v)
+count_fw_trans_f(AggStateVal state, __unused Datum v)
 {
     state.d.i8++;
     return state;
 }
 
 static AggStateVal
-count_bw_trans_f(AggStateVal state, Datum v)
+count_bw_trans_f(AggStateVal state, __unused Datum v)
 {
     state.d.i8--;
     return state;
