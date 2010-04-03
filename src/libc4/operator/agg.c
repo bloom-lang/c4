@@ -299,9 +299,9 @@ group_tbl_cmp(const void *k1, const void *k2, int klen, void *data)
 
 /*
  * We assume that AggExprs appear as top-level operators (i.e. aggs cannot be
- * nested within expression trees); the analysis phase currently enforces
- * this. Note that this only works with the AST representation of expressions:
- * see make_eval_expr().
+ * nested within expression trees); the analysis phase currently enforces this
+ * restriction. Note that this only works with the AST representation of
+ * expressions: see make_eval_expr().
  */
 static int
 count_agg_exprs(AstTableRef *head)
