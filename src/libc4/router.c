@@ -79,6 +79,13 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
 
         tuple_buf_shift(buf, &tuple, &tbl_def);
 
+#if 0
+        c4_log(router->c4, "%s: %s %s (=> %s)",
+               __func__, is_delete ? "delete" : "insert",
+               log_tuple(router->c4, tuple, tbl_def->schema),
+               tbl_def->name);
+#endif
+
         if (is_delete)
             route_tuple = tbl_def->table->delete(tbl_def->table, tuple);
         else
