@@ -93,44 +93,49 @@ count_bw_trans_f(AggStateVal state, __unused Datum v)
     return state;
 }
 
-/* Max */
-struct max_tree_node
+/*
+ * Min and Max. For both these aggregates, we keep the input we've seen so far
+ * in a red-black tree. The only difference between min and max is that the
+ * output func for min returns RB_MIN of the tree, while max does RB_MAX. Hence,
+ * we call the common code "extrema".
+ */
+struct extrema_node
 {
-    RB_ENTRY(max_tree_node) entry;
+    RB_ENTRY(extrema_node) entry;
     union
     {
         Datum val;                          /* Data value */
-        struct max_tree_node *next_free;    /* Next free node, if on free list */
+        struct extrema_node *next_free;    /* Next free node, if on free list */
     } v;
 };
 
-typedef struct MaxStateVal MaxStateVal;
+typedef struct ExtremaStateVal ExtremaStateVal;
 
-RB_HEAD(max_tree, max_tree_node, MaxStateVal *);
+RB_HEAD(extrema_tree, extrema_node, ExtremaStateVal *);
 
-struct MaxStateVal
+struct ExtremaStateVal
 {
     apr_pool_t *pool;
     datum_cmp_func cmp_func;
-    struct max_tree tree;
-    struct max_tree_node *free_head;
+    struct extrema_tree tree;
+    struct extrema_node *free_head;
 };
 
 static int
-max_tree_node_cmp(struct max_tree *tree, struct max_tree_node *n1,
-                  struct max_tree_node *n2)
+extrema_node_cmp(struct extrema_tree *tree, struct extrema_node *n1,
+                 struct extrema_node *n2)
 {
-    MaxStateVal *max_state = (MaxStateVal *) tree->opaque;
+    ExtremaStateVal *extrema_state = (ExtremaStateVal *) tree->opaque;
 
-    return max_state->cmp_func(n1->v.val, n2->v.val);
+    return extrema_state->cmp_func(n1->v.val, n2->v.val);
 }
 
-RB_GENERATE_STATIC(max_tree, max_tree_node, entry, max_tree_node_cmp)
+RB_GENERATE_STATIC(extrema_tree, extrema_node, entry, extrema_node_cmp)
 
 static void
-max_insert_val(MaxStateVal *state, Datum v)
+extrema_insert_val(ExtremaStateVal *state, Datum v)
 {
-    struct max_tree_node *n;
+    struct extrema_node *n;
 
     if (state->free_head)
     {
@@ -143,14 +148,14 @@ max_insert_val(MaxStateVal *state, Datum v)
     }
 
     n->v.val = v;
-    RB_INSERT(max_tree, &state->tree, n);
+    RB_INSERT(extrema_tree, &state->tree, n);
 }
 
 static AggStateVal
-max_init_f(Datum v, AggOperator *agg_op, int aggno)
+extrema_init_f(Datum v, AggOperator *agg_op, int aggno)
 {
     AggStateVal state;
-    MaxStateVal *max_state;
+    ExtremaStateVal *ext_state;
     apr_pool_t *pool;
     AggExprInfo *agg_info;
     int colno;
@@ -161,40 +166,40 @@ max_init_f(Datum v, AggOperator *agg_op, int aggno)
     input_type = schema_get_type(agg_op->op.proj_schema, colno);
 
     pool = make_subpool(agg_op->op.pool);
-    max_state = apr_palloc(pool, sizeof(*max_state));
-    max_state->pool = pool;
-    max_state->cmp_func = type_get_cmp_func(input_type);
-    max_state->free_head = NULL;
-    RB_INIT(&max_state->tree, max_state);
+    ext_state = apr_palloc(pool, sizeof(*ext_state));
+    ext_state->pool = pool;
+    ext_state->cmp_func = type_get_cmp_func(input_type);
+    ext_state->free_head = NULL;
+    RB_INIT(&ext_state->tree, ext_state);
 
-    max_insert_val(max_state, v);
+    extrema_insert_val(ext_state, v);
 
-    state.ptr = max_state;
+    state.ptr = ext_state;
     return state;
 }
 
 static AggStateVal
-max_fw_trans_f(AggStateVal state, Datum v)
+extrema_fw_trans_f(AggStateVal state, Datum v)
 {
-    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
+    ExtremaStateVal *ext_state = (ExtremaStateVal *) state.ptr;
 
-    max_insert_val(max_state, v);
+    extrema_insert_val(ext_state, v);
     return state;
 }
 
 static AggStateVal
-max_bw_trans_f(AggStateVal state, Datum v)
+extrema_bw_trans_f(AggStateVal state, Datum v)
 {
-    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
-    struct max_tree_node find;
-    struct max_tree_node *n;
+    ExtremaStateVal *ext_state = (ExtremaStateVal *) state.ptr;
+    struct extrema_node find;
+    struct extrema_node *n;
 
     find.v.val = v;
-    n = RB_FIND(max_tree, &max_state->tree, &find);
-    RB_REMOVE(max_tree, &max_state->tree, n);
+    n = RB_FIND(extrema_tree, &ext_state->tree, &find);
+    RB_REMOVE(extrema_tree, &ext_state->tree, n);
 
-    n->v.next_free = max_state->free_head;
-    max_state->free_head = n;
+    n->v.next_free = ext_state->free_head;
+    ext_state->free_head = n;
 
     return state;
 }
@@ -202,19 +207,29 @@ max_bw_trans_f(AggStateVal state, Datum v)
 static Datum
 max_output_f(AggStateVal state)
 {
-    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
-    struct max_tree_node *n;
+    ExtremaStateVal *ext_state = (ExtremaStateVal *) state.ptr;
+    struct extrema_node *n;
 
-    n = RB_MAX(max_tree, &max_state->tree);
+    n = RB_MAX(extrema_tree, &ext_state->tree);
+    return n->v.val;
+}
+
+static Datum
+min_output_f(AggStateVal state)
+{
+    ExtremaStateVal *ext_state = (ExtremaStateVal *) state.ptr;
+    struct extrema_node *n;
+
+    n = RB_MIN(extrema_tree, &ext_state->tree);
     return n->v.val;
 }
 
 static void
-max_shutdown_f(AggStateVal state)
+extrema_shutdown_f(AggStateVal state)
 {
-    MaxStateVal *max_state = (MaxStateVal *) state.ptr;
+    ExtremaStateVal *ext_state = (ExtremaStateVal *) state.ptr;
 
-    apr_pool_destroy(max_state->pool);
+    apr_pool_destroy(ext_state->pool);
 }
 
 /* Sum */
@@ -250,11 +265,19 @@ static AggFuncDesc agg_desc_count = {
 };
 
 static AggFuncDesc agg_desc_max = {
-    max_init_f,
-    max_fw_trans_f,
-    max_bw_trans_f,
+    extrema_init_f,
+    extrema_fw_trans_f,
+    extrema_bw_trans_f,
     max_output_f,
-    max_shutdown_f
+    extrema_shutdown_f
+};
+
+static AggFuncDesc agg_desc_min = {
+    extrema_init_f,
+    extrema_fw_trans_f,
+    extrema_bw_trans_f,
+    min_output_f,
+    extrema_shutdown_f
 };
 
 static AggFuncDesc agg_desc_sum = {
@@ -279,10 +302,8 @@ lookup_agg_desc(AstAggKind agg_kind)
         case AST_AGG_MAX:
             return &agg_desc_max;
 
-#if 0
         case AST_AGG_MIN:
             return &agg_desc_min;
-#endif
 
         case AST_AGG_SUM:
             return &agg_desc_sum;
