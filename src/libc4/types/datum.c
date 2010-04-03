@@ -90,7 +90,12 @@ datum_equal(Datum d1, Datum d2, DataType type)
 int
 bool_cmp(Datum d1, Datum d2)
 {
-    ERROR("%s: Not implemented yet", __func__);
+    if (d1.b < d2.b)
+        return -1;
+    else if (d1.b > d2.c)
+        return 1;
+    else
+        return 0;
 }
 
 int

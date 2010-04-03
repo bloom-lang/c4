@@ -121,3 +121,19 @@ avg_t1(2.4, 0.0);
 
 \dump avg_t1
 \dump avg_t2
+
+/* Min and max for booleans */
+define(bool_agg_t1, keys(0), {int8, bool});
+define(bool_agg_t2, keys(0), {int8, bool, bool});
+
+bool_agg_t2(A, max<B>, min<B>) :- bool_agg_t1(A, B);
+
+bool_agg_t1(10, false);
+bool_agg_t1(10, true);
+bool_agg_t1(15, true);
+
+\dump bool_agg_t2
+
+bool_agg_t1(15, false);
+
+\dump bool_agg_t2
