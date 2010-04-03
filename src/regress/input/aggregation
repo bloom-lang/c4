@@ -92,13 +92,9 @@ define(min_t3, keys(0), {int8});
 min_t1(A, B - 1) :- min_t1(A, B), A < B;
 min_t2(A, min<B>) :- min_t1(A, B), notin min_t3(A);
 
-min_t1(5, 10);
-min_t1(5, 15);
 min_t1(5, 20);
 min_t1(10, 50);
-min_t1(10, 0);
 min_t1(1, 1000);
-min_t1(1, 1010);
 
 \dump min_t2
 
