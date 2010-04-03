@@ -84,6 +84,35 @@ max_t1(15, 0);
 
 \dump max_t2
 
+/* Min aggregate */
+define(min_t1, keys(0), {int8, int8});
+define(min_t2, keys(0), {int8, int8});
+define(min_t3, keys(0), {int8});
+
+min_t1(A, B - 1) :- min_t1(A, B), A < B;
+min_t2(A, min<B>) :- min_t1(A, B), notin min_t3(A);
+
+min_t1(5, 10);
+min_t1(5, 15);
+min_t1(5, 20);
+min_t1(10, 50);
+min_t1(10, 0);
+min_t1(1, 1000);
+min_t1(1, 1010);
+
+\dump min_t2
+
+min_t3(1);
+min_t1(1, 0);
+
+\dump min_t2
+
+min_t3(5);
+min_t1(0, 5);
+min_t1(5, 23);
+
+\dump min_t2
+
 /* Avg aggregate */
 define(avg_t1, keys(0), {double, double});
 define(avg_t2, keys(0), {double, double, double, double});
