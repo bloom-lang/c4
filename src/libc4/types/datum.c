@@ -160,7 +160,7 @@ string_cmp(Datum d1, Datum d2)
     C4String *s2 = d2.s;
     int result;
 
-    result = strncmp(s1->data, s2->data, Min(s1->len, s2->len));
+    result = memcmp(s1->data, s2->data, Min(s1->len, s2->len));
     if ((result == 0) && (s1->len != s2->len))
         result = (s1->len < s2->len ? -1 : 1);
 

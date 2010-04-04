@@ -20,7 +20,7 @@ typedef unsigned char DataType;
 
 typedef struct C4String
 {
-    /* The number of bytes in "data"; XXX: including NUL terminator? */
+    /* The number of bytes in "data"; we do NOT store a NUL terminator */
     apr_uint32_t len;
     apr_uint16_t refcount;
     char data[1];       /* Variable-sized */
