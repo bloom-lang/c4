@@ -156,7 +156,15 @@ int8_cmp(Datum d1, Datum d2)
 int
 string_cmp(Datum d1, Datum d2)
 {
-    ERROR("%s: Not implemented yet", __func__);
+    C4String *s1 = d1.s;
+    C4String *s2 = d2.s;
+    int result;
+
+    result = strncmp(s1->data, s2->data, Min(s1->len, s2->len));
+    if ((result == 0) && (s1->len != s2->len))
+        result = (s1->len < s2->len ? -1 : 1);
+
+    return result;
 }
 
 /* XXX: get rid of this */

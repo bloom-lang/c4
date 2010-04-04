@@ -84,6 +84,7 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
         AggExprInfo *agg_info;
         Datum d;
         int colno;
+        DataType type;
 
         agg_info = agg_op->agg_info[i];
         if (agg_info->desc->output_f)
@@ -92,18 +93,21 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
             d = group->state_vals[i].d;
 
         colno = agg_info->colno;
-        group->output_tup->vals[colno] = d;
+        type = schema_get_type(agg_op->op.proj_schema, colno);
+        group->output_tup->vals[colno] = datum_copy(d, type);
     }
 
     /* Copy over group columns: no need to recompute */
     for (i = 0; i < agg_op->num_group_cols; i++)
     {
         int colno;
+        DataType type;
         Datum d;
 
         colno = agg_op->group_colnos[i];
+        type = schema_get_type(agg_op->op.proj_schema, colno);
         d = tuple_get_val(group->key, colno);
-        group->output_tup->vals[colno] = d;
+        group->output_tup->vals[colno] = datum_copy(d, type);
     }
 
     router_insert_tuple(c4->router, group->output_tup,

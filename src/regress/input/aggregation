@@ -137,3 +137,19 @@ bool_agg_t1(15, true);
 bool_agg_t1(15, false);
 
 \dump bool_agg_t2
+
+/* Min and max for strings */
+define(str_agg_t1, keys(0), {int8, string});
+define(str_agg_t2, keys(0), {int8, string, string});
+
+str_agg_t2(A, max<S>, min<S>) :- str_agg_t1(A, S);
+
+str_agg_t1(5, "foo");
+str_agg_t1(5, "foo2");
+str_agg_t1(10, "bar");
+str_agg_t1(10, "foo");
+str_agg_t1(10, "abc");
+str_agg_t1(15, "");
+str_agg_t1(15, "x");
+
+\dump str_agg_t2

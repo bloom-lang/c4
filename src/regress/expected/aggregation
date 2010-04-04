@@ -68,3 +68,13 @@
 **** \dump "avg_t2" ****
 1.200000,1.800000,1.200000,0.600000
 2.400000,3.600000,2.400000,1.200000
+**** \dump "bool_agg_t2" ****
+10,true,false
+15,true,true
+**** \dump "bool_agg_t2" ****
+10,true,false
+15,true,false
+**** \dump "str_agg_t2" ****
+10,foo,abc
+15,x,
+5,foo2,foo
