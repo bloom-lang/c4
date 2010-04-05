@@ -108,3 +108,20 @@ tuple_buf_shift(TupleBuf *buf, Tuple **tuple, TableDef **tbl_def)
     if (tbl_def)
         *tbl_def = ent->tbl_def;
 }
+
+void
+tuple_buf_dump(TupleBuf *buf, C4Runtime *c4)
+{
+    int i;
+
+    for (i = 0; i < tuple_buf_size(buf); i++)
+    {
+        int offset = buf->start + i;
+        TupleBufEntry *ent = &buf->entries[offset];
+
+        c4_log(c4, "%s: (%d) %s => %s",
+               __func__, i,
+               log_tuple(c4, ent->tuple, ent->tbl_def->schema),
+               ent->tbl_def->name);
+    }
+}
