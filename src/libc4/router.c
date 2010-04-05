@@ -92,7 +92,7 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
             route_tuple = tbl_def->table->insert(tbl_def->table, tuple);
 
         if (!route_tuple)
-            return;
+            continue;
 
         op_chain = tbl_def->op_chain_list->head;
         while (op_chain != NULL)

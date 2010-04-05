@@ -1,0 +1,20 @@
+define(i5_a, keys(0), {int8});
+define(i5_b, keys(0), {int8});
+define(i5_c, keys(0), {int8});
+define(i5_plus_a, keys(0), {int8});
+define(i5_minus_a, keys(0), {int8});
+
+define(i5_foo, keys(0), {bool});
+
+i5_b(1);
+i5_b(2);
+i5_c(1);
+i5_c(2);
+
+i5_foo(true) :- i5_c(_);
+
+i5_minus_a(X) :- i5_b(X), i5_c(X);
+i5_plus_a(X) :- i5_b(X), notin i5_c(X);
+i5_a(X) :- i5_plus_a(X), notin i5_minus_a(X);
+
+\dump i5_a
