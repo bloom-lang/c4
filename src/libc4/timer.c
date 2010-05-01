@@ -113,7 +113,7 @@ timer_poll(C4Timer *timer)
     alarm = timer->alarm;
     while (alarm != NULL)
     {
-        /* Note that we might fire many times before advancing to next alarm */
+        /* NB: we might fire many times before advancing to the next alarm */
         if (alarm->deadline <= now)
         {
             fire_alarm(alarm, timer);
