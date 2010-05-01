@@ -229,8 +229,9 @@ network_get_port(C4Network *net)
 
 /*
  * Block for a new event: network activity, network_wakeup(), or timeout. If we
- * saw network activity, returns true (we expect the caller to compute a
- * fixpoint); otherwise, returns false.
+ * saw network activity, returns true (incoming deserialized network tuples will
+ * be inserted into the router's insert buf, and we expect the caller to compute
+ * a fixpoint); otherwise, returns false.
  */
 bool
 network_poll(C4Network *net, apr_interval_time_t timeout)
