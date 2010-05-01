@@ -214,7 +214,8 @@ router_main_loop(C4Router *router)
         apr_interval_time_t timeout;
 
         /* Fire any pending alarms */
-        timer_invoke(router->c4->timer);
+        if (timer_poll(router->c4->timer))
+            router_do_fixpoint(router);
 
         timeout = timer_get_sleep_time(router->c4->timer);
         if (network_poll(router->c4->net, timeout))

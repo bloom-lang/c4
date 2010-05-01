@@ -101,20 +101,27 @@ fire_alarm(AlarmState *alarm, C4Timer *timer)
     alarm->deadline += alarm->period;
 }
 
-void
-timer_invoke(C4Timer *timer)
+bool
+timer_poll(C4Timer *timer)
 {
     apr_time_t now;
     AlarmState *alarm;
+    bool fired_alarm;
 
+    fired_alarm = false;
     now = apr_time_now();
     alarm = timer->alarm;
     while (alarm != NULL)
     {
         /* Note that we might fire many times before advancing to next alarm */
         if (alarm->deadline <= now)
+        {
             fire_alarm(alarm, timer);
+            fired_alarm = true;
+        }
         else
             alarm = alarm->next;
     }
+
+    return fired_alarm;
 }
