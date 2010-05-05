@@ -112,12 +112,20 @@ route_tuple_buf(C4Router *router, TupleBuf *buf, bool is_delete)
     }
 }
 
+#ifdef C4_ASSERT_ENABLED
+static bool
+has_pending_tuples(C4Router *router)
+{
+    return (!tuple_buf_is_empty(router->insert_buf) ||
+            !tuple_buf_is_empty(router->delete_buf) ||
+            !tuple_buf_is_empty(router->net_buf));
+}
+#endif
+
 static void
 router_do_fixpoint(C4Router *router)
 {
     TupleBuf *net_buf = router->net_buf;
-
-    ASSERT(tuple_buf_is_empty(net_buf));
 
     while (!tuple_buf_is_empty(router->insert_buf) ||
            !tuple_buf_is_empty(router->delete_buf))
@@ -143,10 +151,9 @@ router_do_fixpoint(C4Router *router)
         tuple_unpin(tuple, tbl_def->schema);
     }
 
-    /* Sending network messages should not cause more routing work */
-    ASSERT(tuple_buf_is_empty(router->insert_buf));
-    ASSERT(tuple_buf_is_empty(router->delete_buf));
     apr_pool_clear(router->c4->tmp_pool);
+    /* Sending network messages should not cause more routing work */
+    ASSERT(!has_pending_tuples(router));
 }
 
 /*
@@ -225,6 +232,8 @@ router_main_loop(C4Router *router)
             if (!drain_queue(router))
                 break;      /* Saw shutdown request */
         }
+
+        ASSERT(!has_pending_tuples(router));
     }
 }
 
