@@ -66,6 +66,7 @@ Data types and expressions:
 * Allow sum, avg to work on a broader range of data types
   * The sum of int4s might be an int8
 * Check for integer overflow in addition, multiply, etc.
+* Consider removing int2 and int4 data types for simplicity
 
 Tables and storage:
 
@@ -106,6 +107,7 @@ Broader issues:
   the evaluating C4 instance
   * Complicated by the fact that a machine can have multiple network
     addresses (one per interface + localhost + IPv4 vs. IPv6, etc.)
+  * Perhaps adopt something like Reactor's "ref" concept instead
 * Invent something similar to makeNode() from Postgres: infer node
   size from node type tag
 * Consider caching per-tuple hash code
