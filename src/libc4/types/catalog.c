@@ -153,9 +153,7 @@ is_numeric_type(DataType type_id)
     switch (type_id)
     {
         case TYPE_DOUBLE:
-        case TYPE_INT2:
-        case TYPE_INT4:
-        case TYPE_INT8:
+        case TYPE_INT:
             return true;
 
         default:
@@ -179,13 +177,7 @@ get_type_id(const char *type_name)
     if (strcmp(type_name, "double") == 0)
         return TYPE_DOUBLE;
     if (strcmp(type_name, "int") == 0)
-        return TYPE_INT4;
-    if (strcmp(type_name, "int2") == 0)
-        return TYPE_INT2;
-    if (strcmp(type_name, "int4") == 0)
-        return TYPE_INT4;
-    if (strcmp(type_name, "int8") == 0)
-        return TYPE_INT8;
+        return TYPE_INT;
     if (strcmp(type_name, "string") == 0)
         return TYPE_STRING;
 
@@ -205,12 +197,8 @@ get_type_name(DataType type_id)
             return "char";
         case TYPE_DOUBLE:
             return "double";
-        case TYPE_INT2:
-            return "int2";
-        case TYPE_INT4:
-            return "int4";
-        case TYPE_INT8:
-            return "int8";
+        case TYPE_INT:
+            return "int";
         case TYPE_STRING:
             return "string";
 
@@ -233,14 +221,8 @@ type_get_hash_func(DataType type)
         case TYPE_DOUBLE:
             return double_hash;
 
-        case TYPE_INT2:
-            return int2_hash;
-
-        case TYPE_INT4:
-            return int4_hash;
-
-        case TYPE_INT8:
-            return int8_hash;
+        case TYPE_INT:
+            return int_hash;
 
         case TYPE_STRING:
             return string_hash;
@@ -267,14 +249,8 @@ type_get_eq_func(DataType type)
         case TYPE_DOUBLE:
             return double_equal;
 
-        case TYPE_INT2:
-            return int2_equal;
-
-        case TYPE_INT4:
-            return int4_equal;
-
-        case TYPE_INT8:
-            return int8_equal;
+        case TYPE_INT:
+            return int_equal;
 
         case TYPE_STRING:
             return string_equal;
@@ -301,14 +277,8 @@ type_get_cmp_func(DataType type)
         case TYPE_DOUBLE:
             return double_cmp;
 
-        case TYPE_INT2:
-            return int2_cmp;
-
-        case TYPE_INT4:
-            return int4_cmp;
-
-        case TYPE_INT8:
-            return int8_cmp;
+        case TYPE_INT:
+            return int_cmp;
 
         case TYPE_STRING:
             return string_cmp;
@@ -335,14 +305,8 @@ type_get_binary_in_func(DataType type)
         case TYPE_DOUBLE:
             return double_from_buf;
 
-        case TYPE_INT2:
-            return int2_from_buf;
-
-        case TYPE_INT4:
-            return int4_from_buf;
-
-        case TYPE_INT8:
-            return int8_from_buf;
+        case TYPE_INT:
+            return int_from_buf;
 
         case TYPE_STRING:
             return string_from_buf;
@@ -369,14 +333,8 @@ type_get_text_in_func(DataType type)
         case TYPE_DOUBLE:
             return double_from_str;
 
-        case TYPE_INT2:
-            return int2_from_str;
-
-        case TYPE_INT4:
-            return int4_from_str;
-
-        case TYPE_INT8:
-            return int8_from_str;
+        case TYPE_INT:
+            return int_from_str;
 
         case TYPE_STRING:
             return string_from_str;
@@ -407,14 +365,8 @@ type_get_binary_out_func(DataType type)
         case TYPE_DOUBLE:
             return double_to_buf;
 
-        case TYPE_INT2:
-            return int2_to_buf;
-
-        case TYPE_INT4:
-            return int4_to_buf;
-
-        case TYPE_INT8:
-            return int8_to_buf;
+        case TYPE_INT:
+            return int_to_buf;
 
         case TYPE_STRING:
             return string_to_buf;
@@ -441,14 +393,8 @@ type_get_text_out_func(DataType type)
         case TYPE_DOUBLE:
             return double_to_str;
 
-        case TYPE_INT2:
-            return int2_to_str;
-
-        case TYPE_INT4:
-            return int4_to_str;
-
-        case TYPE_INT8:
-            return int8_to_str;
+        case TYPE_INT:
+            return int_to_str;
 
         case TYPE_STRING:
             return string_to_str;

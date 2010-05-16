@@ -7,8 +7,8 @@ eval_op_uminus_i8(ExprState *state)
     Datum lhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     result.i8 = -(lhs.i8);
@@ -43,9 +43,9 @@ eval_op_plus_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->rhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->rhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
@@ -61,9 +61,9 @@ eval_op_minus_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->rhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->rhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
@@ -79,9 +79,9 @@ eval_op_times_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->rhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->rhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
@@ -97,9 +97,9 @@ eval_op_divide_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->rhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->rhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);
@@ -116,9 +116,9 @@ eval_op_modulus_i8(ExprState *state)
     Datum rhs;
     Datum result;
 
-    ASSERT(state->lhs->expr->type == TYPE_INT8);
-    ASSERT(state->rhs->expr->type == TYPE_INT8);
-    ASSERT(state->expr->type == TYPE_INT8);
+    ASSERT(state->lhs->expr->type == TYPE_INT);
+    ASSERT(state->rhs->expr->type == TYPE_INT);
+    ASSERT(state->expr->type == TYPE_INT);
 
     lhs = eval_expr(state->lhs);
     rhs = eval_expr(state->rhs);

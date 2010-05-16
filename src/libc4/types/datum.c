@@ -23,19 +23,7 @@ double_equal(Datum d1, Datum d2)
 }
 
 bool
-int2_equal(Datum d1, Datum d2)
-{
-    return d1.i2 == d2.i2;
-}
-
-bool
-int4_equal(Datum d1, Datum d2)
-{
-    return d1.i4 == d2.i4;
-}
-
-bool
-int8_equal(Datum d1, Datum d2)
+int_equal(Datum d1, Datum d2)
 {
     return d1.i8 == d2.i8;
 }
@@ -67,14 +55,8 @@ datum_equal(Datum d1, Datum d2, DataType type)
         case TYPE_DOUBLE:
             return double_equal(d1, d2);
 
-        case TYPE_INT2:
-            return int2_equal(d1, d2);
-
-        case TYPE_INT4:
-            return int4_equal(d1, d2);
-
-        case TYPE_INT8:
-            return int8_equal(d1, d2);
+        case TYPE_INT:
+            return int_equal(d1, d2);
 
         case TYPE_STRING:
             return string_equal(d1, d2);
@@ -121,29 +103,7 @@ double_cmp(Datum d1, Datum d2)
 }
 
 int
-int2_cmp(Datum d1, Datum d2)
-{
-    if (d1.i2 < d2.i2)
-        return -1;
-    else if (d1.i2 > d2.i2)
-        return 1;
-    else
-        return 0;
-}
-
-int
-int4_cmp(Datum d1, Datum d2)
-{
-    if (d1.i4 < d2.i4)
-        return -1;
-    else if (d1.i4 > d2.i4)
-        return 1;
-    else
-        return 0;
-}
-
-int
-int8_cmp(Datum d1, Datum d2)
+int_cmp(Datum d1, Datum d2)
 {
     if (d1.i8 < d2.i8)
         return -1;
@@ -182,14 +142,8 @@ datum_cmp(Datum d1, Datum d2, DataType type)
         case TYPE_DOUBLE:
             return double_cmp(d1, d2);
 
-        case TYPE_INT2:
-            return int2_cmp(d1, d2);
-
-        case TYPE_INT4:
-            return int4_cmp(d1, d2);
-
-        case TYPE_INT8:
-            return int8_cmp(d1, d2);
+        case TYPE_INT:
+            return int_cmp(d1, d2);
 
         case TYPE_STRING:
             return string_cmp(d1, d2);
@@ -229,19 +183,7 @@ double_hash(Datum d)
 }
 
 apr_uint32_t
-int2_hash(Datum d)
-{
-    return hash_any((unsigned char *) &(d.i2), sizeof(apr_int16_t));
-}
-
-apr_uint32_t
-int4_hash(Datum d)
-{
-    return hash_any((unsigned char *) &(d.i4), sizeof(apr_int32_t));
-}
-
-apr_uint32_t
-int8_hash(Datum d)
+int_hash(Datum d)
 {
     return hash_any((unsigned char *) &(d.i8), sizeof(apr_int64_t));
 }
@@ -370,29 +312,7 @@ parse_int64(const char *str, apr_int64_t max, apr_int64_t min)
 }
 
 Datum
-int2_from_str(const char *str)
-{
-    Datum result;
-    apr_int64_t raw_result;
-
-    raw_result = parse_int64(str, APR_INT16_MAX, APR_INT16_MIN);
-    result.i2 = (apr_int16_t) raw_result;
-    return result;
-}
-
-Datum
-int4_from_str(const char *str)
-{
-    Datum result;
-    apr_int64_t raw_result;
-
-    raw_result = parse_int64(str, APR_INT32_MAX, APR_INT32_MIN);
-    result.i4 = (apr_int32_t) raw_result;
-    return result;
-}
-
-Datum
-int8_from_str(const char *str)
+int_from_str(const char *str)
 {
     Datum result;
 
@@ -443,19 +363,7 @@ double_to_str(Datum d, StrBuf *buf)
 }
 
 void
-int2_to_str(Datum d, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%hd", d.i2);
-}
-
-void
-int4_to_str(Datum d, StrBuf *buf)
-{
-    sbuf_appendf(buf, "%d", d.i4);
-}
-
-void
-int8_to_str(Datum d, StrBuf *buf)
+int_to_str(Datum d, StrBuf *buf)
 {
     sbuf_appendf(buf, "%" APR_INT64_T_FMT, d.i8);
 }
@@ -504,30 +412,12 @@ double_from_buf(StrBuf *buf)
     Datum result;
 
     /* See double_to_buf() for notes on this */
-    result = int8_from_buf(buf);
+    result = int_from_buf(buf);
     return result;
 }
 
 Datum
-int2_from_buf(StrBuf *buf)
-{
-    Datum result;
-
-    result.i2 = ntohs(sbuf_read_int16(buf));
-    return result;
-}
-
-Datum
-int4_from_buf(StrBuf *buf)
-{
-    Datum result;
-
-    result.i4 = ntohl(sbuf_read_int32(buf));
-    return result;
-}
-
-Datum
-int8_from_buf(StrBuf *buf)
+int_from_buf(StrBuf *buf)
 {
     Datum result;
     apr_uint32_t h32;
@@ -570,35 +460,17 @@ char_to_buf(Datum d, StrBuf *buf)
 }
 
 /*
- * We assume that double should be byte-swapped in the same way as int8, per
+ * We assume that double should be byte-swapped in the same way as int, per
  * Postgres. Apparently not perfect, but fairly portable.
  */
 void
 double_to_buf(Datum d, StrBuf *buf)
 {
-    int8_to_buf(d, buf);
+    int_to_buf(d, buf);
 }
 
 void
-int2_to_buf(Datum d, StrBuf *buf)
-{
-    apr_uint16_t n16;
-
-    n16 = htons((apr_uint16_t) d.i2);
-    sbuf_append_data(buf, (char *) &n16, sizeof(n16));
-}
-
-void
-int4_to_buf(Datum d, StrBuf *buf)
-{
-    apr_uint32_t n32;
-
-    n32 = htonl((apr_uint32_t) d.i4);
-    sbuf_append_data(buf, (char *) &n32, sizeof(n32));
-}
-
-void
-int8_to_buf(Datum d, StrBuf *buf)
+int_to_buf(Datum d, StrBuf *buf)
 {
     apr_int64_t i = d.i8;
     apr_uint32_t n32;

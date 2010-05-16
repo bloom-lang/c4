@@ -1,8 +1,8 @@
-define(i5_a, {int8});
-define(i5_b, {int8});
-define(i5_c, {int8});
-define(i5_plus_a, {int8});
-define(i5_minus_a, {int8});
+define(i5_a, {int});
+define(i5_b, {int});
+define(i5_c, {int});
+define(i5_plus_a, {int});
+define(i5_minus_a, {int});
 
 define(i5_foo, {bool});
 

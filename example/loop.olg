@@ -1,4 +1,4 @@
-define(foo, {int8});
+define(foo, {int});
 
 foo(0);
 

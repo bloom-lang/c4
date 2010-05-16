@@ -1,6 +1,6 @@
-define(input, {int8});
-define(add_one, {int8, int8});
-define(sub_500, {int8, int8});
+define(input, {int});
+define(add_one, {int, int});
+define(sub_500, {int, int});
 
 input(0);
 input(X+1) :- input(X), X < 20;

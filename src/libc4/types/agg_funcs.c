@@ -233,7 +233,7 @@ extrema_shutdown_f(AggStateVal state)
 }
 
 /* Sum */
-/* XXX: Currently assume that sum input and output is TYPE_INT8 */
+/* XXX: Currently assume that sum input and output is TYPE_INT */
 static AggStateVal
 sum_fw_trans_f(AggStateVal state, Datum v)
 {

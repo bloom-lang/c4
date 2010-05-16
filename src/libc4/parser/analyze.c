@@ -135,7 +135,7 @@ analyze_timer(AstTimer *timer, AnalyzeState *state)
 
     /* Add an AstDefine for the timer table to the AST */
     schema = list_make(state->pool);
-    list_append(schema, make_schema_elt("int8", false, state->pool));
+    list_append(schema, make_schema_elt("int", false, state->pool));
 
     def = make_define(timer->name, AST_STORAGE_MEMORY, schema, state->pool);
     list_append(state->program->defines, def);
@@ -741,8 +741,8 @@ analyze_agg_expr(AstAggExpr *a_expr, ExprLocation loc, AnalyzeState *state)
             break;
 
         case AST_AGG_SUM:
-            if (expr_get_type(a_expr->expr) != TYPE_INT8)
-                ERROR("Sum aggregate must be used with int8 value");
+            if (expr_get_type(a_expr->expr) != TYPE_INT)
+                ERROR("Sum aggregate must be used with int value");
             break;
 
         default:
@@ -1122,7 +1122,7 @@ const_expr_get_type(AstConstExpr *c_expr)
             return TYPE_DOUBLE;
 
         case AST_CONST_INT:
-            return TYPE_INT8;
+            return TYPE_INT;
 
         case AST_CONST_STRING:
             return TYPE_STRING;
@@ -1154,7 +1154,7 @@ agg_expr_get_type(AstAggExpr *agg)
 
         case AST_AGG_COUNT:
         case AST_AGG_SUM:
-            return TYPE_INT8;
+            return TYPE_INT;
 
         case AST_AGG_MAX:
         case AST_AGG_MIN:

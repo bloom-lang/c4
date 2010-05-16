@@ -13,10 +13,8 @@ typedef unsigned char DataType;
 #define TYPE_BOOL    1
 #define TYPE_CHAR    2
 #define TYPE_DOUBLE  3
-#define TYPE_INT2    4
-#define TYPE_INT4    5
-#define TYPE_INT8    6
-#define TYPE_STRING  7
+#define TYPE_INT     4
+#define TYPE_STRING  5
 
 typedef struct C4String
 {
@@ -31,8 +29,6 @@ typedef union Datum
     /* Pass-by-value types (unboxed) */
     bool           b;
     unsigned char  c;
-    apr_int16_t    i2;
-    apr_int32_t    i4;
     apr_int64_t    i8;
     double         d8;
     /* Pass-by-ref types (boxed) */
@@ -50,61 +46,47 @@ typedef void (*datum_text_out_func)(Datum d, StrBuf *buf);
 bool bool_equal(Datum d1, Datum d2);
 bool char_equal(Datum d1, Datum d2);
 bool double_equal(Datum d1, Datum d2);
-bool int2_equal(Datum d1, Datum d2);
-bool int4_equal(Datum d1, Datum d2);
-bool int8_equal(Datum d1, Datum d2);
+bool int_equal(Datum d1, Datum d2);
 bool string_equal(Datum d1, Datum d2);
 
 int bool_cmp(Datum d1, Datum d2);
 int char_cmp(Datum d1, Datum d2);
 int double_cmp(Datum d1, Datum d2);
-int int2_cmp(Datum d1, Datum d2);
-int int4_cmp(Datum d1, Datum d2);
-int int8_cmp(Datum d1, Datum d2);
+int int_cmp(Datum d1, Datum d2);
 int string_cmp(Datum d1, Datum d2);
 
 apr_uint32_t bool_hash(Datum d);
 apr_uint32_t char_hash(Datum d);
 apr_uint32_t double_hash(Datum d);
-apr_uint32_t int2_hash(Datum d);
-apr_uint32_t int4_hash(Datum d);
-apr_uint32_t int8_hash(Datum d);
+apr_uint32_t int_hash(Datum d);
 apr_uint32_t string_hash(Datum d);
 
 /* Binary input functions */
 Datum bool_from_buf(StrBuf *buf);
 Datum char_from_buf(StrBuf *buf);
 Datum double_from_buf(StrBuf *buf);
-Datum int2_from_buf(StrBuf *buf);
-Datum int4_from_buf(StrBuf *buf);
-Datum int8_from_buf(StrBuf *buf);
+Datum int_from_buf(StrBuf *buf);
 Datum string_from_buf(StrBuf *buf);
 
 /* Binary output functions */
 void bool_to_buf(Datum d, StrBuf *buf);
 void char_to_buf(Datum d, StrBuf *buf);
 void double_to_buf(Datum d, StrBuf *buf);
-void int2_to_buf(Datum d, StrBuf *buf);
-void int4_to_buf(Datum d, StrBuf *buf);
-void int8_to_buf(Datum d, StrBuf *buf);
+void int_to_buf(Datum d, StrBuf *buf);
 void string_to_buf(Datum d, StrBuf *buf);
 
 /* Text input functions */
 Datum bool_from_str(const char *str);
 Datum char_from_str(const char *str);
 Datum double_from_str(const char *str);
-Datum int2_from_str(const char *str);
-Datum int4_from_str(const char *str);
-Datum int8_from_str(const char *str);
+Datum int_from_str(const char *str);
 Datum string_from_str(const char *str);
 
 /* Text output functions */
 void bool_to_str(Datum d, StrBuf *buf);
 void char_to_str(Datum d, StrBuf *buf);
 void double_to_str(Datum d, StrBuf *buf);
-void int2_to_str(Datum d, StrBuf *buf);
-void int4_to_str(Datum d, StrBuf *buf);
-void int8_to_str(Datum d, StrBuf *buf);
+void int_to_str(Datum d, StrBuf *buf);
 void string_to_str(Datum d, StrBuf *buf);
 
 char *string_to_text(Datum d, apr_pool_t *pool);

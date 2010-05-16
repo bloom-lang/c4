@@ -1,4 +1,4 @@
-define(foo, {int8, int8, int8});
+define(foo, {int, int, int});
 
 foo(5, 10, 15);
 foo(10, 15, 20);

@@ -28,10 +28,8 @@ sqlite_table_create_sql(SQLiteTable *tbl)
         switch (schema->types[i])
         {
             case TYPE_BOOL:
-            case TYPE_INT2:
             case TYPE_CHAR:
-            case TYPE_INT4:
-            case TYPE_INT8:
+            case TYPE_INT:
                 sbuf_appendf(stmt, "c%d integer", i);
                 sbuf_appendf(pkeys, "c%d", i);
                 break;
@@ -118,13 +116,7 @@ sqlite_table_insert(AbstractTable *a_tbl, Tuple *t)
             case TYPE_CHAR:
                 sqlite3_bind_int(tbl->insert_stmt, i + 1, val.c);
                 break;
-            case TYPE_INT2:
-                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.i2);
-                break;
-            case TYPE_INT4:
-                sqlite3_bind_int(tbl->insert_stmt, i + 1, val.i4);
-                break;
-            case TYPE_INT8:
+            case TYPE_INT:
                 sqlite3_bind_int64(tbl->insert_stmt, i + 1, val.i8);
                 break;
             case TYPE_DOUBLE:
@@ -224,13 +216,7 @@ sqlite_table_scan_next(AbstractTable *a_tbl, ScanCursor *scan)
             case TYPE_CHAR:
                 d.c = (unsigned char) sqlite3_column_int(scan->sqlite_stmt, i);
                 break;
-            case TYPE_INT2:
-                d.i2 = (apr_int16_t) sqlite3_column_int(scan->sqlite_stmt, i);
-                break;
-            case TYPE_INT4:
-                d.i4 = (apr_int32_t) sqlite3_column_int(scan->sqlite_stmt, i);
-                break;
-            case TYPE_INT8:
+            case TYPE_INT:
                 d.i8 = (apr_int64_t) sqlite3_column_int64(scan->sqlite_stmt, i);
                 break;
             case TYPE_DOUBLE:
