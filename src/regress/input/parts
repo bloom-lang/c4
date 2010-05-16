@@ -1,5 +1,5 @@
-define(assembly, keys(0, 1), {string, string});
-define(subpart, keys(0, 1), {string, string});
+define(assembly, {string, string});
+define(subpart, {string, string});
 
 subpart(A, B) :-
   assembly(A, B);
@@ -7,7 +7,6 @@ subpart(A, B) :-
 subpart(A, B) :-
   assembly(A, C),
   subpart(C, B);
-
 
 assembly("wheel", "spoke");
 assembly("wheel", "tire");

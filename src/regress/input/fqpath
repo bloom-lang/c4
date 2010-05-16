@@ -1,7 +1,7 @@
-define(file, keys(0), {int8, int8, string, bool});
-define(retract_file, keys(0), {int8});
-define(valid_file, keys(0), {int8, int8, string, bool});
-define(fqpath, keys(0), {int8, string});
+define(file, {int8, int8, string, bool});
+define(retract_file, {int8});
+define(valid_file, {int8, int8, string, bool});
+define(fqpath, {int8, string});
 
 /*
  * A file is "valid" if it hasn't been retracted, and either its

@@ -17,13 +17,12 @@ make_program(List *defines, List *timers, List *facts, List *rules, apr_pool_t *
 
 AstDefine *
 make_define(const char *name, AstStorageKind storage,
-            List *keys, List *schema, apr_pool_t *p)
+            List *schema, apr_pool_t *p)
 {
     AstDefine *result = apr_pcalloc(p, sizeof(*result));
     result->node.kind = AST_DEFINE;
     result->storage = storage;
     result->name = apr_pstrdup(p, name);
-    result->keys = list_copy(keys, p);
     result->schema = list_copy_deep(schema, p);
     return result;
 }

@@ -27,7 +27,7 @@ plan_install_defines(ProgramPlan *plan, InstallState *istate)
         AstDefine *def = (AstDefine *) lc_ptr(lc);
 
         cat_define_table(istate->c4->cat, def->name, def->storage,
-                         def->schema, def->keys);
+                         def->schema);
     }
 }
 

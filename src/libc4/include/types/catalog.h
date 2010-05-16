@@ -26,7 +26,6 @@ typedef struct TableDef
     char *name;
     AstStorageKind storage;
     Schema *schema;
-    List *key_list;
 
     /* Column number of location spec, or -1 if none */
     int ls_colno;
@@ -55,8 +54,8 @@ struct CallbackRecord
 
 C4Catalog *cat_make(C4Runtime *c4);
 
-void cat_define_table(C4Catalog *cat, const char *name, AstStorageKind storage,
-                      List *schema, List *key_list);
+void cat_define_table(C4Catalog *cat, const char *name,
+                      AstStorageKind storage, List *schema);
 void cat_delete_table(C4Catalog *cat, const char *name);
 bool cat_table_exists(C4Catalog *cat, const char *name);
 TableDef *cat_get_table(C4Catalog *cat, const char *name);

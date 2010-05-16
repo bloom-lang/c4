@@ -114,7 +114,6 @@ real            ({integer}|{decimal})([Ee][-+]?{digit}+)?
 "define"                { return DEFINE; }
 "delete"                { return DELETE; }
 "false"                 { return OL_FALSE; }
-"keys"                  { return KEYS; }
 "memory"                { return MEMORY; }
 "notin"                 { return NOTIN; }
 "sqlite"                { return SQLITE; }

@@ -1,8 +1,8 @@
-define(agg_t0, keys(0), {int8, int8});
-define(agg_t1, keys(0), {int8, int8});
-define(agg_t2, keys(0), {int8, int8});
-define(agg_t3, keys(0), {int8, int8});
-define(agg_t4, keys(0), {int8, int8});
+define(agg_t0, {int8, int8});
+define(agg_t1, {int8, int8});
+define(agg_t2, {int8, int8});
+define(agg_t3, {int8, int8});
+define(agg_t4, {int8, int8});
 
 agg_t0(A, B) :- agg_t1(A, B);
 agg_t1(A, sum<B>) :- agg_t2(A, B), notin agg_t3(A, B), notin agg_t4(A, B);
@@ -30,9 +30,9 @@ agg_t2(5, 30);
 \dump agg_t1
 \dump agg_t0
 
-define(agg_t5, keys(0), {int8, int8});
-define(agg_t6, keys(0), {int8, int8});
-define(agg_t7, keys(0), {int8, int8});
+define(agg_t5, {int8, int8});
+define(agg_t6, {int8, int8});
+define(agg_t7, {int8, int8});
 
 agg_t5(A, B + 1) :- agg_t5(A, B), A > B;
 agg_t6(A, count<B>) :- agg_t5(A, B);
@@ -46,8 +46,8 @@ agg_t5(2000, 1000);
 \dump agg_t7
 
 /* Test non-constant expr arguments to agg functions */
-define(agg_t8, keys(0), {int8, int8});
-define(agg_t9, keys(0), {int8, int8});
+define(agg_t8, {int8, int8});
+define(agg_t9, {int8, int8});
 
 agg_t8(A, B + 1) :- agg_t8(A, B), A > B;
 agg_t9(A, sum<B + 3>) :- agg_t8(A, B);
@@ -57,9 +57,9 @@ agg_t8(10, 0);
 \dump agg_t9
 
 /* Max aggregate */
-define(max_t1, keys(0), {int8, int8});
-define(max_t2, keys(0), {int8, int8});
-define(max_t3, keys(0), {int8});
+define(max_t1, {int8, int8});
+define(max_t2, {int8, int8});
+define(max_t3, {int8});
 
 max_t1(A, B + 1) :- max_t1(A, B), A > B;
 max_t2(A, max<B>) :- max_t1(A, B), notin max_t3(A);
@@ -85,9 +85,9 @@ max_t1(15, 0);
 \dump max_t2
 
 /* Min aggregate */
-define(min_t1, keys(0), {int8, int8});
-define(min_t2, keys(0), {int8, int8});
-define(min_t3, keys(0), {int8});
+define(min_t1, {int8, int8});
+define(min_t2, {int8, int8});
+define(min_t3, {int8});
 
 min_t1(A, B - 1) :- min_t1(A, B), A < B;
 min_t2(A, min<B>) :- min_t1(A, B), notin min_t3(A);
@@ -110,8 +110,8 @@ min_t1(5, 23);
 \dump min_t2
 
 /* Avg aggregate */
-define(avg_t1, keys(0), {double, double});
-define(avg_t2, keys(0), {double, double, double, double});
+define(avg_t1, {double, double});
+define(avg_t2, {double, double, double, double});
 
 avg_t1(A, B + 0.3) :- avg_t1(A, B), A > B;
 avg_t2(A, avg<A + B>, avg<A>, avg<B>) :- avg_t1(A, B);
@@ -123,8 +123,8 @@ avg_t1(2.4, 0.0);
 \dump avg_t2
 
 /* Min and max for booleans */
-define(bool_agg_t1, keys(0), {int8, bool});
-define(bool_agg_t2, keys(0), {int8, bool, bool});
+define(bool_agg_t1, {int8, bool});
+define(bool_agg_t2, {int8, bool, bool});
 
 bool_agg_t2(A, max<B>, min<B>) :- bool_agg_t1(A, B);
 
@@ -139,8 +139,8 @@ bool_agg_t1(15, false);
 \dump bool_agg_t2
 
 /* Min and max for strings */
-define(str_agg_t1, keys(0), {int8, string});
-define(str_agg_t2, keys(0), {int8, string, string});
+define(str_agg_t1, {int8, string});
+define(str_agg_t2, {int8, string, string});
 
 str_agg_t2(A, max<S>, min<S>) :- str_agg_t1(A, S);
 

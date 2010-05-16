@@ -1,6 +1,6 @@
-define(q, keys(0), {string, string});
-define(p, keys(0), {string, string});
-define(r, keys(0), {string, string});
+define(q, {string, string});
+define(p, {string, string});
+define(r, {string, string});
 
 r(A, C) :-
   p(A, B),
@@ -12,15 +12,15 @@ q("bar", "bam");
 
 \dump r
 
-define(later, keys(0), {string, string});
+define(later, {string, string});
 
 later(A, B) :- p(A, B);
 later(A, B) :- q(A, B);
 
 \dump later
 
-define(j1, keys(0), {int8});
-define(j2, keys(0), {int8});
+define(j1, {int8});
+define(j2, {int8});
 
 j2(A + 1) :- j2(A), j1(B), A >= B, A <= 7;
 

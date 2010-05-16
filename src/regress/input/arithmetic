@@ -1,6 +1,6 @@
-define(input, keys(0), {int8});
-define(add_one, keys(0), {int8, int8});
-define(sub_500, keys(0), {int8, int8});
+define(input, {int8});
+define(add_one, {int8, int8});
+define(sub_500, {int8, int8});
 
 input(0);
 input(X+1) :- input(X), X < 20;
@@ -11,10 +11,10 @@ sub_500(A, A - 500) :- input(A);
 \dump add_one
 \dump sub_500
 
-define(input_d8, keys(0), {double, double});
-define(add_d8, keys(0), {double, double, double});
-define(sub_d8, keys(0), {double, double, double});
-define(mult_d8, keys(0), {double, double, double});
+define(input_d8, {double, double});
+define(add_d8, {double, double, double});
+define(sub_d8, {double, double, double});
+define(mult_d8, {double, double, double});
 
 input_d8(2.0, 10.0);
 input_d8(X + 1.0, Y) :- input_d8(X, Y), X < Y;

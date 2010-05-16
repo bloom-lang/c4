@@ -32,7 +32,7 @@ static void split_rule_body(List *body, List **joins,
 %parse-param { void *scanner }
 %lex-param { yyscan_t scanner }
 
-%token KEYS DEFINE MEMORY SQLITE DELETE NOTIN TIMER
+%token DEFINE MEMORY SQLITE DELETE NOTIN TIMER
        OL_FALSE OL_TRUE OL_AVG OL_COUNT OL_MAX OL_MIN OL_SUM
 %token <str> VAR_IDENT TBL_IDENT FCONST SCONST CCONST ICONST
 
@@ -43,8 +43,8 @@ static void split_rule_body(List *body, List **joins,
 %left UMINUS
 
 %type <ptr>        clause define rule timer table_ref join_clause
-%type <list>       program_body opt_int_list int_list schema_list define_schema
-%type <list>       opt_keys expr_list opt_rule_body rule_body
+%type <list>       program_body schema_list define_schema
+%type <list>       expr_list opt_rule_body rule_body
 %type <ptr>        rule_body_elem qualifier qual_expr expr const_expr op_expr
 %type <ptr>        var_expr agg_expr rule_prefix schema_elt
 %type <agg_kind>   agg_kind
@@ -79,14 +79,14 @@ clause:
  * confused by adjacent optional productions. Is there a better fix?
  */
 define:
-  DEFINE '(' TBL_IDENT ',' MEMORY ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_MEMORY, $7, $8, context->pool);
+  DEFINE '(' TBL_IDENT ',' MEMORY ',' define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $7, context->pool);
 }
-| DEFINE '(' TBL_IDENT ',' SQLITE ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_SQLITE, $7, $8, context->pool);
+| DEFINE '(' TBL_IDENT ',' SQLITE ',' define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_SQLITE, $7, context->pool);
 }
-| DEFINE '(' TBL_IDENT ',' opt_keys define_schema ')' {
-    $$ = make_define($3, AST_STORAGE_MEMORY, $5, $6, context->pool);
+| DEFINE '(' TBL_IDENT ',' define_schema ')' {
+    $$ = make_define($3, AST_STORAGE_MEMORY, $5, context->pool);
 }
 ;
 
@@ -95,26 +95,7 @@ timer: TIMER '(' TBL_IDENT ',' iconst_ival ')' {
 }
 ;
 
-/*
- * Note that we currently equate an empty key list with an absent key list;
- * this is inconsistent with JOL
- */
-opt_keys:
-  KEYS '(' opt_int_list ')' ',' { $$ = $3; }
-| /* EMPTY */ { $$ = NULL; }
-;
-
 define_schema: '{' schema_list '}' { $$ = $2; };
-
-opt_int_list:
-  int_list      { $$ = $1; }
-| /* EMPTY */   { $$ = NULL; }
-;
-
-int_list:
-  iconst_ival                { $$ = list_make1_int($1, context->pool); }
-| int_list ',' iconst_ival   { $$ = list_append_int($1, $3); }
-;
 
 /*
  * This is identical to ICONST, except that we convert the string returned

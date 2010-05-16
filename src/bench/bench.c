@@ -32,8 +32,8 @@ done_table_cb(struct Tuple *tuple, struct TableDef *tbl_def,
 static void
 net_install_program(C4Client *c)
 {
-    c4_install_str(c, "define(ping, keys(0), {@string, string, int8});");
-    c4_install_str(c, "define(done, keys(0), {int8});");
+    c4_install_str(c, "define(ping, {@string, string, int8});");
+    c4_install_str(c, "define(done, {int8});");
     c4_install_str(c, "ping(X, Y, C + 1) :- ping(Y, X, C), C < 100000;");
     c4_install_str(c, "done(C) :- ping(_, _, C), C >= 100000;");
 }
@@ -65,9 +65,9 @@ do_net_bench(apr_pool_t *pool)
 static void
 agg_install_program(C4Client *c)
 {
-    c4_install_str(c, "define(t, keys(0), {int8});");
-    c4_install_str(c, "define(b, keys(0), {int8, int8});");
-    c4_install_str(c, "define(c, keys(0), {int8, int8});");
+    c4_install_str(c, "define(t, {int8});");
+    c4_install_str(c, "define(b, {int8, int8});");
+    c4_install_str(c, "define(c, {int8, int8});");
     c4_install_str(c, "b(X, Y + 1) :- b(X, Y), Y < 150000;");
     c4_install_str(c, "b(X, 0) :- t(X);");
     c4_install_str(c, "t(X + 1) :- t(X), X < 30;");
@@ -77,8 +77,8 @@ agg_install_program(C4Client *c)
 static void
 perf_install_program(C4Client *c)
 {
-    c4_install_str(c, "define(t, keys(0), {int8});");
-    c4_install_str(c, "define(s, keys(0), {int8});");
+    c4_install_str(c, "define(t, {int8});");
+    c4_install_str(c, "define(s, {int8});");
     c4_install_str(c, "t(A + 1) :- t(A), A < 3000000;");
     c4_install_str(c, "s(A) :- t(A);");
 }
@@ -86,8 +86,8 @@ perf_install_program(C4Client *c)
 static void
 join_install_program(C4Client *c)
 {
-    c4_install_str(c, "define(t, keys(0), {int8});");
-    c4_install_str(c, "define(s, keys(0), {int8});");
+    c4_install_str(c, "define(t, {int8});");
+    c4_install_str(c, "define(s, {int8});");
     c4_install_str(c, "s(0);");
     c4_install_str(c, "t(A + 1) :- t(A), s(B), A >= B, A < 3000000;");
 }

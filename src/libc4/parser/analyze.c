@@ -85,7 +85,6 @@ static DataType agg_expr_get_type(AstAggExpr *agg);
 static void
 analyze_define(AstDefine *def, AnalyzeState *state)
 {
-    List *seen_keys;
     bool seen_loc_spec;
     ListCell *lc;
 
@@ -119,35 +118,11 @@ analyze_define(AstDefine *def, AnalyzeState *state)
                 ERROR("Location specifiers must be of type string");
         }
     }
-
-    /* Validate the keys list */
-    if (list_length(def->keys) > list_length(def->schema))
-        ERROR("Key list exceeds schema length of table %s",
-              def->name);
-
-    seen_keys = list_make(state->pool);
-    foreach (lc, def->keys)
-    {
-        int key = lc_int(lc);
-
-        if (key < 0)
-            ERROR("Negative key %d in table %s", key, def->name);
-
-        if (list_member_int(seen_keys, key))
-            ERROR("Duplicate key %d in table %s", key, def->name);
-
-        if (key >= list_length(def->schema))
-            ERROR("Key index %d exceeds schema length in table %s",
-                  key, def->name);
-
-        list_append_int(seen_keys, key);
-    }
 }
 
 static void
 analyze_timer(AstTimer *timer, AnalyzeState *state)
 {
-    List *keys;
     List *schema;
     AstDefine *def;
 
@@ -159,11 +134,10 @@ analyze_timer(AstTimer *timer, AnalyzeState *state)
         ERROR("Period of timer %s is too large", timer->name);
 
     /* Add an AstDefine for the timer table to the AST */
-    keys = list_make1_int(0, state->pool);
     schema = list_make(state->pool);
     list_append(schema, make_schema_elt("int8", false, state->pool));
 
-    def = make_define(timer->name, AST_STORAGE_MEMORY, keys, schema, state->pool);
+    def = make_define(timer->name, AST_STORAGE_MEMORY, schema, state->pool);
     list_append(state->program->defines, def);
     analyze_define(def, state);
 }

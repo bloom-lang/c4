@@ -1,10 +1,10 @@
-define(i5_a, keys(0), {int8});
-define(i5_b, keys(0), {int8});
-define(i5_c, keys(0), {int8});
-define(i5_plus_a, keys(0), {int8});
-define(i5_minus_a, keys(0), {int8});
+define(i5_a, {int8});
+define(i5_b, {int8});
+define(i5_c, {int8});
+define(i5_plus_a, {int8});
+define(i5_minus_a, {int8});
 
-define(i5_foo, keys(0), {bool});
+define(i5_foo, {bool});
 
 i5_b(1);
 i5_b(2);

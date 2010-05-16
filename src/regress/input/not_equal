@@ -1,5 +1,5 @@
-define(c, keys(0), {string, string});
-define(d, keys(0), {string, string});
+define(c, {string, string});
+define(d, {string, string});
 
 d("a", "a");
 d("x", "y");

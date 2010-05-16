@@ -27,7 +27,6 @@ typedef struct AstDefine
     C4Node node;
     char *name;
     AstStorageKind storage;
-    List *keys;
     List *schema;
 } AstDefine;
 

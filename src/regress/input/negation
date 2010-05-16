@@ -1,7 +1,7 @@
 /* Basic negation */
-define(neg_t1, keys(0), {string, string});
-define(neg_t2, keys(0), {string, string});
-define(neg_t3, keys(0), {string, string});
+define(neg_t1, {string, string});
+define(neg_t2, {string, string});
+define(neg_t3, {string, string});
 
 neg_t1("xxx1", "a");
 neg_t1("xxx2", "b");
@@ -26,13 +26,13 @@ neg_t2("xxx2", "b");
 \dump neg_t3
 
 /* Deletion and its consequences */
-define(neg_t4, keys(0), {string, string});
-define(neg_t5, keys(0), {string, string});
-define(neg_t6, keys(0), {string, string});
-define(neg_t7, keys(0), {string, string});
-define(neg_t8, keys(0), {string, string});
-define(neg_t9, keys(0), {string, string});
-define(neg_t10, keys(0), {string, string});
+define(neg_t4, {string, string});
+define(neg_t5, {string, string});
+define(neg_t6, {string, string});
+define(neg_t7, {string, string});
+define(neg_t8, {string, string});
+define(neg_t9, {string, string});
+define(neg_t10, {string, string});
 
 neg_t6("xxx", "1");
 neg_t6("yyy", "2");
@@ -58,11 +58,11 @@ neg_t7("xxx", "300");
 \dump neg_t10
 
 /* Test multiple derivations of the same tuple, then NOT */
-define(multi_a, keys(0), {int8, int8});
-define(multi_b, keys(0), {int8, int8});
-define(multi_c, keys(0), {int8, int8});
-define(multi_d, keys(0), {int8, int8});
-define(multi_e, keys(0), {int8, int8});
+define(multi_a, {int8, int8});
+define(multi_b, {int8, int8});
+define(multi_c, {int8, int8});
+define(multi_d, {int8, int8});
+define(multi_e, {int8, int8});
 
 multi_b(0, 0);
 multi_b(1, 1);
@@ -87,10 +87,10 @@ multi_d(4, 4);
  * Test that multiple facts inserted in the same FP only bump the
  * refcount of derived tuples once, not multiple times.
  */
-define(multi_insert_src1, keys(0), {int8});
-define(multi_insert_src2, keys(0), {int8});
-define(multi_insert_dest, keys(0), {int8});
-define(multi_insert_cancel, keys(0), {int8});
+define(multi_insert_src1, {int8});
+define(multi_insert_src2, {int8});
+define(multi_insert_dest, {int8});
+define(multi_insert_cancel, {int8});
 
 multi_insert_dest(A) :- multi_insert_src1(A), multi_insert_src2(A),
                         notin multi_insert_cancel(A);

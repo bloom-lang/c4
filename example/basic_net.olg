@@ -1,8 +1,8 @@
-define(foo, keys(0), {@string, string});
-define(bar, keys(0), {@string, string});
-define(baz, keys(0), {@string, string});
-define(baz2, keys(0), {@string, string, string});
-define(self, keys(0), {string});
+define(foo, {@string, string});
+define(bar, {@string, string});
+define(baz, {@string, string});
+define(baz2, {@string, string, string});
+define(self, {string});
 
 self("tcp:W88256X9YJX.local:10001");
 

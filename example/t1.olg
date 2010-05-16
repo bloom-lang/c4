@@ -1,7 +1,7 @@
-define(foo, keys(0), {string, string, int8});
-define(bar, keys(0), {string, string, int8});
-define(bax, keys(0), {string, string, int8});
-define(baz, keys(0), {string, string, int8});
+define(foo, {string, string, int8});
+define(bar, {string, string, int8});
+define(bax, {string, string, int8});
+define(baz, {string, string, int8});
 
 foo("XXX", "YYY", 5);
 foo("XXX", "YYY", 10);
