@@ -1,8 +1,7 @@
 Build dependencies: flex (>= 2.3.35), bison, cmake (>= 2.8), apr (>= 1.4),
 apr-util (>= 1.3) and SQLite (>= 3). At the moment, the binaries provided by
 each of these packages (flex, bison, apr-1-config, and apu-1-config) must be in
-your $PATH. Note that apr 1.4 has only recently been released, and so you may
-need to build from source.
+your $PATH.
 
 To build:
 
