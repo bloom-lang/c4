@@ -4,3 +4,6 @@ or whatever is appropriate on your OS.
 You will also need the "ffi" gem installed:
 
     gem install ffi
+
+Then run "ruby regression.rb"
+

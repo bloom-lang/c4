@@ -1,6 +1,6 @@
 require 'rubygems'
-require 'C4'
 require 'fileutils'
+require_relative './C4'
 
 INPUT_DIR="input"
 OUTPUT_DIR="output"
