@@ -1,6 +1,8 @@
 #include "c4-internal.h"
 #include "operator/agg.h"
 #include "router.h"
+#include "parser/analyze.h"
+#include "nodes/copyfuncs.h"
 
 static bool add_new_tuple(Tuple *t, AggOperator *agg_op);
 static void agg_do_delete(Tuple *t, AggOperator *agg_op);
@@ -93,7 +95,7 @@ emit_agg_output(AggGroupState *group, AggOperator *agg_op)
             d = group->state_vals[i].d;
 
         colno = agg_info->colno;
-        type = schema_get_type(agg_op->op.proj_schema, colno);
+        type = expr_get_type((C4Node *) agg_info->ast_expr);
         group->output_tup->vals[colno] = datum_copy(d, type);
     }
 
@@ -352,8 +354,8 @@ make_agg_info(int num_aggs, List *cols, apr_pool_t *pool)
         agg_expr = (AstAggExpr *) expr;
         agg_info = apr_palloc(pool, sizeof(*agg_info));
         agg_info->colno = colno;
-        agg_info->agg_kind = agg_expr->agg_kind;
-        agg_info->desc = lookup_agg_desc(agg_info->agg_kind);
+        agg_info->ast_expr = copy_node(agg_expr, pool);
+        agg_info->desc = lookup_agg_desc(agg_expr->agg_kind);
         result[aggno] = agg_info;
         aggno++;
         colno++;

@@ -56,6 +56,17 @@ agg_t8(10, 0);
 
 \dump agg_t9
 
+/* Bug #2: count<> for strings */
+define(agg_t10, {string, string});
+define(agg_t10_cnt, {string, int});
+
+agg_t10("a", "A");
+agg_t10("b", "A");
+agg_t10("b", "B");
+agg_t10_cnt(X, count<Y>) :- agg_t10(X, Y);
+
+\dump agg_t10_cnt
+
 /* Max aggregate */
 define(max_t1, {int, int});
 define(max_t2, {int, int});

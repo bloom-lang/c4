@@ -10,7 +10,7 @@
 typedef struct AggExprInfo
 {
     int colno;
-    AstAggKind agg_kind;
+    AstAggExpr *ast_expr;
     AggFuncDesc *desc;
 } AggExprInfo;
 
