@@ -625,7 +625,12 @@ client_try_connect(ClientState *client)
     {
         c4_log(client->c4, "Failed to connect to remote host @ %s",
                client->loc_spec_str);
-        FAIL_APR(s);
+        // We used to error out here:
+            // FAIL_APR(s);
+        // We don't do that any more, just log the failed attempt.
+        // No need to clean up the client->pending_tuples; that's handled
+        // at the end of router_do_fixpoint.
+        return;
     }
 
     /*
